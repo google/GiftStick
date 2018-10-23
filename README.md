@@ -2,9 +2,9 @@
 
 ## Summary
 
-This projects contains code which allows a non experimented user to easily (one
+This project contains code which allows an inexperimented user to easily (one
 click) upload forensics evidence (such as some information about the system,
-a full disk image as well as the system's firmware, if supporeted) from a
+a full disk image as well as the system's firmware, if supported) from a
 target device (that will boot on an external device containing the code)
 to Google Cloud Storage.
 
@@ -44,7 +44,7 @@ bash tools/remaster.sh \
 ```
 
 
-### Manually set up the recquired Google Cloud environment & call the script
+### Manually set up the required Google Cloud environment & call the script
 
 First, the script needs credentials (for example, of a Service Account) that
 provide the following roles (see [IAM
@@ -68,7 +68,7 @@ You can now then include the `auto_forensicate` folder, as well as the
 `credentials.json` file on a bootable USB of your choice, where the dependencies
 have been installed (see below).
 
-Once you have booted the system to acquire evidence from on that newly created
+Once you have booted the system to acquire evidence from that newly created
 USB stick, and upload it to a GCS url
 `gs://giftstick-bucket/forensics_evidence/` you can run the acquisition script
 this way:
