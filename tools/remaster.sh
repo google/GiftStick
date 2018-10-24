@@ -65,7 +65,7 @@ readonly TMP_MNT_POINT=$(mktemp -d)
 readonly REMASTERED_SUFFIX="remastered"
 # Name of the service account
 readonly GCS_SA_NAME="giftstick"
-readonly AUTO_FORENSIC_SCRIPT_NAME="auto_forensicate.py"
+readonly AUTO_FORENSIC_SCRIPT_NAME="auto_acquire.py"
 
 # Prints an error and terminates execution.
 #
