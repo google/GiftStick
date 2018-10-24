@@ -25,9 +25,8 @@ if [[ $? -ne 0 ]]; then
 fi
 
 # Make sure have the latest version of the auto_forensicate module
-# TODO fix after release
-git clone https://github.com/google/giftstick
-cd giftstick
+git clone https://github.com/google/GiftStick
+cd GiftStick
 sudo python setup.py install
 
 # We need to build a module for this system, this can't be installed before

@@ -52,5 +52,5 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
-    scripts=['auto_forensicate/auto_forensicate.py']
+    scripts=['auto_forensicate/auto_acquire.py']
 )
