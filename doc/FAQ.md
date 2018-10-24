@@ -83,7 +83,9 @@ device is [explained here](doc/new_recipe.md)
 
 ## Can I also acquire removable disks connected to the target?
 
+Yes.
 
+Call the `auto_acquire.py` script with the `--select_disk` flag.
 
 ## Why are the ISO remastering script in `tools` so ugly?
 
@@ -91,3 +93,12 @@ These scripts come as helpers to get you started quickly (by setting up GCS and
 remastering an vanilla Xubuntu ISO with the acquisition scripts).
 
 The acquisition scripts don't use them.
+
+## Why should I send my data to a remote untrusted cloud platform?
+
+If this is a risk you're not willing to take, make sure you acquire only
+encrypted devices, ie: laptops with Full Disk Encryption such as FileVault or
+BitLocker.
+
+You can disable acquiring the firmware of the target system by only enabling the
+Disk recipe (see the tool's help).
