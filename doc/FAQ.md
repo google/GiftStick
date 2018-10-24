@@ -1,7 +1,5 @@
 # Frequently Asked Questions
 
-This is a quick page to try and answer some questions raised by the community.
-
 ## Is this an official Google product?
 
 No.
