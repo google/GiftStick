@@ -57,14 +57,18 @@ try to re-send chunks on some network errors. Though if internet connectivity
 is lost for a significant amount of time, the upload will stop, and you won't be
 able to resume from the last known uploaded chunk.
 
-## Is this project using 'forensically sound'?
+## Is this project 'forensically sound'?
+
+Not really.
 
 None of the code used in this project has been certified, and does not follow
 and ISO standard.
 
-The code is being read off the block device by calling `dcfldd`, which will
-then generate MD5 and SHA1 hashes for every 128MiB read from the device, as
-well as the whole content. This is uploaded alongside the `sdX.image` file, as
+No write blocking mechanism is currently implemented.
+
+To try and keep some trust about the data being copied from disk, the code also
+uploads MD5 and SHA1 hashes for every 128MiB read from the device, as well as
+the whole content. This is uploaded alongside the `sdX.image` file, as
 `sdX.hash`.
 
 ## Why `dcfldd` and not `acquisition_method_with_compression`?
