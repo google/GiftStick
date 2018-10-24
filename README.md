@@ -1,5 +1,7 @@
 # GiftStick
 
+![](doc/gift_video.gif)
+
 ## Summary
 
 This project contains code which allows an inexperimented user to easily (one
@@ -115,3 +117,8 @@ Currently the script uploads the following data:
   * the device's information (output of udevadm)
 * The system's firmware, dumped with
   [Chipsec](https://github.com/chipsec/chipsec)
+
+
+## FAQ
+
+Some answers to Frequenly Asked Questions can be [found here](doc/FAQ.md)
