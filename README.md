@@ -1,5 +1,7 @@
 # GiftStick
 
+![](doc/gift_video.gif)
+
 ## Summary
 
 This project contains code which allows an inexperimented user to easily (one
