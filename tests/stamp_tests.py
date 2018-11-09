@@ -28,6 +28,9 @@ class StampManagerTests(unittest.TestCase):
   def _FakeTime(self):
     return '20171012-135619'
 
+  def _FakeIdentifier(self):
+    return 'test_uuid'
+
   def setUp(self):
     self.test_stamp = BaseStamp(
         identifier='test_uuid',
@@ -41,5 +44,6 @@ class StampManagerTests(unittest.TestCase):
 
   def testGetStamp(self):
     hostinfo.GetTime = self._FakeTime
+    hostinfo.GetIdentifier = self._FakeIdentifier
     stamp_manager = StampManager()
     self.assertEqual(stamp_manager.GetStamp(), self.test_stamp)
