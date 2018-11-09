@@ -90,11 +90,11 @@ class AutoForensicateTest(unittest.TestCase):
     af = auto_acquire.AutoForensicate(recipes=recipes)
     parser = af._CreateParser()
     expected_help = (
-        'usage: setup.py [-h] --acquire {all,test1,test2} [--gs_keyfile '
+        'usage: run_tests.py [-h] --acquire {all,test1,test2} [--gs_keyfile '
         'GS_KEYFILE]\n'
-        '                [--logging {stackdriver,stdout}] [--select_disks]'
+        '                    [--logging {stackdriver,stdout}] [--select_disks]'
         '\n'
-        '                destination\n\n'
+        '                    destination\n\n'
         'Autopush forensics evidence to Cloud Storage\n\n'
         'positional arguments:\n'
         '  destination           Sets the destination for uploads. For example'
