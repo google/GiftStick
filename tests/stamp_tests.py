@@ -29,21 +29,23 @@ class StampManagerTests(unittest.TestCase):
     return '20171012-135619'
 
   def _FakeIdentifier(self):
-    return 'test_serial'
+    return 'test_uuid'
 
   def setUp(self):
     self.test_stamp = BaseStamp(
-        identifier='test_serial',
+        identifier='test_uuid',
         start_time='20171012-135619')
 
   def testBaseElements(self):
-    path_elements = ['20171012-135619', 'test_serial']
+    path_elements = ['20171012-135619', 'test_uuid']
     stamp_manager = StampManager()
     self.assertEqual(
         stamp_manager.BasePathElements(self.test_stamp), path_elements)
 
   def testGetStamp(self):
+    test_stamp = BaseStamp(
+        identifier='test_serial',
+        start_time='20171012-135619')
     hostinfo.GetTime = self._FakeTime
-    hostinfo.GetIdentifier = self._FakeIdentifier
     stamp_manager = StampManager()
-    self.assertEqual(stamp_manager.GetStamp(), self.test_stamp)
+    self.assertEqual(stamp_manager.GetStamp(), test_stamp)
