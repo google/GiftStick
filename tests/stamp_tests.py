@@ -29,15 +29,15 @@ class StampManagerTests(unittest.TestCase):
     return '20171012-135619'
 
   def _FakeIdentifier(self):
-    return 'test_uuid'
+    return 'test_serial'
 
   def setUp(self):
     self.test_stamp = BaseStamp(
-        identifier='test_uuid',
+        identifier='test_serial',
         start_time='20171012-135619')
 
   def testBaseElements(self):
-    path_elements = ['20171012-135619', 'test_uuid']
+    path_elements = ['20171012-135619', 'test_serial']
     stamp_manager = StampManager()
     self.assertEqual(
         stamp_manager.BasePathElements(self.test_stamp), path_elements)
