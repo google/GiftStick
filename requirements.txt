@@ -4,4 +4,4 @@ google-cloud-logging
 google-cloud-storage
 mock
 progressbar
--i https://pypi.python.org/pypi/ PyZenity
+http://brianramos.com/software/PyZenity/PyZenity-0.1.8.tar.gz
