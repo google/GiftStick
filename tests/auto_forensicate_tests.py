@@ -24,7 +24,7 @@ import sys
 import tempfile
 import unittest
 
-import auto_acquire
+from auto_forensicate import auto_acquire
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import base
@@ -90,11 +90,11 @@ class AutoForensicateTest(unittest.TestCase):
     af = auto_acquire.AutoForensicate(recipes=recipes)
     parser = af._CreateParser()
     expected_help = (
-        'usage: run_tests.py [-h] --acquire {all,test1,test2} [--gs_keyfile '
+        'usage: setup.py [-h] --acquire {all,test1,test2} [--gs_keyfile '
         'GS_KEYFILE]\n'
-        '                    [--logging {stackdriver,stdout}] [--select_disks]'
+        '                [--logging {stackdriver,stdout}] [--select_disks]'
         '\n'
-        '                    destination\n\n'
+        '                destination\n\n'
         'Autopush forensics evidence to Cloud Storage\n\n'
         'positional arguments:\n'
         '  destination           Sets the destination for uploads. For example'

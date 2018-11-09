@@ -19,12 +19,22 @@ try:
 except ImportError:
   from distutils.core import find_packages, setup
 
+import unittest
+
 
 description = 'Forensics acquisition tool'
 
 long_description = (
     'auto_forensicate is a module to automate uploading forensics evidence to'
     'Google Cloud Storage')
+
+def test_suite():
+  """Loads the unittest suite."""
+  loader = unittest.TestLoader()
+  start_dir = 'tests'
+  suite = loader.discover(start_dir, pattern='*_tests.py')
+  return suite
+
 
 setup(
     name='auto_forensicate',
@@ -46,7 +56,8 @@ setup(
         'google-cloud-logging',
         'PyZenity'
     ],
-    tests_require = ['mock'],
+    tests_require=['mock', 'PyZenity', 'boto', 'google-cloud-logging'],
+    test_suite='setup.test_suite',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
