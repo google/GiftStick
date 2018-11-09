@@ -1,0 +1,7 @@
+boto
+gcs-oauth2-boto-plugin
+google-cloud-logging
+google-cloud-storage
+mock
+progressbar
+-i https://pypi.python.org/pypi/ PyZenity

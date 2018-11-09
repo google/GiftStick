@@ -1,5 +1,6 @@
 language: python
 python:
-      - "2.7"
+    - "2.7"
 script:
-      python run_tests.py
+    pip install -r requirements.txt
+    python run_tests.py
