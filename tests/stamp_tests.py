@@ -47,5 +47,6 @@ class StampManagerTests(unittest.TestCase):
         identifier='test_uuid',
         start_time='20171012-135619')
     hostinfo.GetTime = self._FakeTime
+    hostinfo.GetIdentifier = self._FakeIdentifier
     stamp_manager = StampManager()
     self.assertEqual(stamp_manager.GetStamp(), test_stamp)
