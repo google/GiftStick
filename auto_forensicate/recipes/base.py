@@ -19,6 +19,7 @@ from __future__ import unicode_literals
 import logging
 import os
 from io import BytesIO
+import six
 import shutil
 import subprocess
 import tempfile
@@ -127,8 +128,8 @@ class StringArtifact(BaseArtifact):
       ValueError: if the path doesn't point to a file.
     """
     super(StringArtifact, self).__init__(os.path.basename(path))
-    if type(string_content) == str:
-      self._data = string_content.encode()
+    if type(string_content) == six.text_type:
+      self._data = string_content.encode('utf-8')
     else:
       self._data = string_content
     self._size = len(self._data)
