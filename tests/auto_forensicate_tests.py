@@ -17,6 +17,7 @@
 from __future__ import unicode_literals
 
 import argparse
+from io import BytesIO
 import logging
 import os
 import StringIO
@@ -33,11 +34,11 @@ import mock
 DEFAULT_ARTIFACT_CONTENT = os.urandom(1000)
 
 
-class StringIORecipe(base.BaseRecipe):
-  """A Recipe returning 1 artifact with a StringIO."""
+class BytesIORecipe(base.BaseRecipe):
+  """A Recipe returning 1 artifact with a BytesIO."""
 
   def __init__(self, name, options=None):
-    super(StringIORecipe, self).__init__(name, options=options)
+    super(BytesIORecipe, self).__init__(name, options=options)
     self.ran_collection = False
 
   def GetArtifacts(self):
@@ -231,7 +232,7 @@ class AutoForensicateTest(unittest.TestCase):
     af._logger = logging.getLogger(self.__class__.__name__)
     af._MakeProgressBar = self.FakeMakeProgressBar
 
-    recipe = StringIORecipe('stringio', options=options)
+    recipe = BytesIORecipe('stringio', options=options)
     self.assertTrue(recipe._options.fake)
 
     with tempfile.TemporaryFile() as destination:

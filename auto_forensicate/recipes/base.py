@@ -18,8 +18,8 @@ from __future__ import unicode_literals
 
 import logging
 import os
+from io import BytesIO
 import shutil
-import StringIO
 import subprocess
 import tempfile
 
@@ -127,7 +127,10 @@ class StringArtifact(BaseArtifact):
       ValueError: if the path doesn't point to a file.
     """
     super(StringArtifact, self).__init__(os.path.basename(path))
-    self._data = string_content
+    if type(string_content) == str:
+      self._data = string_content.encode()
+    else:
+      self._data = string_content
     self._size = len(self._data)
     self.remote_path = path
     self._stream = None
@@ -135,7 +138,7 @@ class StringArtifact(BaseArtifact):
   def _GetStream(self):
     """Get access to the file-like object."""
     if self._stream is None:
-      self._stream = StringIO.StringIO(self._data)
+      self._stream = BytesIO(self._data)
     return self._stream
 
   def CloseStream(self):
@@ -209,6 +212,7 @@ class ProcessOutputArtifact(BaseArtifact):
           'Command \'{0:s}\' failed with \'{1:s}\' return code {2:d})'.format(
               self._command, error.strip(), process.returncode))
       self._logger.error(command_output)
+      command_output = command_output.decode('utf-8', 'ignore')
 
     return command_output
 
@@ -221,7 +225,7 @@ class ProcessOutputArtifact(BaseArtifact):
     if not self._buffered_content:
       command_output = self._RunCommand()
       self._size = len(command_output)
-      self._buffered_content = StringIO.StringIO(command_output)
+      self._buffered_content = BytesIO(command_output)
     return self._buffered_content
 
 
