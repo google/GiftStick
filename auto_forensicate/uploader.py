@@ -142,7 +142,7 @@ class GCSUploader(object):
     except boto.exception.GSDataError as e:
       # This is usually raised when the connection is broken, and deserves to
       # be retried.
-      raise errors.RetryableError(e.message)
+      raise errors.RetryableError(str(e))
 
   def UploadArtifact(self, artifact, update_callback=None):
     """Uploads a file object to Google Cloud Storage.
