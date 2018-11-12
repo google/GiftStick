@@ -91,7 +91,7 @@ class AutoForensicate(object):
         description='Autopush forensics evidence to Cloud Storage')
     parser.add_argument(
         '--acquire', action='append', help='Evidence to acquire',
-        choices=['all']+self._recipes.keys(), required=True
+        choices=['all']+list(self._recipes.keys()), required=True
     )
     parser.add_argument(
         'destination', action='store',
@@ -205,10 +205,10 @@ class AutoForensicate(object):
 
   def _ParseRecipes(self, options):
     if 'all' in options.acquire:
-      options.acquire = self._recipes.keys()
+      options.acquire = sorted(list(self._recipes.keys()))
     else:
       # Deduplicate recipes
-      options.acquire = list(set(options.acquire))
+      options.acquire = sorted(list(set(options.acquire)))
 
   def _ParseGCSJSON(self, options):
     """Parses a GCS json configuration file.
