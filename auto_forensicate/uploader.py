@@ -20,7 +20,10 @@ import argparse
 import json
 import logging
 import os
-import StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 try:
   from urlparse import urlparse
 except ImportError:
@@ -59,7 +62,7 @@ class GCSUploader(object):
     """Upload the 'stamp' (a json file containing metadata)."""
 
     # TODO: if this fails, raise an Exception that will stop execution
-    stream = StringIO.StringIO(json.dumps(self._stamp._asdict()))
+    stream = StringIO(json.dumps(self._stamp._asdict()))
     remote_path = self._MakeRemotePath('stamp.json')
     self._UploadStream(stream, remote_path)
     self._stamp_uploaded = True

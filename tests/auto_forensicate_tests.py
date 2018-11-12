@@ -20,7 +20,10 @@ import argparse
 from io import BytesIO
 import logging
 import os
-import StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 import sys
 import tempfile
 import unittest
@@ -135,7 +138,7 @@ class AutoForensicateTest(unittest.TestCase):
     test_args = ['--acquire', 'test1', '--logging', 'stackdriver']
     with self.assertRaises(SystemExit):
       prev_stderr = sys.stderr
-      sys.stderr = StringIO.StringIO()
+      sys.stderr = StringIO()
       af.ParseArguments(test_args)
     sys.stderr = prev_stderr
 
@@ -147,7 +150,7 @@ class AutoForensicateTest(unittest.TestCase):
     af = auto_acquire.AutoForensicate(recipes=recipes)
     test_args = ['--acquire', 'test1', '--gs_keyfile=null']
     prev_stderr = sys.stderr
-    sys.stderr = StringIO.StringIO()
+    sys.stderr = StringIO()
     with self.assertRaises(SystemExit):
       af.ParseArguments(test_args)
     sys.stderr = prev_stderr
@@ -174,7 +177,7 @@ class AutoForensicateTest(unittest.TestCase):
         '--acquire', 'test4', '--acquire', 'all',
         '--gs_keyfile=file', 'gs://bucket']
     prev_stderr = sys.stderr
-    sys.stderr = StringIO.StringIO()
+    sys.stderr = StringIO()
     with self.assertRaises(SystemExit):
       af.ParseArguments(test_args)
     sys.stderr = prev_stderr
