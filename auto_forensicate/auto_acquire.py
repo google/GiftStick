@@ -91,7 +91,7 @@ class AutoForensicate(object):
         description='Autopush forensics evidence to Cloud Storage')
     parser.add_argument(
         '--acquire', action='append', help='Evidence to acquire',
-        choices=['all']+list(self._recipes.keys()), required=True
+        choices=['all']+sorted(list(self._recipes.keys())), required=True
     )
     parser.add_argument(
         'destination', action='store',
