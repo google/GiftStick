@@ -67,6 +67,9 @@ class DiskArtifact(base.BaseArtifact):
   def __cmp__(self, other):
     return cmp(self.size, other.size)
 
+  def __lt__(self, other):
+    return self.size < other.size
+
   def _GenerateDDCommand(self):
     """Builds the DD command to run on the disk.
 
