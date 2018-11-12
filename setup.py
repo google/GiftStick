@@ -34,7 +34,7 @@ setup(
     url='https://github.com/google/giftstick',
     author='giftstick development team',
     license='Apache License, Version 2.0',
-    packages=find_packages(exclude=['tests']),
+    packages=find_packages(),
     dependency_links=[
         'http://brianramos.com/software/PyZenity/PyZenity-0.1.8.tar.gz'
         '#egg=PyZenity-0.1.8'],
@@ -46,7 +46,6 @@ setup(
         'google-cloud-logging',
         'PyZenity'
     ],
-    tests_require = ['mock'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',

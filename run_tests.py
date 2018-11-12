@@ -12,14 +12,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import logging
+"""Run all tests inside the tests folder."""
 import unittest
+import sys
 
 
-logging.disable(logging.CRITICAL)
 loader = unittest.TestLoader()
 start_dir = 'tests'
 suite = loader.discover(start_dir, pattern='*_tests.py')
 
 runner = unittest.TextTestRunner()
-runner.run(suite)
+result = runner.run(suite)
+sys.exit(not result.wasSuccessful())

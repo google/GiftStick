@@ -24,7 +24,7 @@ import sys
 import tempfile
 import unittest
 
-import auto_acquire
+from auto_forensicate import auto_acquire
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import base

@@ -1,0 +1,7 @@
+boto
+gcs-oauth2-boto-plugin
+google-cloud-logging
+google-cloud-storage
+mock
+progressbar
+http://brianramos.com/software/PyZenity/PyZenity-0.1.8.tar.gz
