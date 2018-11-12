@@ -44,7 +44,7 @@ class StampManagerTests(unittest.TestCase):
 
   def testGetStamp(self):
     test_stamp = BaseStamp(
-        identifier='test_serial',
+        identifier='test_uuid',
         start_time='20171012-135619')
     hostinfo.GetTime = self._FakeTime
     stamp_manager = StampManager()
