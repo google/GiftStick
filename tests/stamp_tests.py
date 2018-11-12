@@ -17,19 +17,13 @@
 from __future__ import unicode_literals
 
 import unittest
-from auto_forensicate import hostinfo
+import mock
 from auto_forensicate.stamp.manager import BaseStamp
 from auto_forensicate.stamp.manager import StampManager
 
 
 class StampManagerTests(unittest.TestCase):
   """Tests for the StampManager class."""
-
-  def _FakeTime(self):
-    return '20171012-135619'
-
-  def _FakeIdentifier(self):
-    return 'test_uuid'
 
   def setUp(self):
     self.test_stamp = BaseStamp(
@@ -46,7 +40,9 @@ class StampManagerTests(unittest.TestCase):
     test_stamp = BaseStamp(
         identifier='test_uuid',
         start_time='20171012-135619')
-    hostinfo.GetTime = self._FakeTime
-    hostinfo.GetIdentifier = self._FakeIdentifier
-    stamp_manager = StampManager()
-    self.assertEqual(stamp_manager.GetStamp(), test_stamp)
+    with mock.patch('auto_forensicate.hostinfo.GetTime') as faked_time:
+      faked_time.return_value = '20171012-135619'
+      with mock.patch('auto_forensicate.hostinfo.GetIdentifier') as faked_id:
+        faked_id.return_value = 'test_uuid'
+        stamp_manager = StampManager()
+        self.assertEqual(stamp_manager.GetStamp(), test_stamp)
