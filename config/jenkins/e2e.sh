@@ -28,6 +28,14 @@ set -e
 
 # install required packages and things
 function setup {
+  sudo apt install -y \
+    gdisk \
+    genisoimage \
+    grub2-common \
+    grub-efi-amd64-bin \
+    kpartx \
+    squashfs-tools \
+    syslinux
   download_iso "${ISO_TO_REMASTER_URL}" "${ISO_FILENAME}"
   return 0
 }
