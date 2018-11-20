@@ -40,19 +40,7 @@ function setup {
     kpartx \
     squashfs-tools \
     syslinux
-  download_iso "${ISO_TO_REMASTER_URL}" "${ISO_FILENAME}"
-  return 0
-}
-
-# Downloads an ISO if not present
-#
-# Arguments:
-#   The URL to download, as string
-#   The destination filename, as string
-function download_iso {
-  readonly local url=$1
-  readonly local filename=$2
-  curl -z -J -O "${filename}" "${url}"
+  curl -J --output "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
 }
 
 function build_image {
