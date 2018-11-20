@@ -46,6 +46,8 @@ FLAGS_REMASTERED_ISO=
 FLAGS_SKIP_IMAGE=false
 FLAGS_SKIP_ISO_REMASTER=false
 FLAGS_SKIP_GCS=false
+FLAGS_BUILD_TEST=false
+FLAGS_SA_JSON_PATH=""
 
 # Hardcoded paths
 readonly CURRENT_DIR=$(pwd)
@@ -56,8 +58,8 @@ readonly REMASTER_SCRIPTS_DIR="${CODE_DIR}/remaster_scripts"
 
 readonly FORENSICATE_SCRIPT_NAME="call_auto_forensicate.sh"
 readonly FORENSICATE_SCRIPT="${REMASTER_SCRIPTS_DIR}/${FORENSICATE_SCRIPT_NAME}"
-readonly POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root.sh"
-readonly POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-user.sh"
+POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root.sh"
+POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-user.sh"
 readonly TMP_MNT_POINT=$(mktemp -d)
 
 # Global variables
@@ -153,9 +155,12 @@ Mandatory flags:
 
 Optional flags
   -h, --help            Show this help message
+  --sa_json_file        If provided, will use this file for the GCS service
+                        account credentials, and won't try to create one.
   --image=IMAGE         Set the output filename to IMAGE
   --remastered_iso=ISO  Path to the remastered ISO (used if --skip_iso is
                         enabled)
+  --skip_gcs            If set, will skip GCS environment setup
   --skip_image          If set, will skip the Gift image build
   --skip_iso            If set, will skip the ISO remastering"
 }
@@ -241,6 +246,17 @@ function assert_sa_name {
   fi
 }
 
+# Make sure the provided service account credentials file exists and is valid
+function assert_sa_json_path {
+  if [ ! -f "${FLAGS_SA_JSON_PATH}" ] ; then
+    die "${FLAGS_SA_JSON_PATH} does not exist"
+  fi
+  if ! grep -q '"type": "service_account",' "${FLAGS_SA_JSON_PATH}" ;  then
+  #if [[ ! $(grep -q '"type": "service_account",' "${FLAGS_SA_JSON_PATH}") ]] ; then
+    die "${FLAGS_SA_JSON_PATH} does not look like a valid service account credentials JSON file"
+  fi
+}
+
 # Parses the command line arguments
 #
 # Arguments:
@@ -313,6 +329,23 @@ function parse_arguments {
         FLAGS_SKIP_GCS=true
         ;;
 
+      --sa_json_file)
+        assert_option_argument "$2" "--sa_json_file"
+        FLAGS_SA_JSON_PATH="$2"
+        shift
+        ;;
+      --sa_json_file=?*)
+        FLAGS_SA_JSON_PATH=${1#*=}
+        ;;
+      --sa_json_file=)
+          die '--sa_json_file requires a non-empty option argument.'
+        ;;
+
+      --e2e_test)
+        FLAGS_BUILD_TEST=true
+        POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root-e2e.sh"
+        ;;
+
       --source_iso)
         assert_option_argument "$2" "--source_iso"
         FLAGS_SOURCE_ISO="$2"
@@ -350,7 +383,12 @@ function parse_arguments {
 
   readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence"
 
-  readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
+  if [ -z "${FLAGS_SA_JSON_PATH}" ] ; then
+    readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
+  else
+    assert_sa_json_path
+    readonly GCS_SA_KEY_NAME="${FLAGS_SA_JSON_PATH}"
+  fi
   readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
 
 }
@@ -671,8 +709,10 @@ function configure_gcs {
   msg "Preparing GCS environment"
 
   create_bucket "${FLAGS_GCS_BUCKET_NAME}"
-  create_service_account "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}"
-  create_sa_key "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}" "${GCS_SA_KEY_PATH}"
+  if [ -z "$FLAGS_SA_JSON_PATH" ] ; then
+    create_service_account "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}"
+    create_sa_key "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}" "${GCS_SA_KEY_PATH}"
+  fi
 }
 
 # This function uses a LiveCD ISO image and creates a USB bootable image.
@@ -792,7 +832,9 @@ EOFORENSICSH
   sudo chown -R 999:999 "${TMP_MNT_POINT}/upper/home/${GIFT_USERNAME}"
 
   msg "Cleaning up"
-  sudo rm "${GCS_SA_KEY_PATH}"
+  if [[ "${FLAGS_SKIP_GCS}" == "false" ]]; then
+    sudo rm "${GCS_SA_KEY_PATH}"
+  fi
   sudo umount "${TMP_MNT_POINT}"
   rmdir "${TMP_MNT_POINT}"
   sudo kpartx -d "${FLAGS_IMAGE_FILENAME}"
