@@ -16,6 +16,10 @@
 # This script builds a GiftStick image, runs it in qemu, starts the aquisition
 # script from there, and checks the output image in GCS.
 
+CLOUD_PROJECT=$1
+GCS_BUCKET=$2
+SA_CREDENTIALS_FILE=$3
+
 ISO_TO_REMASTER_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
 ISO_FILENAME="xubuntu.iso"
 IMAGE_NAME="giftstick.img"
@@ -55,18 +59,22 @@ function build_image {
   bash "${REMASTER_SCRIPT}" \
     --project "${CLOUD_PROJECT}" \
     --bucket "${GCS_PROJECT}" \
+    --skip_gcs \
     --source_iso "${ISO_FILENAME}" \
-    --image "${IMAGE_NAME}"
+    --image "${IMAGE_NAME}" \
+    --e2e_test \
+    --sa_json_file "${SA_CREDENTIALS_FILE}"
 }
 
 function run_image {
-  # qemu things here
-  return 0
+  qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
+    -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
+    -netdev user,id=net0,hostfwd=tcp::5555-:22 -no-kvm -daemonize -display none
 }
 
 function run_acquisition_script {
   # Call python script from VM
-  return 0
+  ssh  e2etest@localhost -p 5555 "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
 }
 
 function check_gcs {
@@ -74,7 +82,12 @@ function check_gcs {
   return 0
 }
 
+function cleaup {
+  kill -9 "$(pgrep qemu-system-x86_64)"
+}
+
 setup
 build_image
 run_acquisition_script
 check_gcs
+cleanup
