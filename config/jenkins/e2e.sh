@@ -39,6 +39,7 @@ function setup {
     grub2-common \
     grub-efi-amd64-bin \
     kpartx \
+    ovmf \
     qemu \
     squashfs-tools \
     syslinux \
