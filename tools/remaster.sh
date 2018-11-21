@@ -547,16 +547,12 @@ function pack_initrd {
     initrd_file="${unpacked_iso_dir}/install/initrd.gz"
     initrd_pack_method=gzip
   elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
-    initrd_file="${unpacked_iso_dir}/casper/initrd"
-    initrd_pack_method=""
+    initrd_file="${unpacked_iso_dir}/casper/initrd.lz"
+    initrd_pack_method=lzma
   else
     die "Can't find initrd file"
   fi
-  if [ -z "${initrd_pack_method}" ] ; then
-    find . | cpio -H newc -o > "${REMASTER_WORKDIR_PATH}/initrd.packed"
-  else
-    find . | cpio -H newc -o | ${initrd_pack_method} > "${REMASTER_WORKDIR_PATH}/initrd.packed"
-  fi
+  find . | cpio -H newc -o | ${initrd_pack_method} > "${REMASTER_WORKDIR_PATH}/initrd.packed"
   sudo mv -f "${REMASTER_WORKDIR_PATH}/initrd.packed" "${initrd_file}"
   popd
 }
