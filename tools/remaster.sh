@@ -541,10 +541,17 @@ function pack_initrd {
   elif [[ -e "${unpacked_iso_dir}/install/initrd.gz" ]]; then
     initrd_file="${unpacked_iso_dir}/install/initrd.gz"
     initrd_pack_method=gzip
+  elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
+    initrd_file="${unpacked_iso_dir}/casper/initrd"
+    initrd_pack_method=""
   else
-    die "Can't find initrd.gz nor initrd.lz file"
+    die "Can't find initrd file"
   fi
-  find  | cpio -H newc -o | ${initrd_pack_method} > "${REMASTER_WORKDIR_PATH}/initrd.packed"
+  if [ -z "${initrd_pack_method}" ] ; then
+    find . | cpio -H newc -o > "${REMASTER_WORKDIR_PATH}/initrd.packed"
+  else
+    find . | cpio -H newc -o | ${initrd_pack_method} > "${REMASTER_WORKDIR_PATH}/initrd.packed"
+  fi
   sudo mv -f "${REMASTER_WORKDIR_PATH}/initrd.packed" "${initrd_file}"
   popd
 }
@@ -573,11 +580,18 @@ function unpack_initrd {
   elif [[ -e "${unpacked_iso_dir}/install/initrd.gz" ]]; then
     initrd_file="${unpacked_iso_dir}/install/initrd.gz"
     initrd_pack_method=gzip
+  elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
+    initrd_file="${unpacked_iso_dir}/casper/initrd"
+    initrd_pack_method=""
   else
-    find "${unpacked_iso_dir}"
     die "Can't find initrd.gz nor initrd.lz file in ${unpacked_iso_dir}"
   fi
-  cat "${initrd_file}" | "${initrd_pack_method}" -d | cpio -i
+  if [ -z "${initrd_pack_method}" ] ; then
+    # Fancy ubuntu magic
+    (cpio -id; lzma -d| cpio -id) < "${initrd_file}"
+  else
+    cat "${initrd_file}" | "${initrd_pack_method}" -d | cpio -i
+  fi
   popd
 }
 
