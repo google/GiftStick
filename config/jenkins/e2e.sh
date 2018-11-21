@@ -32,6 +32,7 @@ set -e
 
 # install required packages and things
 function setup {
+  sudo apt update -y
   sudo apt install -y \
     gdisk \
     genisoimage \
@@ -39,7 +40,9 @@ function setup {
     grub-efi-amd64-bin \
     kpartx \
     squashfs-tools \
-    syslinux
+    syslinux \
+    syslinux-utils
+
   curl -J --output "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
 }
 
