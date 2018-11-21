@@ -389,11 +389,12 @@ function parse_arguments {
 
   if [ -z "${FLAGS_SA_JSON_PATH}" ] ; then
     readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
+    readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
   else
     assert_sa_json_path
-    readonly GCS_SA_KEY_NAME="${FLAGS_SA_JSON_PATH}"
+    readonly GCS_SA_KEY_PATH="$(readlink -m "${FLAGS_SA_JSON_PATH}")"
+    readonly GCS_SA_KEY_NAME="$(basename "${FLAGS_SA_JSON_PATH}")"
   fi
-  readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
 
 }
 
@@ -852,7 +853,9 @@ EOFORENSICSH
 
   msg "Cleaning up"
   if [[ "${FLAGS_SKIP_GCS}" == "false" ]]; then
-    sudo rm "${GCS_SA_KEY_PATH}"
+    if [[ ! -z "${FLAGS_SA_JSON_PATH}" ]] ; then
+      sudo rm "${GCS_SA_KEY_PATH}"
+    fi
   fi
   sudo umount "${TMP_MNT_POINT}"
   rmdir "${TMP_MNT_POINT}"
