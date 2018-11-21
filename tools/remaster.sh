@@ -26,11 +26,9 @@
 # you specify the destination with --image
 #
 # It requires the following packages, on ubuntu:
-#   gdisk genisoimage grub-efi-amd64-bin kpartx syslinux
+#   gdisk genisoimage grub-efi-amd64-bin syslinux
 #
 # gdisk and grub-efi-amd64-bin are used for the EFI booting part.
-# kpartx makes mounting the USB image file easier
-# uck is a tool to unpack/repack an LiveCD ISO.
 #
 # If you want to try the new USB image in Qemu, install the following packages:
 #   qemu-system-x86 and ovmf
@@ -741,7 +739,6 @@ function make_bootable_usb_image {
   local remastered_iso_path
   local kernel_name
   local loop_device
-  local loop_num
 
   remastered_iso_path=$1
 
@@ -760,12 +757,10 @@ function make_bootable_usb_image {
   sgdisk --largest-new=2 --typecode=2:8300 "${FLAGS_IMAGE_FILENAME}" # this will be the persistent partition
 
   msg "Mount the EFI partition"
-  sudo kpartx -a "${FLAGS_IMAGE_FILENAME}"
-  loop_device=$(sudo losetup -a | grep "${FLAGS_IMAGE_FILENAME}" | cut -d":" -f 1)
-  loop_num=$(basename "${loop_device}")
-  sudo mkfs.vfat "/dev/mapper/${loop_num}p1"
-  sudo mkfs.ext3 -L casper-rw "/dev/mapper/${loop_num}p2"
-  sudo mount "/dev/mapper/${loop_num}p1" "${TMP_MNT_POINT}"
+  loop_device=$(sudo losetup -fP --show "${FLAGS_IMAGE_FILENAME}")
+  sudo mkfs.vfat "${loop_device}p1"
+  sudo mkfs.ext3 -L casper-rw "${loop_device}p2"
+  sudo mount "${loop_device}p1" "${TMP_MNT_POINT}"
 
   msg "Install some EFI Magic"
   sudo mkdir -p "${TMP_MNT_POINT}/EFI/BOOT"
@@ -817,7 +812,7 @@ EOGRUB
   sudo umount "${TMP_MNT_POINT}"
 
   msg "Customize user directory"
-  sudo mount "/dev/mapper/${loop_num}p2" "${TMP_MNT_POINT}"
+  sudo mount "${loop_device}p2" "${TMP_MNT_POINT}"
   sudo mkdir -p "${TMP_MNT_POINT}/upper/home/${GIFT_USERNAME}/"
 
   pushd "${TMP_MNT_POINT}/upper/home/${GIFT_USERNAME}/"
@@ -855,7 +850,7 @@ EOFORENSICSH
   fi
   sudo umount "${TMP_MNT_POINT}"
   rmdir "${TMP_MNT_POINT}"
-  sudo kpartx -d "${FLAGS_IMAGE_FILENAME}"
+  sudo losetup -d "${loop_device}"
 }
 
 function main {
@@ -867,7 +862,6 @@ function main {
   check_packages genisoimage
   check_packages grub2-common
   check_packages grub-efi-amd64-bin
-  check_packages kpartx
   check_packages squashfs-tools
   check_packages syslinux
 
@@ -908,8 +902,8 @@ if [[ -d '${CURRENT_DIR}' ]]; then
   cd ${CURRENT_DIR}
   mountpoint -q '${TMP_MNT_POINT}' && sudo -n umount '${TMP_MNT_POINT}'
   if [[ -f '${FLAGS_IMAGE_FILENAME}' ]]; then
-    echo sudo -n kpartx -d '${FLAGS_IMAGE_FILENAME}'
-    sudo -n kpartx -d '${FLAGS_IMAGE_FILENAME}'
+    loop_device=$(losetup -O NAME --noheadings -j '${FLAGS_IMAGE_FILENAME}')
+    sudo losetup -d '${loop_device}'
   fi
   if [[ -d '${TMP_MNT_POINT}' ]] ; then
     rmdir '${TMP_MNT_POINT}'
