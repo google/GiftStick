@@ -574,7 +574,8 @@ function unpack_initrd {
     initrd_file="${unpacked_iso_dir}/install/initrd.gz"
     initrd_pack_method=gzip
   else
-    die "Can't find initrd.gz nor initrd.lz file"
+    find "${unpacked_iso_dir}"
+    die "Can't find initrd.gz nor initrd.lz file in ${unpacked_iso_dir}"
   fi
   cat "${initrd_file}" | "${initrd_pack_method}" -d | cpio -i
   popd
