@@ -75,7 +75,7 @@ sed -e '/cdrom/ s/^#*/#/' -i /etc/apt/sources.list
 
 source /etc/lsb-release
 
-newest_ubuntus=("zesty" "artful")
+newest_ubuntus=("zesty" "artful" "bionic")
 if [[ "${newest_ubuntus[@]}" =~ "${DISTRIB_CODENAME}" ]]; then
   ubuntu_fix_systemd
 fi
