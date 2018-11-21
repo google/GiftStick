@@ -41,7 +41,7 @@ function install_basic_pkg {
   local password
   password=$(python -c "import crypt ; print(crypt.crypt('e2etest', '\$6\$saltsalt\$'))")
   useradd -m -p "${password}" -s /bin/bash e2etest
-  echo "e2etest ALL=(ALL) ALL" >> /etc/sudoers.d/e2etest
+  echo "e2etest ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/e2etest
 }
 
 function ubuntu_fix_systemd {
