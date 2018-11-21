@@ -79,6 +79,7 @@ function cleaup {
 
 setup
 build_image
+run_image
 run_acquisition_script
 check_gcs
 cleanup
