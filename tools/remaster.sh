@@ -191,7 +191,11 @@ function assert_sourceiso_flag {
     if [[ ! "${FLAGS_SOURCE_ISO}" ]]; then
       die "Please specify a source ISO to remaster with --source_iso"
     fi
-    SOURCE_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
+    if [ -f "${FLAGS_SOURCE_ISO}" ]; then
+      SOURCE_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
+    else
+      die "${FLAGS_SOURCE_ISO} is not found"
+    fi
   else
     if [[ ! "${FLAGS_REMASTERED_ISO}" ]]; then
       die "Please specify a remastered ISO with --remastered_iso"
