@@ -817,9 +817,7 @@ EOGRUB
 
   pushd "${TMP_MNT_POINT}/upper/home/${GIFT_USERNAME}/"
 
-  if [[ "${FLAGS_SKIP_GCS}" == "false" ]]; then
-    sudo cp "${GCS_SA_KEY_PATH}" .
-  fi
+  sudo cp "${GCS_SA_KEY_PATH}" .
 
   pwd
   sudo cp "${FORENSICATE_SCRIPT}" "${FORENSICATE_SCRIPT_NAME}"
