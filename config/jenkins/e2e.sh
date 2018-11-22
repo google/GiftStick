@@ -64,8 +64,8 @@ function run_image {
   qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::5555-:22 -no-kvm -daemonize -display none
-  # Wait for qemu to finish booting
-  sleep 120
+  echo "Waiting for qemu to finish booting..."
+  sleep $((4*60))
 }
 
 function run_acquisition_script {
