@@ -37,11 +37,7 @@ function install_basic_pkg {
   apt-get -y update
   apt-get -y install "${COMMON_UTILS[@]}"
 
-  echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
-  local password
-  password=$(python -c "import crypt ; print(crypt.crypt('e2etest', '\$6\$saltsalt\$'))")
-  useradd -m -p "${password}" -s /bin/bash e2etest
-  echo "e2etest ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers.d/e2etest
+  echo "PasswordAuthentication no" >>  /etc/ssh/sshd_config
 }
 
 function ubuntu_fix_systemd {
