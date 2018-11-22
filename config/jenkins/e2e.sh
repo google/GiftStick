@@ -64,11 +64,20 @@ function run_image {
   qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::5555-:22 -no-kvm -daemonize -display none
-  echo "Waiting for qemu to finish booting..."
-  sleep $((4*60))
+
+  readonly local tries=100
+  for try in $(seq 1 $tries); do
+    echo "Waiting for qemu to settle ${try}"
+    if ssh -oConnectTimeout=5 -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oIdentityFile=./test_key gift@localhost -p 5555 "echo 'logged in'"; then
+      break
+    fi
+    sleep 5
+  done
 }
 
 function run_acquisition_script {
+  # The corresponding public key is pushed in the giftstick "e2etest" image.
+  # The image is running in Qemu, in the VM that is running the Jenkins Job.
   cat >test_key <<EOKEY
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
@@ -80,7 +89,7 @@ UuY29tAQIDBAUGBw==
 -----END OPENSSH PRIVATE KEY-----
 EOKEY
   chmod 600 test_key
-  ssh -v \
+  ssh  \
     -oIdentityFile=test_key \
     -oUserKnownHostsFile=/dev/null \
     -oStrictHostKeyChecking=no gift@localhost \
