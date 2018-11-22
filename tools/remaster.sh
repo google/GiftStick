@@ -49,7 +49,7 @@ FLAGS_SA_JSON_PATH=""
 
 # Hardcoded paths
 readonly CURRENT_DIR=$(pwd)
-readonly CODE_DIR=$(realpath $(dirname "$0"))
+readonly CODE_DIR=$(realpath "$(dirname "$0")")
 readonly REMASTER_WORKDIR_NAME="remaster_workdir"
 readonly REMASTER_WORKDIR_PATH=$(readlink -m "${CURRENT_DIR}/${REMASTER_WORKDIR_NAME}")
 readonly REMASTER_SCRIPTS_DIR="${CODE_DIR}/remaster_scripts"
@@ -345,7 +345,8 @@ function parse_arguments {
 
       --e2e_test)
         FLAGS_BUILD_TEST=true
-        POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root-e2e.sh"
+        POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/e2e/post-install-root.sh"
+        POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/e2e/post-install-user.sh"
         ;;
 
       --source_iso)
