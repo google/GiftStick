@@ -21,3 +21,5 @@ function add_test_ssh_key {
   mkdir .ssh
   echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHx26PEzEj5WIZDP/Actr4LruAiIFbVP4hS8ANBrcnnH e2etests" > .ssh/authorized_keys
 }
+
+add_test_ssh_key
