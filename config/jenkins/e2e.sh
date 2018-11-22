@@ -62,6 +62,8 @@ function run_image {
   qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::5555-:22 -no-kvm -daemonize -display none
+  # Wait for qemu to finish booting
+  sleep 120
 }
 
 function run_acquisition_script {
@@ -75,11 +77,13 @@ uAiIFbVP4hS8ANBrcnnHAAAAJnJvbWFpbmdAZ3JpbWJlcmdlbi56cmguY29ycC5nb29nbG
 UuY29tAQIDBAUGBw==
 -----END OPENSSH PRIVATE KEY-----
 EOKEY
-  ssh \
-     -oIdentityFile=test_key \
+  chmod 600 test_key
+  ssh -v \
+    -oIdentityFile=test_key \
     -oUserKnownHostsFile=/dev/null \
-    -oStrictHostKeyChecking=no e2etest@localhost \
-    -p 5555 "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
+    -oStrictHostKeyChecking=no gift@localhost \
+    -p 5555 \
+    "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
 }
 
 function check_gcs {
@@ -97,11 +101,11 @@ function main {
   SA_CREDENTIALS_FILE=$3
 
   echo "Setting up environment"
-#  setup
+  setup
   echo "Starting GiftStick image building process"
-#  build_image
+  build_image
   echo "Starting up GiftStick image"
-#  run_image
+  run_image
   echo "Starting up acquisition scripts"
   run_acquisition_script
   echo "Checking files are up in GCS"
