@@ -65,8 +65,18 @@ function run_image {
 }
 
 function run_acquisition_script {
-  # Call python script from VM
+  cat >test_key <<EOKEY
+-----BEGIN OPENSSH PRIVATE KEY-----
+b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
+QyNTUxOQAAACB8dujxMxI+ViGQz/wHLa+C67gIiBW1T+IUvADQa3J5xwAAALDY6JAB2OiQ
+AQAAAAtzc2gtZWQyNTUxOQAAACB8dujxMxI+ViGQz/wHLa+C67gIiBW1T+IUvADQa3J5xw
+AAAECGsXl/bYnTqdXNZCxXI3ZcjmnCRODj2yGyqjTF1T62Ynx26PEzEj5WIZDP/Actr4Lr
+uAiIFbVP4hS8ANBrcnnHAAAAJnJvbWFpbmdAZ3JpbWJlcmdlbi56cmguY29ycC5nb29nbG
+UuY29tAQIDBAUGBw==
+-----END OPENSSH PRIVATE KEY-----
+EOKEY
   ssh \
+     -oIdentityFile=test_key \
     -oUserKnownHostsFile=/dev/null \
     -oStrictHostKeyChecking=no e2etest@localhost \
     -p 5555 "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
