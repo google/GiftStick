@@ -16,17 +16,15 @@
 # This script builds a GiftStick image, runs it in qemu, starts the aquisition
 # script from there, and checks the output image in GCS.
 
-CLOUD_PROJECT=$1
-GCS_BUCKET=$2
-SA_CREDENTIALS_FILE=$3
+CLOUD_PROJECT=""
+GCS_BUCKET=""
+SA_CREDENTIALS_FILE=""
 
 ISO_TO_REMASTER_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
-ISO_FILENAME="xubuntu.iso"
+ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
 IMAGE_NAME="giftstick.img"
 
 REMASTER_SCRIPT="tools/remaster.sh"
-CLOUD_PROJECT="plaso_ci"
-GCS_PROJECT="giftstick-e2e"
 
 set -e
 
@@ -40,7 +38,7 @@ function setup {
     grub-efi-amd64-bin \
     kpartx \
     ovmf \
-    qemu \
+    qemu-system-x86 \
     squashfs-tools \
     syslinux \
     syslinux-utils
@@ -51,7 +49,7 @@ function setup {
 function build_image {
   bash "${REMASTER_SCRIPT}" \
     --project "${CLOUD_PROJECT}" \
-    --bucket "${GCS_PROJECT}" \
+    --bucket "${GCS_BUCKET}" \
     --skip_gcs \
     --source_iso "${ISO_FILENAME}" \
     --image "${IMAGE_NAME}" \
@@ -67,7 +65,10 @@ function run_image {
 
 function run_acquisition_script {
   # Call python script from VM
-  ssh  e2etest@localhost -p 5555 "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
+  ssh \
+    -oUserKnownHostsFile=/dev/null \
+    -oStrictHostKeyChecking=no e2etest@localhost \
+    -p 5555 "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
 }
 
 function check_gcs {
@@ -79,9 +80,28 @@ function cleaup {
   kill -9 "$(pgrep qemu-system-x86_64)"
 }
 
-setup
-build_image
-run_image
-run_acquisition_script
-check_gcs
-cleanup
+function main {
+  CLOUD_PROJECT=$1
+  GCS_BUCKET=$2
+  SA_CREDENTIALS_FILE=$3
+
+  echo "Setting up environment"
+#  setup
+  echo "Starting GiftStick image building process"
+#  build_image
+  echo "Starting up GiftStick image"
+#  run_image
+  echo "Starting up acquisition scripts"
+  run_acquisition_script
+  echo "Checking files are up in GCS"
+  check_gcs
+  echo "Cleaning up"
+  cleanup
+  echo "Done"
+}
+
+trap "{
+  exit 1
+}" INT EXIT
+
+main "$@"
