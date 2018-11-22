@@ -44,7 +44,9 @@ function setup {
     syslinux-utils \
     wget
 
-  wget -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
+  if [ ! -f "${ISO_FILENAME}" ]; then
+    wget -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
+  fi
 }
 
 function build_image {
