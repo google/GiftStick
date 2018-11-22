@@ -41,9 +41,10 @@ function setup {
     qemu-system-x86 \
     squashfs-tools \
     syslinux \
-    syslinux-utils
+    syslinux-utils \
+    wget
 
-  curl -J --output "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
+  wget -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
 }
 
 function build_image {
