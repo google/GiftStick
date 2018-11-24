@@ -20,16 +20,18 @@ CLOUD_PROJECT=""
 GCS_BUCKET=""
 SA_CREDENTIALS_FILE=""
 
-ISO_TO_REMASTER_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
-ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
-IMAGE_NAME="giftstick.img"
+readonly ISO_TO_REMASTER_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
+readonly ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
+readonly IMAGE_NAME="giftstick.img"
 
-REMASTER_SCRIPT="tools/remaster.sh"
+readonly REMASTER_SCRIPT="tools/remaster.sh"
+readonly SSH_KEY_PATH="test_key"
+readonly QEMU_SSH_PORT=5555
 
 set -e
 
 function msg {
-  message=$1
+  readonly local message=$1
   echo "[$(date +%Y%m%d-%H%M%S)] ${message}"
 }
 
@@ -65,25 +67,12 @@ function build_image {
     --sa_json_file "${SA_CREDENTIALS_FILE}"
 }
 
-function run_image {
-  qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
-    -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
-    -netdev user,id=net0,hostfwd=tcp::5555-:22 -no-kvm -daemonize -display none
-
-  readonly local tries=100
-  for try in $(seq 1 $tries); do
-    msg "Waiting for qemu to settle ${try}/100"
-    if ssh -oConnectTimeout=5 -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oIdentityFile=./test_key gift@localhost -p 5555 "echo 'logged in'"; then
-      break
-    fi
-    sleep 5
-  done
-}
-
-function run_acquisition_script {
-  # The corresponding public key is pushed in the giftstick "e2etest" image.
-  # The image is running in Qemu, in the VM that is running the Jenkins Job.
-  cat >test_key <<EOKEY
+function ssh_and_run {
+  readonly local ssh_command=$1
+  if [ ! -f "${SSH_KEY_PATH}" ]; then
+    # The corresponding public key is pushed in the giftstick "e2etest" image.
+    # The image is running in Qemu, in the VM that is running the Jenkins Job.
+    cat >"${SSH_KEY_PATH}" <<EOKEY
 -----BEGIN OPENSSH PRIVATE KEY-----
 b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAAAMwAAAAtzc2gtZW
 QyNTUxOQAAACB8dujxMxI+ViGQz/wHLa+C67gIiBW1T+IUvADQa3J5xwAAALDY6JAB2OiQ
@@ -93,13 +82,35 @@ uAiIFbVP4hS8ANBrcnnHAAAAJnJvbWFpbmdAZ3JpbWJlcmdlbi56cmguY29ycC5nb29nbG
 UuY29tAQIDBAUGBw==
 -----END OPENSSH PRIVATE KEY-----
 EOKEY
-  chmod 600 test_key
+    chmod 600 "${SSH_KEY_PATH}"
+  fi
   ssh  \
-    -oIdentityFile=test_key \
+    -oIdentityFile=${SSH_KEY_PATH} \
     -oUserKnownHostsFile=/dev/null \
-    -oStrictHostKeyChecking=no gift@localhost \
-    -p 5555 \
-    "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
+    -oStrictHostKeyChecking=no \
+    -oConnectTimeout 5 \
+    "${GIFT_USER}@localhost" \
+    -p "${QEMU_SSH_PORT}" \
+    "${ssh_command}"
+}
+
+function run_image {
+  qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
+    -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
+    -netdev user,id=net0,hostfwd=tcp::5555-:22 -no-kvm -daemonize -display none
+
+  readonly local tries=100
+  for try in $(seq 1 $tries); do
+    msg "Waiting for qemu to settle ${try}/100"
+    if ssh_and_run "echo 'logged in'"; then
+      break
+    fi
+    sleep 5
+  done
+}
+
+function run_acquisition_script {
+  ssh_and_run "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
 }
 
 function check_gcs {
