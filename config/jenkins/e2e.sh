@@ -31,7 +31,7 @@ readonly QEMU_SSH_PORT=5555
 set -e
 
 function msg {
-  readonly local message=$1
+  local message=$1
   echo "[$(date +%Y%m%d-%H%M%S)] ${message}"
 }
 
@@ -52,7 +52,7 @@ function setup {
     wget
 
   if [ ! -f "${ISO_FILENAME}" ]; then
-    wget -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
+    wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
   fi
 }
 
@@ -68,7 +68,7 @@ function build_image {
 }
 
 function ssh_and_run {
-  readonly local ssh_command=$1
+  local ssh_command=$1
   if [ ! -f "${SSH_KEY_PATH}" ]; then
     # The corresponding public key is pushed in the giftstick "e2etest" image.
     # The image is running in Qemu, in the VM that is running the Jenkins Job.
@@ -99,7 +99,7 @@ function run_image {
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::5555-:22 -no-kvm -daemonize -display none
 
-  readonly local tries=100
+  local tries=100
   for try in $(seq 1 $tries); do
     msg "Waiting for qemu to settle ${try}/100"
     if ssh_and_run "echo 'logged in'"; then
