@@ -28,6 +28,11 @@ REMASTER_SCRIPT="tools/remaster.sh"
 
 set -e
 
+function msg {
+  message=$1
+  echo "[$(date +%Y%m%d-%H%M%S)] ${message}"
+}
+
 # install required packages and things
 function setup {
   sudo apt update -y
@@ -67,7 +72,7 @@ function run_image {
 
   readonly local tries=100
   for try in $(seq 1 $tries); do
-    echo "Waiting for qemu to settle ${try}"
+    msg "Waiting for qemu to settle ${try}/100"
     if ssh -oConnectTimeout=5 -oStrictHostKeyChecking=no -oUserKnownHostsFile=/dev/null -oIdentityFile=./test_key gift@localhost -p 5555 "echo 'logged in'"; then
       break
     fi
@@ -111,19 +116,19 @@ function main {
   GCS_BUCKET=$2
   SA_CREDENTIALS_FILE=$3
 
-  echo "Setting up environment"
+  msg "Setting up environment"
   setup
-  echo "Starting GiftStick image building process"
+  msg "Starting GiftStick image building process"
   build_image
-  echo "Starting up GiftStick image"
+  msg "Starting up GiftStick image"
   run_image
-  echo "Starting up acquisition scripts"
+  msg "Starting up acquisition scripts"
   run_acquisition_script
-  echo "Checking files are up in GCS"
+  msg "Checking files are up in GCS"
   check_gcs
-  echo "Cleaning up"
+  msg "Cleaning up"
   cleanup
-  echo "Done"
+  msg "Done"
 }
 
 trap "{
