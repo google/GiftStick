@@ -128,7 +128,7 @@ class StringArtifact(BaseArtifact):
       ValueError: if the path doesn't point to a file.
     """
     super(StringArtifact, self).__init__(os.path.basename(path))
-    if type(string_content) == six.text_type:
+    if isinstance(string_content, six.text_type):
       self._data = string_content.encode('utf-8')
     else:
       self._data = string_content
@@ -243,6 +243,7 @@ class BaseRecipe(object):
     Raises:
       ValueError: if the name parameter is None.
     """
+    self._workdir = None
     if name:
       self.name = name
     else:
@@ -268,4 +269,3 @@ class BaseRecipe(object):
       list (BaseArtifact): the artifacts corresponding to copy.
     """
     return list()
-

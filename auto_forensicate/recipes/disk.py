@@ -116,7 +116,7 @@ class DiskArtifact(base.BaseArtifact):
     # If there is anything still to read from the subprocess then CloseStream
     # has been called early, terminate the child process to avoid deadlock.
     c = self._ddprocess.stdout.read(1)
-    if c != '':  # pylint: disable=g-explicit-bool-comparison
+    if c != '':
       # TODO log this
       self._ddprocess.terminate()
       raise subprocess.CalledProcessError(
@@ -261,4 +261,3 @@ class DiskRecipe(base.BaseRecipe):
       artifacts.append(disk)
       artifacts.append(hashlog_artifact)
     return artifacts
-

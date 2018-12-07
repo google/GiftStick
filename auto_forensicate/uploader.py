@@ -111,12 +111,13 @@ class GCSUploader(object):
 
     remote_path_elems = self._stamp_manager.BasePathElements(self._stamp)
     remote_path = '/'.join(remote_path_elems)
+    base_path = None
 
     if not self._bucket_name:
-      self._bucket_name, self._base_path = self._SplitGCSUrl()
+      self._bucket_name, base_path = self._SplitGCSUrl()
 
-    if self._base_path:
-      remote_path = '/'.join([self._base_path, remote_path])
+    if base_path:
+      remote_path = '/'.join([base_path, remote_path])
 
     if destination:
       remote_path = '/'.join([remote_path, destination])

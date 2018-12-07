@@ -31,6 +31,9 @@ from auto_forensicate.stamp.manager import StampManager
 import boto
 import mock
 
+# pylint: disable=missing-docstring
+# pylint: disable=protected-access
+
 
 class FakeStamp(
     namedtuple('Stamp', [
@@ -200,4 +203,3 @@ class GCSUploaderTests(unittest.TestCase):
     with self.assertRaises(errors.ForensicateError):
       uploader_object._UploadStream(
           test_artifact.OpenStream(), 'gs://fake_bucket/remote/path')
-
