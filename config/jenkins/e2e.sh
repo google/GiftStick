@@ -84,13 +84,21 @@ UuY29tAQIDBAUGBw==
 EOKEY
     chmod 600 "${SSH_KEY_PATH}"
   fi
+  echo Running ssh  \
+    -oIdentityFile=${SSH_KEY_PATH} \
+    -oUserKnownHostsFile=/dev/null \
+    -oStrictHostKeyChecking=no \
+    -oConnectTimeout=5 \
+    -p "${QEMU_SSH_PORT}" \
+    "${GIFT_USER}@localhost" \
+    "${ssh_command}"
   ssh  \
     -oIdentityFile=${SSH_KEY_PATH} \
     -oUserKnownHostsFile=/dev/null \
     -oStrictHostKeyChecking=no \
     -oConnectTimeout=5 \
-    "${GIFT_USER}@localhost" \
     -p "${QEMU_SSH_PORT}" \
+    "${GIFT_USER}@localhost" \
     "${ssh_command}"
 }
 
