@@ -4,6 +4,9 @@ python:
     - '3.5'
 install:
     - pip install -r requirements.txt
+    - pip install coverage
 script:
     - export BOTO_CONFIG=/dev/null
-    - python run_tests.py
+    - coverage run run_tests.py
+after_success:
+    - curl -o codecov.sh -s https://codecov.io/bash && /bin/bash ./codecov.sh
