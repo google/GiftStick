@@ -20,6 +20,7 @@ CLOUD_PROJECT=""
 GCS_BUCKET=""
 SA_CREDENTIALS_FILE=""
 
+readonly GIFT_USER="gift"
 readonly ISO_TO_REMASTER_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
 readonly ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
 readonly IMAGE_NAME="giftstick.img"
