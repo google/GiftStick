@@ -4,4 +4,5 @@ google-cloud-logging
 google-cloud-storage
 mock
 progressbar
+six
 http://brianramos.com/software/PyZenity/PyZenity-0.1.8.tar.gz

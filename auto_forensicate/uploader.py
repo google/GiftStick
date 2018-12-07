@@ -20,8 +20,14 @@ import argparse
 import json
 import logging
 import os
-import StringIO
-from urlparse import urlparse
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
+try:
+  from urlparse import urlparse
+except ImportError:
+  from urllib.parse import urlparse
 from auto_forensicate import errors
 import boto
 
@@ -56,7 +62,7 @@ class GCSUploader(object):
     """Upload the 'stamp' (a json file containing metadata)."""
 
     # TODO: if this fails, raise an Exception that will stop execution
-    stream = StringIO.StringIO(json.dumps(self._stamp._asdict()))
+    stream = StringIO(json.dumps(self._stamp._asdict()))
     remote_path = self._MakeRemotePath('stamp.json')
     self._UploadStream(stream, remote_path)
     self._stamp_uploaded = True
@@ -136,7 +142,7 @@ class GCSUploader(object):
     except boto.exception.GSDataError as e:
       # This is usually raised when the connection is broken, and deserves to
       # be retried.
-      raise errors.RetryableError(e.message)
+      raise errors.RetryableError(str(e))
 
   def UploadArtifact(self, artifact, update_callback=None):
     """Uploads a file object to Google Cloud Storage.

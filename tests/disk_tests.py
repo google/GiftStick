@@ -190,13 +190,13 @@ class DiskRecipeTests(unittest.TestCase):
 
         udevadm_artifact = artifacts[0]
         self.assertIsInstance(udevadm_artifact, base.StringArtifact)
-        self.assertEqual(udevadm_artifact._GetStream().read(), 'fake disk info')
+        self.assertEqual(udevadm_artifact._GetStream().read(), b'fake disk info')
         self.assertEqual(udevadm_artifact.remote_path, 'Disks/sdx.udevadm.txt')
 
         lsblk_artifact = artifacts[1]
         self.assertIsInstance(lsblk_artifact, base.StringArtifact)
         self.assertEqual(
-            lsblk_artifact._GetStream().read(), json.dumps(self._lsblk_dict))
+            lsblk_artifact._GetStream().read(), json.dumps(self._lsblk_dict).encode('utf-8'))
         self.assertEqual(lsblk_artifact.remote_path, 'Disks/lsblk.txt')
 
         self.assertEqual(artifacts[2], disk_object)

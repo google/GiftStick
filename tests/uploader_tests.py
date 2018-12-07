@@ -19,7 +19,10 @@ from __future__ import unicode_literals
 import argparse
 from collections import namedtuple
 import json
-import StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 import unittest
 from auto_forensicate import errors
 from auto_forensicate import uploader
@@ -147,7 +150,7 @@ class GCSUploaderTests(unittest.TestCase):
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   def testUploadArtifact(self, patched_getstream):
     test_artifact = base.BaseArtifact('test_artifact')
-    patched_getstream.return_value = StringIO.StringIO('fake_content')
+    patched_getstream.return_value = StringIO('fake_content')
 
     uploader_object = FakeGCSUploader(self.gcs_url)
 
@@ -169,7 +172,7 @@ class GCSUploaderTests(unittest.TestCase):
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   @mock.patch.object(boto, 'storage_uri')
   def testFailUploadRetryWorthy(self, patched_storage, patched_getstream):
-    patched_getstream.return_value = StringIO.StringIO('fake_content')
+    patched_getstream.return_value = StringIO('fake_content')
     patched_storage.side_effect = boto.exception.GSDataError('boom')
 
     test_artifact = base.BaseArtifact('test_artifact')
@@ -185,7 +188,7 @@ class GCSUploaderTests(unittest.TestCase):
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   @mock.patch.object(boto, 'storage_uri')
   def testFailUploadNoRetry(self, patched_storage, patched_getstream):
-    patched_getstream.return_value = StringIO.StringIO('fake_content')
+    patched_getstream.return_value = StringIO('fake_content')
     patched_storage.side_effect = errors.ForensicateError('random_error')
 
     test_artifact = base.BaseArtifact('test_artifact')

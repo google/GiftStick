@@ -25,9 +25,9 @@ class SysinfoRecipeTest(unittest.TestCase):
   """Tests for the SysinfoRecipe class."""
 
   _DMIDECODE_OUTPUT_FAIL_STRING = (
-      '/dev/mem: Permission denied\n Error running dmidecode')
+      b'/dev/mem: Permission denied\n Error running dmidecode')
 
-  _DMIDECODE_OUTPUT_STRING = """\
+  _DMIDECODE_OUTPUT_STRING = b"""\
     # dmidecode 2.12
     SMBIOS 2.8 present.
 

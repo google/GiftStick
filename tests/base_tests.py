@@ -72,7 +72,7 @@ class BaseArtifactTests(unittest.TestCase):
 class ProcessOutputArtifactTest(unittest.TestCase):
   """Tests for the ProcessOutputArtifact class."""
 
-  _TEST_OUTPUT = 'this is some command output'
+  _TEST_OUTPUT = b'this is some command output'
 
   def testRunCommand(self):
     cmd = ['echo', '-n', self._TEST_OUTPUT]

@@ -14,6 +14,7 @@
 # limitations under the License.
 """Automated forensics acquisition script."""
 
+from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
@@ -90,7 +91,7 @@ class AutoForensicate(object):
         description='Autopush forensics evidence to Cloud Storage')
     parser.add_argument(
         '--acquire', action='append', help='Evidence to acquire',
-        choices=['all']+self._recipes.keys(), required=True
+        choices=['all']+sorted(list(self._recipes.keys())), required=True
     )
     parser.add_argument(
         'destination', action='store',
@@ -204,10 +205,10 @@ class AutoForensicate(object):
 
   def _ParseRecipes(self, options):
     if 'all' in options.acquire:
-      options.acquire = self._recipes.keys()
+      options.acquire = sorted(list(self._recipes.keys()))
     else:
       # Deduplicate recipes
-      options.acquire = list(set(options.acquire))
+      options.acquire = sorted(list(set(options.acquire)))
 
   def _ParseGCSJSON(self, options):
     """Parses a GCS json configuration file.
@@ -346,11 +347,11 @@ class AutoForensicate(object):
     green_color_code = 2
 
     if not self._errors:
-      print self._Colorize(
+      print(self._Colorize(
           green_color_code,
           ('Everything has completed successfully, feel free to shut the system'
            ' down.')
-      )
+      ))
       return
 
     should_retry = False
@@ -360,16 +361,16 @@ class AutoForensicate(object):
         should_retry = True
 
     if should_retry:
-      print self._Colorize(
+      print(self._Colorize(
           red_color_code,
-          'There was a problem with the upload, please re-run the script.')
+          'There was a problem with the upload, please re-run the script.'))
     else:
-      print self._Colorize(
+      print(self._Colorize(
           red_color_code,
           ('There was a problem with the upload, please keep the system '
            'running and contact the security person who told you to do the '
            'GiftStick process')
-      )
+      ))
 
 
 if __name__ == '__main__':

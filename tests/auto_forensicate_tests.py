@@ -17,9 +17,13 @@
 from __future__ import unicode_literals
 
 import argparse
+from io import BytesIO
 import logging
 import os
-import StringIO
+try:
+  from StringIO import StringIO
+except ImportError:
+  from io import StringIO
 import sys
 import tempfile
 import unittest
@@ -33,11 +37,11 @@ import mock
 DEFAULT_ARTIFACT_CONTENT = os.urandom(1000)
 
 
-class StringIORecipe(base.BaseRecipe):
-  """A Recipe returning 1 artifact with a StringIO."""
+class BytesIORecipe(base.BaseRecipe):
+  """A Recipe returning 1 artifact with a BytesIO."""
 
   def __init__(self, name, options=None):
-    super(StringIORecipe, self).__init__(name, options=options)
+    super(BytesIORecipe, self).__init__(name, options=options)
     self.ran_collection = False
 
   def GetArtifacts(self):
@@ -134,7 +138,7 @@ class AutoForensicateTest(unittest.TestCase):
     test_args = ['--acquire', 'test1', '--logging', 'stackdriver']
     with self.assertRaises(SystemExit):
       prev_stderr = sys.stderr
-      sys.stderr = StringIO.StringIO()
+      sys.stderr = StringIO()
       af.ParseArguments(test_args)
     sys.stderr = prev_stderr
 
@@ -146,7 +150,7 @@ class AutoForensicateTest(unittest.TestCase):
     af = auto_acquire.AutoForensicate(recipes=recipes)
     test_args = ['--acquire', 'test1', '--gs_keyfile=null']
     prev_stderr = sys.stderr
-    sys.stderr = StringIO.StringIO()
+    sys.stderr = StringIO()
     with self.assertRaises(SystemExit):
       af.ParseArguments(test_args)
     sys.stderr = prev_stderr
@@ -173,7 +177,7 @@ class AutoForensicateTest(unittest.TestCase):
         '--acquire', 'test4', '--acquire', 'all',
         '--gs_keyfile=file', 'gs://bucket']
     prev_stderr = sys.stderr
-    sys.stderr = StringIO.StringIO()
+    sys.stderr = StringIO()
     with self.assertRaises(SystemExit):
       af.ParseArguments(test_args)
     sys.stderr = prev_stderr
@@ -231,7 +235,7 @@ class AutoForensicateTest(unittest.TestCase):
     af._logger = logging.getLogger(self.__class__.__name__)
     af._MakeProgressBar = self.FakeMakeProgressBar
 
-    recipe = StringIORecipe('stringio', options=options)
+    recipe = BytesIORecipe('stringio', options=options)
     self.assertTrue(recipe._options.fake)
 
     with tempfile.TemporaryFile() as destination:
