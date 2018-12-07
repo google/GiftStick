@@ -88,7 +88,7 @@ EOKEY
     -oIdentityFile=${SSH_KEY_PATH} \
     -oUserKnownHostsFile=/dev/null \
     -oStrictHostKeyChecking=no \
-    -oConnectTimeout 5 \
+    -oConnectTimeout=5 \
     "${GIFT_USER}@localhost" \
     -p "${QEMU_SSH_PORT}" \
     "${ssh_command}"
