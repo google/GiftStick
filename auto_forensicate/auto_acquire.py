@@ -62,7 +62,7 @@ class BaBar(progressbar.ProgressBar):
       # This is raised when current_bytes > self.maxval, which happens when we
       # didn't have the correct size of an Artifact at its initialization,
       # ie: all ProcessOutputArtifacts
-      self.maxval = current_bytes
+      self.maxval = current_bytes  # pyling: disable=attribute-defined-outside-init
       self.update(current_bytes)
 
 
@@ -298,13 +298,14 @@ class AutoForensicate(object):
     current_task = 0
     for artifact in artifacts:
       current_task += 1
-      bar = self._MakeProgressBar(
+      progress_bar = self._MakeProgressBar(
           artifact.size, artifact.name,
           'Uploading \'{0:s}\' ({1:s}, Task {2:d}/{3:d})'.format(
               artifact.name, artifact.readable_size, current_task, nb_tasks))
-      bar.start()
-      self._UploadArtifact(artifact, update_callback=bar.update_with_total)
-      bar.finish()
+      progress_bar.start()
+      self._UploadArtifact(
+          artifact, update_callback=progress_bar.update_with_total)
+      progress_bar.finish()
 
   def _Colorize(self, color, msg):
     """Adds a ANSI color to a message.
