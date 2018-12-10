@@ -62,7 +62,7 @@ class BaBar(progressbar.ProgressBar):
       # This is raised when current_bytes > self.maxval, which happens when we
       # didn't have the correct size of an Artifact at its initialization,
       # ie: all ProcessOutputArtifacts
-      self.maxval = current_bytes  # pyling: disable=attribute-defined-outside-init
+      self.maxval = current_bytes  # pylint: disable=attribute-defined-outside-init
       self.update(current_bytes)
 
 
