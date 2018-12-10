@@ -108,13 +108,17 @@ function run_image {
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
     -netdev user,id=net0,hostfwd=tcp::${QEMU_SSH_PORT}-:22 -no-kvm -daemonize -display none
 
-  local tries=100
+  # Cloud VMs lack any kind of virtualization super powers, so booting a
+  # Ubuntu VM in a vm can take around forever.
+  msg "Waiting 10 mins for qemu to settle"
+  sleep $((10*60))
+  local tries=10
   for try in $(seq 1 $tries); do
-    msg "Waiting for qemu to settle ${try}/100"
     if ssh_and_run "echo 'logged in'"; then
       break
     fi
-    sleep 5
+    msg "Waiting 10 more seconds for qemu to settle ${try}/${tries}"
+    sleep 10
   done
 }
 
