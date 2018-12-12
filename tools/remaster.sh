@@ -859,7 +859,6 @@ function main {
   check_available_space "${REMASTER_WORKDIR_PATH}"
   check_packages gdisk
   check_packages genisoimage
-  check_packages grub2-common
   check_packages grub-efi-amd64-bin
   check_packages squashfs-tools
   check_packages syslinux
