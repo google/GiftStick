@@ -63,7 +63,8 @@ EOAPT
 
   apt update -y
   apt install -y \
-    grub-efi-amd64-bin=2.02-2ubuntu8
+    grub-efi-amd64-bin=2.02-2ubuntu8 \
+    grub-common=2.02-2ubuntu8
 
   if [ ! -f "${ISO_FILENAME}" ]; then
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
