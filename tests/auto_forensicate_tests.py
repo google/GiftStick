@@ -17,7 +17,6 @@
 from __future__ import unicode_literals
 
 import argparse
-from io import BytesIO
 import logging
 import os
 try:
@@ -36,6 +35,9 @@ import mock
 
 DEFAULT_ARTIFACT_CONTENT = os.urandom(1000)
 
+
+# pylint: disable=missing-docstring
+# pylint: disable=protected-access
 
 class BytesIORecipe(base.BaseRecipe):
   """A Recipe returning 1 artifact with a BytesIO."""
@@ -86,6 +88,7 @@ class AutoForensicateTest(unittest.TestCase):
     return mock.create_autospec(auto_acquire.BaBar, spec_set=True)
 
   def testParseArgsHelp(self):
+    """Test for help message option."""
     recipes = {
         'test1': None,
         'test2': None

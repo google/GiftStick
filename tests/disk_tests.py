@@ -24,6 +24,9 @@ from auto_forensicate.recipes import disk
 import mock
 
 
+# pylint: disable=missing-docstring
+# pylint: disable=protected-access
+
 class DiskArtifactTests(unittest.TestCase):
   """Tests for the DiskArtifact class."""
 

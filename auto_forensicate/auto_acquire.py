@@ -49,14 +49,20 @@ class BaBar(progressbar.ProgressBar):
     takes two arguments, and ProgressBar only one.
   """
 
-  def update_with_total(self, current_bytes, total_bytes):
+  def update_with_total(self, current_bytes, total_bytes):  # pylint: disable=unused-argument
+    """Called by boto library to update the ProgressBar.
+
+    Args:
+      current_bytes(int): the number of bytes uploaded.
+      total_bytes(int): the total number of bytes to upload.
+    """
     try:
       self.update(current_bytes)
     except ValueError:
       # This is raised when current_bytes > self.maxval, which happens when we
       # didn't have the correct size of an Artifact at its initialization,
       # ie: all ProcessOutputArtifacts
-      self.maxval = current_bytes
+      self.maxval = current_bytes  # pylint: disable=attribute-defined-outside-init
       self.update(current_bytes)
 
 
@@ -80,6 +86,7 @@ class AutoForensicate(object):
 
     self._errors = []
     self._gcs_settings = None
+    self._logger = None
     self._recipes = recipes
     self._uploader = None
     self._should_retry = False  # True when a recoverable error occurred.
@@ -204,6 +211,11 @@ class AutoForensicate(object):
     return options
 
   def _ParseRecipes(self, options):
+    """Parses the recipes argument flag.
+
+    Args:
+      options (argparse.Namespace): the parsed command-line arguments.
+    """
     if 'all' in options.acquire:
       options.acquire = sorted(list(self._recipes.keys()))
     else:
@@ -286,13 +298,14 @@ class AutoForensicate(object):
     current_task = 0
     for artifact in artifacts:
       current_task += 1
-      bar = self._MakeProgressBar(
+      progress_bar = self._MakeProgressBar(
           artifact.size, artifact.name,
           'Uploading \'{0:s}\' ({1:s}, Task {2:d}/{3:d})'.format(
               artifact.name, artifact.readable_size, current_task, nb_tasks))
-      bar.start()
-      self._UploadArtifact(artifact, update_callback=bar.update_with_total)
-      bar.finish()
+      progress_bar.start()
+      self._UploadArtifact(
+          artifact, update_callback=progress_bar.update_with_total)
+      progress_bar.finish()
 
   def _Colorize(self, color, msg):
     """Adds a ANSI color to a message.
@@ -346,30 +359,29 @@ class AutoForensicate(object):
     red_color_code = 1
     green_color_code = 2
 
-    if not self._errors:
+    if self._errors:
+      should_retry = False
+      # Error management from down here
+      for e in self._errors:
+        if isinstance(e, errors.RetryableError):
+          should_retry = True
+
+      if should_retry:
+        print(self._Colorize(
+            red_color_code,
+            'There was a problem with the upload, please re-run the script.'))
+      else:
+        print(self._Colorize(
+            red_color_code,
+            ('There was a problem with the upload, please keep the system '
+             'running and contact the security person who told you to do the '
+             'GiftStick process')
+        ))
+    else:
       print(self._Colorize(
           green_color_code,
           ('Everything has completed successfully, feel free to shut the system'
            ' down.')
-      ))
-      return
-
-    should_retry = False
-    # Error management from down here
-    for e in self._errors:
-      if isinstance(e, errors.RetryableError):
-        should_retry = True
-
-    if should_retry:
-      print(self._Colorize(
-          red_color_code,
-          'There was a problem with the upload, please re-run the script.'))
-    else:
-      print(self._Colorize(
-          red_color_code,
-          ('There was a problem with the upload, please keep the system '
-           'running and contact the security person who told you to do the '
-           'GiftStick process')
       ))
 
 

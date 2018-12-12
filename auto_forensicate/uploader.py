@@ -96,6 +96,7 @@ class GCSUploader(object):
     bucket_name = parsed_url.netloc
     gs_base_path = parsed_url.path
 
+    # This takes care of "//" in a url
     remote_base_path = '/'.join(filter(None, gs_base_path.split('/')))
 
     return (bucket_name, remote_base_path)
@@ -111,7 +112,6 @@ class GCSUploader(object):
 
     remote_path_elems = self._stamp_manager.BasePathElements(self._stamp)
     remote_path = '/'.join(remote_path_elems)
-
     base_path = None
 
     self._bucket_name, base_path = self._SplitGCSUrl()
