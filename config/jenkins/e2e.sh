@@ -62,7 +62,7 @@ Pin-Priority: 150
 EOAPT
 
   apt update -y
-  apt install -y grub-common=2.02-2ubuntu8
+  apt install -y grub2-common=2.02-2ubuntu8
   apt install -y grub-efi-amd64-bin=2.02-2ubuntu8
 
   if [ ! -f "${ISO_FILENAME}" ]; then
