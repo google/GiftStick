@@ -42,8 +42,6 @@ function setup {
   sudo apt install -y \
     gdisk \
     genisoimage \
-    grub2-common \
-    grub-efi-amd64-bin \
     kpartx \
     ovmf \
     qemu-system-x86 \
@@ -51,6 +49,21 @@ function setup {
     syslinux \
     syslinux-utils \
     wget
+
+   # Xenial version of grub-efi-amd64-bin: 2.02~beta2-36ubuntu3 doesn't
+   # generate bootable images, for an unknown reason.
+   # Since our current CI environment uses Xenial, let's for installation
+   # of 2.02-2ubuntu8 from bionic hosted on GCE
+   add-apt-repository 'deb http://europe-west1.gce.archive.ubuntu.com/ubuntu/ bionic main'
+   cat >/etc/apt/preferences.d/limit-bionic <<EOAPT
+Package: *
+Pin: release o=Ubuntu,a=bionic
+Pin-Priority: 150
+EOAPT
+
+  apt update -y
+  apt install -y \
+    grub-efi-amd64-bin=2.02-2ubuntu8
 
   if [ ! -f "${ISO_FILENAME}" ]; then
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
