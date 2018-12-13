@@ -139,13 +139,22 @@ function run_acquisition_script {
   ssh_and_run "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
 }
 
+function check_stamp {
+  gsutil cat
+}
+
 function check_gcs {
   # Pull files from GCS and/or check their MD5
+  check_stamp
+  check_system_info
+  check_disks
+  check_firmware
   return 0
 }
 
-function cleaup {
+function cleanup {
   kill -9 "$(pgrep qemu-system-x86_64)"
+  delete_gcs_files
 }
 
 function main {
