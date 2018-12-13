@@ -26,23 +26,30 @@ readonly ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
 readonly IMAGE_NAME="giftstick.img"
 
 readonly REMASTER_SCRIPT="tools/remaster.sh"
+readonly EXTRA_GCS_PATH="jenkins-build-${BUILD_NUMBER}"
 readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
+readonly GCS_EXPECTED_URL="gs://${GCS_BUCKET}/forensic_evidence/${EXTRA_GCS_PATH}*/*/"
+
 set -e
 
+# Adds a timestamp to a message to display
+# Args:
+#   the message as a string
 function msg {
   local message=$1
   echo "[$(date +%Y%m%d-%H%M%S)] ${message}"
 }
 
-# install required packages and things
+# Installs packages required to run the E2E tests
 function setup {
   sudo apt update -y
   sudo apt install -y \
     gdisk \
     genisoimage \
     kpartx \
+    jq \
     ovmf \
     qemu-system-x86 \
     squashfs-tools \
@@ -70,6 +77,7 @@ EOAPT
   fi
 }
 
+# Builds a GiftStick image, using the remaster script
 function build_image {
   bash "${REMASTER_SCRIPT}" \
     --project "${CLOUD_PROJECT}" \
@@ -78,9 +86,14 @@ function build_image {
     --source_iso "${ISO_FILENAME}" \
     --image "${IMAGE_NAME}" \
     --e2e_test \
-    --sa_json_file "${SA_CREDENTIALS_FILE}"
+    --sa_json_file "${SA_CREDENTIALS_FILE}" \
+    --extra_gcs_path "${EXTRA_GCS_PATH}"
 }
 
+# Tries to run a command in the Qemu VM.
+#
+# Args:
+#  The command to run in the Qemu VM, as a string.
 function ssh_and_run {
   local ssh_command=$1
   if [ ! -f "${SSH_KEY_PATH}" ]; then
@@ -98,14 +111,6 @@ UuY29tAQIDBAUGBw==
 EOKEY
     chmod 600 "${SSH_KEY_PATH}"
   fi
-  echo Running ssh  \
-    -oIdentityFile=${SSH_KEY_PATH} \
-    -oUserKnownHostsFile=/dev/null \
-    -oStrictHostKeyChecking=no \
-    -oConnectTimeout=5 \
-    -p "${QEMU_SSH_PORT}" \
-    "${GIFT_USER}@localhost" \
-    "${ssh_command}"
   ssh  \
     -oIdentityFile=${SSH_KEY_PATH} \
     -oUserKnownHostsFile=/dev/null \
@@ -116,6 +121,7 @@ EOKEY
     "${ssh_command}"
 }
 
+# Runs the newly generated GiftStick image in Qemu
 function run_image {
   qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
@@ -135,26 +141,55 @@ function run_image {
   done
 }
 
+# Starts the acquisition script
 function run_acquisition_script {
   ssh_and_run "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
 }
 
-function check_stamp {
-  gsutil cat
+# Checks whether a GCS object exists.
+#
+# Args:
+#   The object's URL, as a string
+# Returns:
+#   The object's explicit URL as a string
+function check_gcs_object_present {
+  local GCS_URL="$1"
+  return "$(gsutil -q stat "${GCS_URL}")"
 }
 
+# Checks that the stamp.json file has been uploaded, and contains
+# the proper information
+function check_stamp {
+  local stamp_url
+  local stamp_content
+  local identifier_from_json
+  stamp_url=$(check_gcs_object_present "${GCS_EXPECTED_URL}/stamp.json")
+  stamp_content=$(gsutil -q cat "${stamp_url}")
+  identifier_from_json=$(echo "${stamp_content}" | jq -r '.identifier')
+  # Check that the identifier is coherent with the path
+  if [[ ! "${stamp_url}" =~ ${identifier_from_json} ]] ; then
+    die "We were expectint to find the system identifier ${identifier_from_json} in stamp file full path ${stamp_url}"
+  fi
+  # TODO: also check the timestamp
+}
+
+# Checks that files pushed to GCS are present and contains the proper
+# information.
 function check_gcs {
   # Pull files from GCS and/or check their MD5
   check_stamp
-  check_system_info
-  check_disks
-  check_firmware
-  return 0
+  # TODO more checks
+  # check_system_info
+  # check_disks
+  # check_firmware
 }
 
+# Cleans up the test environment
 function cleanup {
   kill -9 "$(pgrep qemu-system-x86_64)"
-  delete_gcs_files
+  rm "${SSH_KEY_PATH}"
+  # We keep pushed evidence for now, maybe we can delete those later to make
+  # some space
 }
 
 function main {
