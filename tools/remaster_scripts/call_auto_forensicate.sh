@@ -16,6 +16,8 @@
 # Base forensication script.
 # This is customized by the master remaster script.
 
+EXTRA_AUTO_FORENSICATE_OPTIONS=$*
+
 # First, check that we have internet
 wget -q --spider http://www.google.com
 if [[ $? -ne 0 ]]; then

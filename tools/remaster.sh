@@ -158,6 +158,7 @@ Optional flags
   --image=IMAGE         Set the output filename to IMAGE
   --remastered_iso=ISO  Path to the remastered ISO (used if --skip_iso is
                         enabled)
+  --extra_gcs_path      Appends an path to the GCS URL
   --skip_gcs            If set, will skip GCS environment setup
   --skip_image          If set, will skip the Gift image build
   --skip_iso            If set, will skip the ISO remastering"
@@ -214,7 +215,6 @@ function assert_image_size_flag {
     FLAGS_IMAGE_SIZE=$DEFAULT_IMAGE_SIZE
   fi
 }
-
 
 # Check FLAGS_GCS_BUCKET_NAME against Bucket Name Requirements:
 # https://cloud.google.com/storage/docs/naming#requirements
@@ -281,6 +281,18 @@ function parse_arguments {
         ;;
       --bucket=)
         die '--bucket requires a non-empty option argument.'
+        ;;
+
+      --extra_gcs_path)
+        assert_option_argument "$2" "--extra_gcs_path"
+        FLAGS_EXTRA_GCS_PATH="$2"
+        shift
+        ;;
+      --extra_gcs_path=?*)
+        FLAGS_EXTRA_GCS_PATH=${1#*=}
+        ;;
+      --extra_gcs_path=)
+        die '--extra_gcs_path requires a non-empty option argument.'
         ;;
 
       --image)
@@ -384,7 +396,11 @@ function parse_arguments {
     readonly FLAGS_REMASTERED_ISO=$(basename "${UBUNTU_ISO}.${REMASTERED_SUFFIX}")
   fi
 
-  readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence"
+  readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/${FLAGS_EXTRA_GCS_PATH}"
+
+  if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.\-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
+    die "${GCS_REMOTE_URL} is not a valid GCS URL"
+  fi
 
   if [ -z "${FLAGS_SA_JSON_PATH}" ] ; then
     readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
@@ -827,7 +843,7 @@ EOGRUB
 sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
   --gs_keyfile="../${GCS_SA_KEY_NAME}" \
   --logging stdout \
-  --acquire all "${GCS_REMOTE_URL}/" ${AF_ARG}
+  --acquire all "${GCS_REMOTE_URL}/" \${EXTRA_AUTO_FORENSICATE_OPTIONS}
 EOFORENSICSH
 
   if [[ -f "${POST_UBUNTU_USER_SCRIPT}" ]] ; then
