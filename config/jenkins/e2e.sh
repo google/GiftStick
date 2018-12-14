@@ -155,7 +155,7 @@ function run_acquisition_script {
 #   The object's explicit URL as a string
 function check_gcs_object_present {
   local GCS_URL="$1"
-  return "$(gsutil -q stat "${GCS_URL}")"
+  gsutil -q stat "${GCS_URL}"
 }
 
 # Checks that the stamp.json file has been uploaded, and contains
@@ -164,14 +164,11 @@ function check_stamp {
   local stamp_url
   local stamp_content
   local identifier_from_json
-  stamp_url=$(check_gcs_object_present "${GCS_EXPECTED_URL}/stamp.json")
+  stamp_url="${GCS_EXPECTED_URL}/stamp.json"
   stamp_content=$(gsutil -q cat "${stamp_url}")
-  identifier_from_json=$(echo "${stamp_content}" | jq -r '.identifier')
-  # Check that the identifier is coherent with the path
-  if [[ ! "${stamp_url}" =~ ${identifier_from_json} ]] ; then
-    die "We were expectint to find the system identifier ${identifier_from_json} in stamp file full path ${stamp_url}"
-  fi
-  # TODO: also check the timestamp
+  # Check that the stamp is a valid JSON file
+  echo "${stamp_content}" | jq -r '.'
+  # TODO: check the json contains expected data
 }
 
 # Checks that files pushed to GCS are present and contains the proper
