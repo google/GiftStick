@@ -177,6 +177,13 @@ function check_system_info {
   python config/jenkins/e2e_tools.py check_system_info system_info.txt
 }
 
+# Checks that an (empty) rom.bin has been uploaded
+# The file is empty because Qemu doesn't have a real firmware that chipsec can
+# dump
+function check_firmware {
+  local firmware_url
+  firmware_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Firmware/rom.bin")
+  gsutil -q stat "${firmware_url}"
 }
 
 # Checks that files pushed to GCS are present and contains the proper
@@ -185,8 +192,8 @@ function check_gcs {
   # Pull files from GCS and/or check their MD5
   check_stamp
   check_system_info
+  check_firmware
   # check_disks
-  # check_firmware
 }
 
 # Cleans up the test environment
