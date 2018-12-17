@@ -55,10 +55,10 @@ def CheckStamp(stamp_path):
     stamp_dict = json.load(stamp_file)
 
   identifier_regex = re.compile(
-      '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
+      r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
   assert identifier_regex.match(stamp_dict.get('identifier'))
 
-  start_time_regex = re.compile('^[0-9]{8}-[0-9]{6}$')
+  start_time_regex = re.compile(r'^[0-9]{8}-[0-9]{6}$')
   assert start_time_regex.match(stamp_dict.get('start_time'))
 
 def CheckSystemInfo(system_info_path):
@@ -76,7 +76,7 @@ def CheckSystemInfo(system_info_path):
     system_info = system_info_file.read()
 
   sysinfo_regex = re.compile(
-      'System Information\n\W+Manufacturer: QEMU', re.MULTILINE)
+      r'System Information\n\W+Manufacturer: QEMU', re.MULTILINE)
   assert sysinfo_regex.search(system_info)
 
 
