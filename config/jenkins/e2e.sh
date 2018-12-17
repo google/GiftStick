@@ -167,6 +167,16 @@ function check_stamp {
   # Check that the stamp is a valid JSON file
   python config/jenkins/e2e_tools.py check_stamp stamp.json
 }
+
+# Checks the system_info.txt file
+function check_system_info {
+  local system_info_url
+  system_info_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/system_info.txt")
+  gsutil -q cp "${system_info_url}" system_info.txt
+  # Check that the stamp is a valid JSON file
+  python config/jenkins/e2e_tools.py check_system_info system_info.txt
+}
+
 }
 
 # Checks that files pushed to GCS are present and contains the proper
@@ -174,8 +184,7 @@ function check_stamp {
 function check_gcs {
   # Pull files from GCS and/or check their MD5
   check_stamp
-  # TODO more checks
-  # check_system_info
+  check_system_info
   # check_disks
   # check_firmware
 }
@@ -185,6 +194,7 @@ function cleanup {
   kill -9 "$(pgrep qemu-system-x86_64)"
   rm "${SSH_KEY_PATH}"
   rm stamp.json
+  rm system_info.txt
   # We keep pushed evidence for now, maybe we can delete those later to make
   # some space
 }
