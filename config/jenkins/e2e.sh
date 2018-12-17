@@ -30,7 +30,7 @@ readonly EXTRA_GCS_PATH="jenkins-build-${BUILD_NUMBER}"
 readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
-readonly GCS_EXPECTED_URL="gs://${GCS_BUCKET}/forensic_evidence/${EXTRA_GCS_PATH}*/*/"
+readonly EVIDENCE_DISK="disk_42.img"
 
 set -e
 
@@ -163,9 +163,10 @@ function normalize_gcs_url {
 function check_stamp {
   local stamp_url
   stamp_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/stamp.json")
+  gsutil -q cp "${stamp_url}" stamp.json
   # Check that the stamp is a valid JSON file
-  echo "${stamp_content}" | jq -r '.'
-  # TODO: check the json contains expected data
+  python config/jenkins/e2e_tools.py check_stamp stamp.json
+}
 }
 
 # Checks that files pushed to GCS are present and contains the proper
