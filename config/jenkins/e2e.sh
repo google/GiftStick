@@ -31,7 +31,6 @@ readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
 readonly EVIDENCE_DISK="disk_42.img"
-readonly EVIDENCE_DISK_URL="gs://${GCS_BUCKET}/test_data/disk_42.img"
 
 
 set -e
@@ -79,7 +78,7 @@ EOAPT
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
   fi
 
-  gsutil -q cp "${EVIDENCE_DISK_URL}" "${EVIDENCE_DISK}"
+  gsutil -q cp "gs://${GCS_BUCKET}/test_data/disk_42.img" "${EVIDENCE_DISK}"
 }
 
 # Builds a GiftStick image, using the remaster script
