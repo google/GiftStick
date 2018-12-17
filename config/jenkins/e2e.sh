@@ -31,6 +31,8 @@ readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
 readonly EVIDENCE_DISK="disk_42.img"
+readonly EVIDENCE_DISK_URL="gs://${GCS_BUCKET}/test_data/disk_42.img"
+
 
 set -e
 
@@ -76,6 +78,8 @@ EOAPT
   if [ ! -f "${ISO_FILENAME}" ]; then
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
   fi
+
+  gsutil -q cp "${EVIDENCE_DISK_URL}" "${EVIDENCE_DISK}"
 }
 
 # Builds a GiftStick image, using the remaster script
@@ -126,6 +130,7 @@ EOKEY
 function run_image {
   qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
+    -drive format=raw,file="${EVIDENCE_DISK}" \
     -netdev user,id=net0,hostfwd=tcp::${QEMU_SSH_PORT}-:22 -no-kvm -daemonize -display none
 
   # Cloud VMs lack any kind of virtualization super powers, so booting a
