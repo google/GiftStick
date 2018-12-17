@@ -839,12 +839,23 @@ EOGRUB
   pwd
   sudo cp "${FORENSICATE_SCRIPT}" "${FORENSICATE_SCRIPT_NAME}"
 
-  cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
+  if $FLAGS_BUILD_TEST ; then
+    cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
 sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
   --gs_keyfile="../${GCS_SA_KEY_NAME}" \
   --logging stdout \
-  --acquire all "${GCS_REMOTE_URL}/" \${EXTRA_AUTO_FORENSICATE_OPTIONS}
+  --acquire all --disk sdb "${GCS_REMOTE_URL}/"
 EOFORENSICSH
+
+  else
+
+    cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
+sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
+  --gs_keyfile="../${GCS_SA_KEY_NAME}" \
+  --logging stdout \
+  --acquire all "${GCS_REMOTE_URL}/"
+EOFORENSICSH
+  fi
 
   if [[ -f "${POST_UBUNTU_USER_SCRIPT}" ]] ; then
     . "${POST_UBUNTU_USER_SCRIPT}"
