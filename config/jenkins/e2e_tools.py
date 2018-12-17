@@ -56,10 +56,10 @@ def CheckStamp(stamp_path):
 
   identifier_regex = re.compile(
       '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$')
-  assert(identifier_regex.match(stamp_dict.get('identifier')))
+  assert identifier_regex.match(stamp_dict.get('identifier'))
 
   start_time_regex = re.compile('^[0-9]{8}-[0-9]{6}$')
-  assert(start_time_regex.match(stamp_dict.get('start_time')))
+  assert start_time_regex.match(stamp_dict.get('start_time'))
 
 def CheckSystemInfo(system_info_path):
   """Checks the content of a GiftStick stamp.json file.
@@ -77,7 +77,7 @@ def CheckSystemInfo(system_info_path):
 
   sysinfo_regex = re.compile(
       'System Information\n\W+Manufacturer: QEMU', re.MULTILINE)
-  assert(sysinfo_regex.search(system_info))
+  assert sysinfo_regex.search(system_info)
 
 
 def ParseArguments():
@@ -101,7 +101,8 @@ def ParseArguments():
       'stamp', type=str, help='the stamp.json file to check')
 
   check_system_info = subparsers.add_parser(
-      'check_system_info', help='Checks the content of the system_info.txt file')
+      'check_system_info',
+      help='Checks the content of the system_info.txt file')
   check_system_info.add_argument(
       'system_info', type=str, help='the system_info.txt file to check')
 
