@@ -122,6 +122,10 @@ class AutoForensicate(object):
         '--select_disks', action='store_true', required=False, default=False,
         help='Asks the user to select which disk to acquire'
     )
+    parser.add_argument(
+        '--disk', action='append', required=False,
+        help='Specify a disk to acquire (ie: sda)'
+    )
     return parser
 
   def _ParseLoggingArguments(self, options):

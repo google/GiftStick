@@ -165,6 +165,17 @@ class DiskRecipeTests(unittest.TestCase):
     self.assertEqual(disk_list[1].size, 502110190592)
     self.assertEqual(disk_list[2].size, 3000041824)
 
+  def testListDisksWithNames(self):
+    recipe = disk.DiskRecipe('Disk')
+    disk.DiskRecipe._GetLsblkDict = self._GetLsblkDictThreeDisks
+    disk_list = recipe._ListDisks(all_devices=True, names=['sdz_not_present'])
+    self.assertEqual(len(disk_list), 0)
+
+    disk_list = recipe._ListDisks(all_devices=True, names=['usb0', 'sdy'])
+    self.assertEqual(len(disk_list), 2)
+    self.assertEqual(disk_list[0].name, 'sdy')
+    self.assertEqual(disk_list[1].name, 'usb0')
+
   def testGetArtifactsZeroDisk(self):
     with mock.patch(
         'auto_forensicate.recipes.disk.DiskRecipe._ListDisks'

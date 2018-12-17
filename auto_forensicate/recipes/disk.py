@@ -194,12 +194,13 @@ class DiskRecipe(base.BaseRecipe):
         ['/bin/lsblk', '-J', '--bytes', '-o', '+UUID,FSTYPE,SERIAL'])
     return json.loads(lsblk_output)
 
-  def _ListDisks(self, all_devices=False):
+  def _ListDisks(self, all_devices=False, names=None):
     """Lists disks connected to the machine.
 
     Args:
       all_devices(bool): whether to also list devices that aren't internal to
-      the system's (ie: removable media).
+        the system's (ie: removable media).
+      names(list(str)): list of disk names (ie: ['sda', 'sdc']) to acquire.
 
     Returns:
       list(DiskArtifact): a list of disks.
@@ -212,6 +213,9 @@ class DiskRecipe(base.BaseRecipe):
     for blockdevice in lsblk_dict.get('blockdevices', None):
       if blockdevice.get('type') == 'disk':
         disk_name = blockdevice.get('name')
+        if names:
+          if not disk_name in names:
+            continue
         disk_size_str = blockdevice.get('size')
         disk_size = int(disk_size_str)
         disk = DiskArtifact(os.path.join('/dev', disk_name), disk_size)
@@ -237,6 +241,8 @@ class DiskRecipe(base.BaseRecipe):
     if getattr(self._options, 'select_disks', None):
       all_disks = self._ListDisks(all_devices=True)
       disks_to_collect = gui.AskDiskList(all_disks)
+    elif getattr(self._options, 'disk', None):
+      disks_to_collect = self._ListDisks(names=self._options.disk)
     else:
       disks_to_collect = self._ListDisks()
 
