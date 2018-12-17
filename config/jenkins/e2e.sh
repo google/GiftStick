@@ -153,19 +153,16 @@ function run_acquisition_script {
 #   The object's URL, as a string
 # Returns:
 #   The object's explicit URL as a string
-function check_gcs_object_present {
+function normalize_gcs_url {
   local GCS_URL="$1"
-  gsutil -q stat "${GCS_URL}"
+  echo "$(python config/jenkins/e2e_tools.py normalize "${GCS_URL}")"
 }
 
 # Checks that the stamp.json file has been uploaded, and contains
 # the proper information
 function check_stamp {
   local stamp_url
-  local stamp_content
-  local identifier_from_json
-  stamp_url="${GCS_EXPECTED_URL}/stamp.json"
-  stamp_content=$(gsutil -q cat "${stamp_url}")
+  stamp_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/stamp.json")
   # Check that the stamp is a valid JSON file
   echo "${stamp_content}" | jq -r '.'
   # TODO: check the json contains expected data
@@ -186,6 +183,7 @@ function check_gcs {
 function cleanup {
   kill -9 "$(pgrep qemu-system-x86_64)"
   rm "${SSH_KEY_PATH}"
+  rm stamp.json
   # We keep pushed evidence for now, maybe we can delete those later to make
   # some space
 }
@@ -194,6 +192,8 @@ function main {
   CLOUD_PROJECT=$1
   GCS_BUCKET=$2
   SA_CREDENTIALS_FILE=$3
+
+  readonly GCS_EXPECTED_URL="gs://${GCS_BUCKET}/forensic_evidence/${EXTRA_GCS_PATH}/*/*/"
 
   msg "Setting up environment"
   setup
