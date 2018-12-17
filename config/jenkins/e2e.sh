@@ -202,7 +202,7 @@ function check_gcs {
 
 # Cleans up the test environment
 function cleanup {
-  kill -9 "$(pgrep qemu-system-x86_64)"
+  pkill -9 qemu || echo "Didn't kill any qemu"
   rm "${SSH_KEY_PATH}"
   rm stamp.json
   rm system_info.txt
