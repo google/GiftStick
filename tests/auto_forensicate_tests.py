@@ -119,7 +119,7 @@ class AutoForensicateTest(unittest.TestCase):
         '  --logging {stackdriver,stdout}\n'
         '                        Selects logging methods.\n'
         '  --select_disks        Asks the user to select which disk to acquire'
-        '\n  --disk DISK           Specify a disk to acquire (ie: sda)'
+        '\n  --disk DISK           Specify a disk to acquire (eg: sda)'
         '\n'
     )
     self.assertEqual(parser.format_help(), expected_help)
