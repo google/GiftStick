@@ -100,6 +100,7 @@ class AutoForensicateTest(unittest.TestCase):
         'usage: run_tests.py [-h] --acquire {all,test1,test2} [--gs_keyfile '
         'GS_KEYFILE]\n'
         '                    [--logging {stackdriver,stdout}] [--select_disks]'
+        '\n                    [--disk DISK]'
         '\n'
         '                    destination\n\n'
         'Autopush forensics evidence to Cloud Storage\n\n'
@@ -118,6 +119,7 @@ class AutoForensicateTest(unittest.TestCase):
         '  --logging {stackdriver,stdout}\n'
         '                        Selects logging methods.\n'
         '  --select_disks        Asks the user to select which disk to acquire'
+        '\n  --disk DISK           Specify a disk to acquire (eg: sda)'
         '\n'
     )
     self.assertEqual(parser.format_help(), expected_help)
