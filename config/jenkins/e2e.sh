@@ -31,6 +31,7 @@ readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
 readonly EVIDENCE_DISK="disk_42.img"
+readonly EVIDENCE_DISK_MD5_HEX="1e639d0a0b2c718eae71a058582a555e"
 
 
 set -e
@@ -190,6 +191,37 @@ function check_firmware {
   gsutil -q stat "${firmware_url}"
 }
 
+# Checks that the evidence disk uploaded has the proper md5 (calculated by
+# GCS
+function check_disk {
+  local disk_url
+  local hash_url
+  local lsblk_url
+  local udevadm_url
+  disk_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/sdb.image")
+  hash_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/sdb.hash")
+  lsblk_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/lsblk.txt")
+  udevadm_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/sdb.udevadm.txt")
+  msg "Checking MD5 for ${disk_url}"
+  if gsutil -q hash -m -h "${disk_url}"| grep -q "${EVIDENCE_DISK_MD5_HEX}"; then
+    msg "MD5 is correct for ${disk_url}"
+  else
+    die "Bad MD5 for ${disk_url}"
+  fi
+
+  msg "Checking ${lsblk_url}"
+  gsutil cp "${lsblk_url}" "lsblk.txt"
+  python config/jenkins/e2e_tools.py check_lsblk lsblk.txt
+
+  msg "Checking ${hash_url}"
+  gsutil cp "${hash_url}" "sdb.hash"
+  python config/jenkins/e2e_tools.py check_hash "sdb.hash"
+
+  msg "Checking ${udevadm_url}"
+  gsutil cp "${udevadm_url}" sdb.udevadm.txt
+  python config/jenkins/e2e_tools.py check_udevadm sdb.udevadm.txt
+}
+
 # Checks that files pushed to GCS are present and contains the proper
 # information.
 function check_gcs {
@@ -197,7 +229,7 @@ function check_gcs {
   check_stamp
   check_system_info
   check_firmware
-  # check_disks
+  check_disk
 }
 
 # Cleans up the test environment

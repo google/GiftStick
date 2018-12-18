@@ -48,10 +48,10 @@ def CheckStamp(stamp_path):
     stamp_path(str): path to the stamp file.
 
   Raises:
-    Exception: if the stamp's content aren't correct.
+    Exception: if the input file content isn't correct.
   """
   stamp_dict = {}
-  with open(stamp_path) as stamp_file:
+  with open(stamp_path, 'r') as stamp_file:
     stamp_dict = json.load(stamp_file)
 
   identifier_regex = re.compile(
@@ -68,7 +68,7 @@ def CheckSystemInfo(system_info_path):
     system_info_path(str): path to the system_info.txt file.
 
   Raises:
-    Exception: if the input file's content aren't correct.
+    Exception: if the input file content isn't correct.
   """
 
   system_info = ''
@@ -79,6 +79,73 @@ def CheckSystemInfo(system_info_path):
       r'System Information\n\W+Manufacturer: QEMU', re.MULTILINE)
   assert sysinfo_regex.search(system_info)
 
+def CheckLsblk(lsblk_path):
+  """Checks the content of a GiftStick lsblk.txt file.
+
+  Args:
+    lsblk_path(str): path to the lsblk.txt file.
+
+  Raises:
+    Exception: if the input file content isn't correct.
+  """
+  lsblk_dict = {}
+  with open(lsblk_path) as lsblk_file:
+    lsblk_dict = json.load(lsblk_file)
+
+  assert len(lsblk_dict['blockdevices']) == 6
+  sdb_disk = [
+      dev for dev in lsblk_dict['blockdevices'] if dev['name']=='sdb'][0]
+
+  assert sdb_disk['size'] == '44040192'
+  children = sorted(
+      [(child['name'], child['maj:min'], child['size'])
+       for child in sdb_disk['children']])
+  assert children == [
+      ('sdb1', '8:17', '12582912'), ('sdb2', '8:18', '30408704')]
+
+
+def CheckDiskHash(hash_path):
+  """Checks the content of a GiftStick disk.hash file.
+
+  Args:
+    hash_path(str): path to the disk.hash file.
+
+  Raises:
+    Exception: if the input file content isn't correct.
+  """
+  expected = """0 - 44040192: 1e639d0a0b2c718eae71a058582a555e
+0 - 44040192: 11840d13e5e9462f6acfa7bb9f700268202e29bf
+
+Total (md5): 1e639d0a0b2c718eae71a058582a555e
+
+Total (sha1): 11840d13e5e9462f6acfa7bb9f700268202e29bf
+"""
+  with open(hash_path, 'r') as hash_file:
+    hash_file_content = hash_file.read()
+    assert hash_file_content == expected
+
+def CheckUdevadm(udevadm_path):
+  """Checks the content of a GiftStick udevadm.txt file.
+
+  Args:
+    udevadm_path(str): path to the udevadm.txt file.
+
+  Raises:
+    Exception: if the input file content isn't correct.
+  """
+  expected = [
+      ['DEVTYPE', 'disk'],
+      ['ID_MODEL', 'QEMU_HARDDISK'],
+      ['ID_SERIAL', 'QEMU_HARDDISK_QM00002']]
+
+  with open(udevadm_path, 'r') as udevadm_file:
+    udevadm_content = udevadm_file.read().splitlines()
+    udevadm_pairs = [pair.split('=') for pair in udevadm_content]
+
+    interesting_keys = ['ID_SERIAL', 'ID_MODEL', 'DEVTYPE']
+    data_to_check = [pair for pair in udevadm_pairs if pair[0] in interesting_keys]
+
+    assert data_to_check == expected
 
 def ParseArguments():
   """Parse arguments
@@ -106,6 +173,24 @@ def ParseArguments():
   check_system_info.add_argument(
       'system_info', type=str, help='the system_info.txt file to check')
 
+  check_lsblk = subparsers.add_parser(
+      'check_lsblk',
+      help='Checks the content of the lsblk.txt file')
+  check_lsblk.add_argument(
+      'lsblk', type=str, help='the lsblk.txt file to check')
+
+  check_hash = subparsers.add_parser(
+      'check_hash',
+      help='Checks the content of the sdb.hash file')
+  check_hash.add_argument(
+      'hash', type=str, help='the sdb.hash file to check')
+
+  check_udevadm = subparsers.add_parser(
+      'check_udevadm',
+      help='Checks the content of the sdb.udevadm.txt file')
+  check_udevadm.add_argument(
+      'udevadm', type=str, help='the sdb.udevadm.txt file to check')
+
   return parser.parse_args()
 
 if __name__ == '__main__':
@@ -117,3 +202,9 @@ if __name__ == '__main__':
     CheckStamp(options.stamp)
   elif options.command == 'check_system_info':
     CheckSystemInfo(options.system_info)
+  elif options.command == 'check_lsblk':
+    CheckLsblk(options.lsblk)
+  elif options.command == 'check_hash':
+    CheckDiskHash(options.hash)
+  elif options.command == 'check_udevadm':
+    CheckUdevadm(options.udevadm)
