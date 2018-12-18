@@ -230,6 +230,7 @@ function main {
   msg "Cleaning up"
   cleanup
   msg "Done"
+  return 0
 }
 
 trap "{
