@@ -46,6 +46,7 @@ function msg {
 
 # Installs packages required to run the E2E tests
 function setup {
+  local evidence_disk_url
   sudo apt update -y
   sudo apt install -y \
     gdisk \
@@ -79,7 +80,9 @@ EOAPT
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
   fi
 
-  gsutil -q cp "gs://${GCS_BUCKET}/test_data/disk_42.img" "${EVIDENCE_DISK}"
+  evidence_disk_url=$(normalize_gcs_url "gs://${GCS_BUCKET}/test_data/disk_42.img")
+  msg "Downloading evidence disk from ${evidence_disk_url}"
+  gsutil -q cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
 }
 
 # Builds a GiftStick image, using the remaster script
@@ -128,6 +131,7 @@ EOKEY
 
 # Runs the newly generated GiftStick image in Qemu
 function run_image {
+  msg "Starting qemu"
   qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
     -drive format=raw,file="${EVIDENCE_DISK}" \
@@ -160,11 +164,12 @@ function run_acquisition_script {
 #   The object's explicit URL as a string
 function normalize_gcs_url {
   local GCS_URL="$1"
+  # 'echo' is needed here because we catch the output of the command
   echo "$(python config/jenkins/e2e_tools.py normalize "${GCS_URL}")"
 }
 
 # Checks that the stamp.json file has been uploaded, and contains
-# the proper information
+# the proper information.
 function check_stamp {
   local stamp_url
   stamp_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/stamp.json")
@@ -173,26 +178,24 @@ function check_stamp {
   python config/jenkins/e2e_tools.py check_stamp stamp.json
 }
 
-# Checks the system_info.txt file
+# Checks the system_info.txt file.
 function check_system_info {
   local system_info_url
   system_info_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/system_info.txt")
   gsutil -q cp "${system_info_url}" system_info.txt
-  # Check that the stamp is a valid JSON file
   python config/jenkins/e2e_tools.py check_system_info system_info.txt
 }
 
 # Checks that an (empty) rom.bin has been uploaded
-# The file is empty because Qemu doesn't have a real firmware that chipsec can
-# dump
+# The file is empty because qemu doesn't have a real firmware that chipsec can
+# dump.
 function check_firmware {
   local firmware_url
   firmware_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Firmware/rom.bin")
   gsutil -q stat "${firmware_url}"
 }
 
-# Checks that the evidence disk uploaded has the proper md5 (calculated by
-# GCS
+# Checks the files related to the evidence disk.
 function check_disk {
   local disk_url
   local hash_url
@@ -202,7 +205,7 @@ function check_disk {
   hash_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/sdb.hash")
   lsblk_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/lsblk.txt")
   udevadm_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/sdb.udevadm.txt")
-  msg "Checking MD5 for ${disk_url}"
+  msg "Checking MD5 of ${disk_url}"
   if gsutil -q hash -m -h "${disk_url}"| grep -q "${EVIDENCE_DISK_MD5_HEX}"; then
     msg "MD5 is correct for ${disk_url}"
   else
@@ -226,16 +229,23 @@ function check_disk {
 # information.
 function check_gcs {
   # Pull files from GCS and/or check their MD5
+  msg "Checking stamp.json"
   check_stamp
+  msg "Checking system_info.txt"
   check_system_info
+  msg "Checking Firmware file"
   check_firmware
+  msg "Checking disks files"
   check_disk
 }
 
-# Cleans up the test environment
+# Cleans up the test environment.
 function cleanup {
   pkill -9 qemu || echo "Didn't kill any qemu"
   rm "${SSH_KEY_PATH}"
+  rm "sdb.hash"
+  rm lsblk.txt
+  rm sdb.udevadm.txt
   rm stamp.json
   rm system_info.txt
   # We keep pushed evidence for now, maybe we can delete those later to make
