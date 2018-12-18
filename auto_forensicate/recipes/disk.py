@@ -214,7 +214,7 @@ class DiskRecipe(base.BaseRecipe):
       if blockdevice.get('type') == 'disk':
         disk_name = blockdevice.get('name')
         if names:
-          if not disk_name in names:
+          if disk_name not in names:
             continue
         disk_size_str = blockdevice.get('size')
         disk_size = int(disk_size_str)
