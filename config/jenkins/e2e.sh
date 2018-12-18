@@ -251,12 +251,12 @@ function check_gcs {
 # Cleans up the test environment.
 function cleanup {
   pkill -9 qemu || echo "Didn't kill any qemu"
-  rm "${SSH_KEY_PATH}"
-  rm "sdb.hash"
-  rm lsblk.txt
-  rm sdb.udevadm.txt
-  rm stamp.json
-  rm system_info.txt
+  rm -f "${SSH_KEY_PATH}"
+  rm -f "sdb.hash"
+  rm -f lsblk.txt
+  rm -f sdb.udevadm.txt
+  rm -f stamp.json
+  rm -f system_info.txt
   # We keep pushed evidence for now, maybe we can delete those later to make
   # some space
 }
