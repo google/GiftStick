@@ -124,7 +124,7 @@ class AutoForensicate(object):
     )
     parser.add_argument(
         '--disk', action='append', required=False,
-        help='Specify a disk to acquire (ie: sda)'
+        help='Specify a disk to acquire (eg: sda)'
     )
     return parser
 
