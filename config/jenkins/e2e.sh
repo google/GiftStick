@@ -44,6 +44,15 @@ function msg {
   echo "[$(date +%Y%m%d-%H%M%S)] ${message}"
 }
 
+# Adds a timestamp to a message to display, and quit with returncode = 1
+# Args:
+#   the message as a string
+function die {
+  local message=$1
+  echo "[$(date +%Y%m%d-%H%M%S)] ${message}; exiting"
+  exit 1
+}
+
 # Installs packages required to run the E2E tests
 function setup {
   local evidence_disk_url
