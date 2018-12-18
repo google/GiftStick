@@ -286,6 +286,6 @@ function main {
 
 trap "{
   exit 1
-}" INT EXIT
+}" INT
 
 main "$@"
