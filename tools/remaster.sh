@@ -283,18 +283,6 @@ function parse_arguments {
         die '--bucket requires a non-empty option argument.'
         ;;
 
-      --extra_gcs_path)
-        assert_option_argument "$2" "--extra_gcs_path"
-        FLAGS_EXTRA_GCS_PATH="$2"
-        shift
-        ;;
-      --extra_gcs_path=?*)
-        FLAGS_EXTRA_GCS_PATH=${1#*=}
-        ;;
-      --extra_gcs_path=)
-        die '--extra_gcs_path requires a non-empty option argument.'
-        ;;
-
       --image)
         assert_option_argument "$2" "--image"
         FLAGS_IMAGE_FILENAME="$2"
@@ -396,7 +384,7 @@ function parse_arguments {
     readonly FLAGS_REMASTERED_ISO=$(basename "${UBUNTU_ISO}.${REMASTERED_SUFFIX}")
   fi
 
-  readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/${FLAGS_EXTRA_GCS_PATH}"
+  readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/"
 
   if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.\-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
     die "${GCS_REMOTE_URL} is not a valid GCS URL"
