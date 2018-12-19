@@ -189,11 +189,10 @@ function assert_sourceiso_flag {
     if [[ ! "${FLAGS_SOURCE_ISO}" ]]; then
       die "Please specify a source ISO to remaster with --source_iso"
     fi
-    if [ -f "${FLAGS_SOURCE_ISO}" ]; then
-      SOURCE_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
-    else
+    if [[ ! -f "${FLAGS_SOURCE_ISO}" ]]; then
       die "${FLAGS_SOURCE_ISO} is not found"
     fi
+    SOURCE_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
   else
     if [[ ! "${FLAGS_REMASTERED_ISO}" ]]; then
       die "Please specify a remastered ISO with --remastered_iso"
@@ -249,11 +248,10 @@ function assert_sa_name {
 
 # Make sure the provided service account credentials file exists and is valid
 function assert_sa_json_path {
-  if [ ! -f "${FLAGS_SA_JSON_PATH}" ] ; then
+  if [[ ! -f "${FLAGS_SA_JSON_PATH}" ]] ; then
     die "${FLAGS_SA_JSON_PATH} does not exist"
   fi
   if ! grep -q '"type": "service_account",' "${FLAGS_SA_JSON_PATH}" ;  then
-  #if [[ ! $(grep -q '"type": "service_account",' "${FLAGS_SA_JSON_PATH}") ]] ; then
     die "${FLAGS_SA_JSON_PATH} does not look like a valid service account credentials JSON file"
   fi
 }
@@ -385,11 +383,14 @@ function parse_arguments {
 
   readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/"
 
+  # This checks agains a valid GCS object URL, such as
+  # gs://bucket/path/to/file
+  # See https://cloud.google.com/storage/docs/naming
   if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.\-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
     die "${GCS_REMOTE_URL} is not a valid GCS URL"
   fi
 
-  if [ -z "${FLAGS_SA_JSON_PATH}" ] ; then
+  if [[ -z "${FLAGS_SA_JSON_PATH}" ]] ; then
     readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
     readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
   else
@@ -589,8 +590,10 @@ function unpack_initrd {
   else
     die "Can't find initrd.gz nor initrd.lz file in ${unpacked_iso_dir}"
   fi
-  if [ -z "${initrd_pack_method}" ] ; then
-    # Fancy ubuntu magic
+  if [[ -z "${initrd_pack_method}" ]] ; then
+    # Ubuntu changed their initramfs building method in Bionic
+    # See https://unix.stackexchange.com/a/329937
+    # and https://bugs.launchpad.net/ubuntu/+source/live-build/+bug/1778811
     (cpio -id; lzma -d| cpio -id) < "${initrd_file}"
   else
     cat "${initrd_file}" | "${initrd_pack_method}" -d | cpio -i
@@ -727,7 +730,7 @@ function configure_gcs {
   msg "Preparing GCS environment"
 
   create_bucket "${FLAGS_GCS_BUCKET_NAME}"
-  if [ -z "$FLAGS_SA_JSON_PATH" ] ; then
+  if [[ -z "$FLAGS_SA_JSON_PATH" ]] ; then
     create_service_account "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}"
     create_sa_key "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}" "${GCS_SA_KEY_PATH}"
   fi
