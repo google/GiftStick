@@ -76,3 +76,4 @@ venv.bak/
 *.iso.remastered
 *.iso.remastered.md5
 *.img
+gift*.json*

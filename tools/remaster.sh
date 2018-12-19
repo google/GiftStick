@@ -26,11 +26,9 @@
 # you specify the destination with --image
 #
 # It requires the following packages, on ubuntu:
-#   gdisk genisoimage grub-efi-amd64-bin kpartx syslinux
+#   gdisk genisoimage grub-efi-amd64-bin syslinux
 #
 # gdisk and grub-efi-amd64-bin are used for the EFI booting part.
-# kpartx makes mounting the USB image file easier
-# uck is a tool to unpack/repack an LiveCD ISO.
 #
 # If you want to try the new USB image in Qemu, install the following packages:
 #   qemu-system-x86 and ovmf
@@ -46,18 +44,20 @@ FLAGS_REMASTERED_ISO=
 FLAGS_SKIP_IMAGE=false
 FLAGS_SKIP_ISO_REMASTER=false
 FLAGS_SKIP_GCS=false
+FLAGS_BUILD_TEST=false
+FLAGS_SA_JSON_PATH=""
 
 # Hardcoded paths
 readonly CURRENT_DIR=$(pwd)
-readonly CODE_DIR=$(realpath $(dirname "$0"))
+readonly CODE_DIR=$(realpath "$(dirname "$0")")
 readonly REMASTER_WORKDIR_NAME="remaster_workdir"
 readonly REMASTER_WORKDIR_PATH=$(readlink -m "${CURRENT_DIR}/${REMASTER_WORKDIR_NAME}")
 readonly REMASTER_SCRIPTS_DIR="${CODE_DIR}/remaster_scripts"
 
 readonly FORENSICATE_SCRIPT_NAME="call_auto_forensicate.sh"
 readonly FORENSICATE_SCRIPT="${REMASTER_SCRIPTS_DIR}/${FORENSICATE_SCRIPT_NAME}"
-readonly POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root.sh"
-readonly POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-user.sh"
+POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root.sh"
+POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-user.sh"
 readonly TMP_MNT_POINT=$(mktemp -d)
 
 # Global variables
@@ -153,9 +153,13 @@ Mandatory flags:
 
 Optional flags
   -h, --help            Show this help message
+  --sa_json_file        If provided, will use this file for the GCS service
+                        account credentials, and won't try to create one.
   --image=IMAGE         Set the output filename to IMAGE
   --remastered_iso=ISO  Path to the remastered ISO (used if --skip_iso is
                         enabled)
+  --extra_gcs_path      Appends an path to the GCS URL
+  --skip_gcs            If set, will skip GCS environment setup
   --skip_image          If set, will skip the Gift image build
   --skip_iso            If set, will skip the ISO remastering"
 }
@@ -186,7 +190,11 @@ function assert_sourceiso_flag {
     if [[ ! "${FLAGS_SOURCE_ISO}" ]]; then
       die "Please specify a source ISO to remaster with --source_iso"
     fi
-    SOURCE_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
+    if [ -f "${FLAGS_SOURCE_ISO}" ]; then
+      SOURCE_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
+    else
+      die "${FLAGS_SOURCE_ISO} is not found"
+    fi
   else
     if [[ ! "${FLAGS_REMASTERED_ISO}" ]]; then
       die "Please specify a remastered ISO with --remastered_iso"
@@ -207,7 +215,6 @@ function assert_image_size_flag {
     FLAGS_IMAGE_SIZE=$DEFAULT_IMAGE_SIZE
   fi
 }
-
 
 # Check FLAGS_GCS_BUCKET_NAME against Bucket Name Requirements:
 # https://cloud.google.com/storage/docs/naming#requirements
@@ -241,6 +248,17 @@ function assert_sa_name {
   fi
 }
 
+# Make sure the provided service account credentials file exists and is valid
+function assert_sa_json_path {
+  if [ ! -f "${FLAGS_SA_JSON_PATH}" ] ; then
+    die "${FLAGS_SA_JSON_PATH} does not exist"
+  fi
+  if ! grep -q '"type": "service_account",' "${FLAGS_SA_JSON_PATH}" ;  then
+  #if [[ ! $(grep -q '"type": "service_account",' "${FLAGS_SA_JSON_PATH}") ]] ; then
+    die "${FLAGS_SA_JSON_PATH} does not look like a valid service account credentials JSON file"
+  fi
+}
+
 # Parses the command line arguments
 #
 # Arguments:
@@ -263,6 +281,18 @@ function parse_arguments {
         ;;
       --bucket=)
         die '--bucket requires a non-empty option argument.'
+        ;;
+
+      --extra_gcs_path)
+        assert_option_argument "$2" "--extra_gcs_path"
+        FLAGS_EXTRA_GCS_PATH="$2"
+        shift
+        ;;
+      --extra_gcs_path=?*)
+        FLAGS_EXTRA_GCS_PATH=${1#*=}
+        ;;
+      --extra_gcs_path=)
+        die '--extra_gcs_path requires a non-empty option argument.'
         ;;
 
       --image)
@@ -313,6 +343,24 @@ function parse_arguments {
         FLAGS_SKIP_GCS=true
         ;;
 
+      --sa_json_file)
+        assert_option_argument "$2" "--sa_json_file"
+        FLAGS_SA_JSON_PATH="$2"
+        shift
+        ;;
+      --sa_json_file=?*)
+        FLAGS_SA_JSON_PATH=${1#*=}
+        ;;
+      --sa_json_file=)
+          die '--sa_json_file requires a non-empty option argument.'
+        ;;
+
+      --e2e_test)
+        FLAGS_BUILD_TEST=true
+        POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/e2e/post-install-root.sh"
+        POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/e2e/post-install-user.sh"
+        ;;
+
       --source_iso)
         assert_option_argument "$2" "--source_iso"
         FLAGS_SOURCE_ISO="$2"
@@ -348,10 +396,20 @@ function parse_arguments {
     readonly FLAGS_REMASTERED_ISO=$(basename "${UBUNTU_ISO}.${REMASTERED_SUFFIX}")
   fi
 
-  readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence"
+  readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/${FLAGS_EXTRA_GCS_PATH}"
 
-  readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
-  readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
+  if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.\-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
+    die "${GCS_REMOTE_URL} is not a valid GCS URL"
+  fi
+
+  if [ -z "${FLAGS_SA_JSON_PATH}" ] ; then
+    readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
+    readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
+  else
+    assert_sa_json_path
+    readonly GCS_SA_KEY_PATH="$(readlink -m "${FLAGS_SA_JSON_PATH}")"
+    readonly GCS_SA_KEY_NAME="$(basename "${FLAGS_SA_JSON_PATH}")"
+  fi
 
 }
 
@@ -503,10 +561,13 @@ function pack_initrd {
   elif [[ -e "${unpacked_iso_dir}/install/initrd.gz" ]]; then
     initrd_file="${unpacked_iso_dir}/install/initrd.gz"
     initrd_pack_method=gzip
+  elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
+    initrd_file="${unpacked_iso_dir}/casper/initrd.lz"
+    initrd_pack_method=lzma
   else
-    die "Can't find initrd.gz nor initrd.lz file"
+    die "Can't find initrd file"
   fi
-  find  | cpio -H newc -o | ${initrd_pack_method} > "${REMASTER_WORKDIR_PATH}/initrd.packed"
+  find . | cpio -H newc -o | ${initrd_pack_method} > "${REMASTER_WORKDIR_PATH}/initrd.packed"
   sudo mv -f "${REMASTER_WORKDIR_PATH}/initrd.packed" "${initrd_file}"
   popd
 }
@@ -535,10 +596,18 @@ function unpack_initrd {
   elif [[ -e "${unpacked_iso_dir}/install/initrd.gz" ]]; then
     initrd_file="${unpacked_iso_dir}/install/initrd.gz"
     initrd_pack_method=gzip
+  elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
+    initrd_file="${unpacked_iso_dir}/casper/initrd"
+    initrd_pack_method=""
   else
-    die "Can't find initrd.gz nor initrd.lz file"
+    die "Can't find initrd.gz nor initrd.lz file in ${unpacked_iso_dir}"
   fi
-  cat "${initrd_file}" | "${initrd_pack_method}" -d | cpio -i
+  if [ -z "${initrd_pack_method}" ] ; then
+    # Fancy ubuntu magic
+    (cpio -id; lzma -d| cpio -id) < "${initrd_file}"
+  else
+    cat "${initrd_file}" | "${initrd_pack_method}" -d | cpio -i
+  fi
   popd
 }
 
@@ -671,8 +740,10 @@ function configure_gcs {
   msg "Preparing GCS environment"
 
   create_bucket "${FLAGS_GCS_BUCKET_NAME}"
-  create_service_account "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}"
-  create_sa_key "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}" "${GCS_SA_KEY_PATH}"
+  if [ -z "$FLAGS_SA_JSON_PATH" ] ; then
+    create_service_account "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}"
+    create_sa_key "${FLAGS_GCS_BUCKET_NAME}" "${GCS_SA_NAME}" "${GCS_SA_KEY_PATH}"
+  fi
 }
 
 # This function uses a LiveCD ISO image and creates a USB bootable image.
@@ -685,7 +756,6 @@ function make_bootable_usb_image {
   local remastered_iso_path
   local kernel_name
   local loop_device
-  local loop_num
 
   remastered_iso_path=$1
 
@@ -704,12 +774,10 @@ function make_bootable_usb_image {
   sgdisk --largest-new=2 --typecode=2:8300 "${FLAGS_IMAGE_FILENAME}" # this will be the persistent partition
 
   msg "Mount the EFI partition"
-  sudo kpartx -a "${FLAGS_IMAGE_FILENAME}"
-  loop_device=$(sudo losetup -a | grep "${FLAGS_IMAGE_FILENAME}" | cut -d":" -f 1)
-  loop_num=$(basename "${loop_device}")
-  sudo mkfs.vfat "/dev/mapper/${loop_num}p1"
-  sudo mkfs.ext3 -L casper-rw "/dev/mapper/${loop_num}p2"
-  sudo mount "/dev/mapper/${loop_num}p1" "${TMP_MNT_POINT}"
+  loop_device=$(sudo losetup -fP --show "${FLAGS_IMAGE_FILENAME}")
+  sudo mkfs.vfat "${loop_device}p1"
+  sudo mkfs.ext3 -L casper-rw "${loop_device}p2"
+  sudo mount "${loop_device}p1" "${TMP_MNT_POINT}"
 
   msg "Install some EFI Magic"
   sudo mkdir -p "${TMP_MNT_POINT}/EFI/BOOT"
@@ -761,24 +829,33 @@ EOGRUB
   sudo umount "${TMP_MNT_POINT}"
 
   msg "Customize user directory"
-  sudo mount "/dev/mapper/${loop_num}p2" "${TMP_MNT_POINT}"
+  sudo mount "${loop_device}p2" "${TMP_MNT_POINT}"
   sudo mkdir -p "${TMP_MNT_POINT}/upper/home/${GIFT_USERNAME}/"
 
   pushd "${TMP_MNT_POINT}/upper/home/${GIFT_USERNAME}/"
 
-  if [[ "${FLAGS_SKIP_GCS}" == "false" ]]; then
-    sudo cp "${GCS_SA_KEY_PATH}" .
-  fi
+  sudo cp "${GCS_SA_KEY_PATH}" .
 
   pwd
   sudo cp "${FORENSICATE_SCRIPT}" "${FORENSICATE_SCRIPT_NAME}"
 
-  cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
+  if $FLAGS_BUILD_TEST ; then
+    cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
 sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
   --gs_keyfile="../${GCS_SA_KEY_NAME}" \
   --logging stdout \
-  --acquire all "${GCS_REMOTE_URL}/" ${AF_ARG}
+  --acquire all --disk sdb "${GCS_REMOTE_URL}/"
 EOFORENSICSH
+
+  else
+
+    cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
+sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
+  --gs_keyfile="../${GCS_SA_KEY_NAME}" \
+  --logging stdout \
+  --acquire all "${GCS_REMOTE_URL}/"
+EOFORENSICSH
+  fi
 
   if [[ -f "${POST_UBUNTU_USER_SCRIPT}" ]] ; then
     . "${POST_UBUNTU_USER_SCRIPT}"
@@ -792,10 +869,14 @@ EOFORENSICSH
   sudo chown -R 999:999 "${TMP_MNT_POINT}/upper/home/${GIFT_USERNAME}"
 
   msg "Cleaning up"
-  sudo rm "${GCS_SA_KEY_PATH}"
+  if [[ "${FLAGS_SKIP_GCS}" == "false" ]]; then
+    if [[ ! -z "${FLAGS_SA_JSON_PATH}" ]] ; then
+      sudo rm "${GCS_SA_KEY_PATH}"
+    fi
+  fi
   sudo umount "${TMP_MNT_POINT}"
   rmdir "${TMP_MNT_POINT}"
-  sudo kpartx -d "${FLAGS_IMAGE_FILENAME}"
+  sudo losetup -d "${loop_device}"
 }
 
 function main {
@@ -805,9 +886,7 @@ function main {
   check_available_space "${REMASTER_WORKDIR_PATH}"
   check_packages gdisk
   check_packages genisoimage
-  check_packages grub2-common
   check_packages grub-efi-amd64-bin
-  check_packages kpartx
   check_packages squashfs-tools
   check_packages syslinux
 
@@ -848,8 +927,8 @@ if [[ -d '${CURRENT_DIR}' ]]; then
   cd ${CURRENT_DIR}
   mountpoint -q '${TMP_MNT_POINT}' && sudo -n umount '${TMP_MNT_POINT}'
   if [[ -f '${FLAGS_IMAGE_FILENAME}' ]]; then
-    echo sudo -n kpartx -d '${FLAGS_IMAGE_FILENAME}'
-    sudo -n kpartx -d '${FLAGS_IMAGE_FILENAME}'
+    loop_device=$(losetup -O NAME --noheadings -j '${FLAGS_IMAGE_FILENAME}')
+    sudo losetup -d '${loop_device}'
   fi
   if [[ -d '${TMP_MNT_POINT}' ]] ; then
     rmdir '${TMP_MNT_POINT}'
