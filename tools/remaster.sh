@@ -158,7 +158,6 @@ Optional flags
   --image=IMAGE         Set the output filename to IMAGE
   --remastered_iso=ISO  Path to the remastered ISO (used if --skip_iso is
                         enabled)
-  --extra_gcs_path      Appends an path to the GCS URL
   --skip_gcs            If set, will skip GCS environment setup
   --skip_image          If set, will skip the Gift image build
   --skip_iso            If set, will skip the ISO remastering"
