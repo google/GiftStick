@@ -94,7 +94,7 @@ def CheckLsblk(lsblk_path):
 
   assert len(lsblk_dict['blockdevices']) == 6
   sdb_disk = [
-      dev for dev in lsblk_dict['blockdevices'] if dev['name']=='sdb'][0]
+      dev for dev in lsblk_dict['blockdevices'] if dev['name'] == 'sdb'][0]
 
   assert sdb_disk['size'] == '44040192'
   children = sorted(
@@ -143,7 +143,8 @@ def CheckUdevadm(udevadm_path):
     udevadm_pairs = [pair.split('=') for pair in udevadm_content]
 
     interesting_keys = ['ID_SERIAL', 'ID_MODEL', 'DEVTYPE']
-    data_to_check = [pair for pair in udevadm_pairs if pair[0] in interesting_keys]
+    data_to_check = [
+        pair for pair in udevadm_pairs if pair[0] in interesting_keys]
 
     assert data_to_check == expected
 
