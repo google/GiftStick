@@ -32,11 +32,10 @@ function install_forensication_tools {
 }
 
 function install_basic_pkg {
-  readonly local COMMON_UTILS=( git jq python-pip pv zenity )
-  readonly local WIRELESS_PKG=( firmware-b43-installer bcmwl-kernel-source )
+  readonly local COMMON_UTILS=( git jq python-pip pv openssh-server zenity )
 
   apt-get -y update
-  apt-get -y install "${COMMON_UTILS[@]}" "${WIRELESS_PKG[@]}"
+  apt-get -y install "${COMMON_UTILS[@]}"
 
   echo "PasswordAuthentication no" >>  /etc/ssh/sshd_config
 }
@@ -60,21 +59,6 @@ function ubuntu_fix_systemd {
   apt-get -y install libnss-resolve
 }
 
-function ubuntu_fix_mbp {
-
-  # This is installing SPI drivers for the keyboard & mousepads on
-  # MacBook 2016 (with touchbar)
-  apt-get -y install dkms
-  git clone https://github.com/cb22/macbook12-spi-driver.git /usr/src/applespi-0.1
-
-  # We need to install for the kernel of the OS we're chrooted in, not the one
-  # that's currently running on our workstation.
-  # Ubuntu Live CD should only have one kernel installed, so this should work.
-  dkms install -m applespi -v 0.1 -k "$(basename /lib/modules/*)"
-  echo -e "\napplespi\nintel_lpss_pci\nspi_pxa2xx_platform" >> /etc/initramfs-tools/modules
-  update-initramfs -u
-}
-
 function ignore_chipsec_logs {
   # Chipsec generates a ton of logs which can fill up the local storage
   echo -e ":msg, contains, \"IOCTL_RDMMIO\" stop\n\
@@ -96,4 +80,3 @@ ignore_chipsec_logs
 install_basic_pkg
 install_forensication_tools
 ubuntu_remove_packages
-ubuntu_fix_mbp
