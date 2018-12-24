@@ -64,9 +64,6 @@ class DiskArtifact(base.BaseArtifact):
 
     self._udevadm_metadata = None
 
-  def __lt__(self, other):
-    return self.size < other.size
-
   def _GenerateDDCommand(self):
     """Builds the DD command to run on the disk.
 
@@ -219,7 +216,7 @@ class DiskRecipe(base.BaseRecipe):
         if all_devices or disk.ProbablyADisk():
           disk_list.append(disk)
     # We order the list by size, descending.
-    return sorted(disk_list, reverse=True)
+    return sorted(disk_list, reverse=True, key=lambda disk: disk.size)
 
   def GetArtifacts(self):
     """Selects the Artifacts to acquire.
