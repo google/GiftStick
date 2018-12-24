@@ -64,9 +64,6 @@ class DiskArtifact(base.BaseArtifact):
 
     self._udevadm_metadata = None
 
-  def __cmp__(self, other):
-    return cmp(self.size, other.size)
-
   def __lt__(self, other):
     return self.size < other.size
 
