@@ -35,9 +35,12 @@
 
 set -e
 
+readonly CODE_DIR=$(realpath "$(dirname "$0")")
+# shellcheck source=tools/commons.sh
+. "${CODE_DIR}/commons.sh"
+
 # Default values
 readonly DEFAULT_IMAGE_SIZE="4"
-readonly GIFT_USERNAME="gift"
 readonly TODAY=$(date +"%Y%m%d")
 readonly DEFAULT_IMAGE_FILENAME="giftstick-${TODAY}.img"
 FLAGS_REMASTERED_ISO=
@@ -48,14 +51,6 @@ FLAGS_BUILD_TEST=false
 FLAGS_SA_JSON_PATH=""
 
 # Hardcoded paths
-readonly CURRENT_DIR=$(pwd)
-readonly CODE_DIR=$(realpath "$(dirname "$0")")
-readonly REMASTER_WORKDIR_NAME="remaster_workdir"
-readonly REMASTER_WORKDIR_PATH=$(readlink -m "${CURRENT_DIR}/${REMASTER_WORKDIR_NAME}")
-readonly REMASTER_SCRIPTS_DIR="${CODE_DIR}/remaster_scripts"
-
-readonly FORENSICATE_SCRIPT_NAME="call_auto_forensicate.sh"
-readonly FORENSICATE_SCRIPT_PATH="${REMASTER_SCRIPTS_DIR}/${FORENSICATE_SCRIPT_NAME}"
 POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root.sh"
 POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-user.sh"
 readonly TMP_MNT_POINT=$(mktemp -d)
@@ -67,16 +62,6 @@ readonly CONFIG_FILENAME="config.sh"
 readonly REMASTERED_SUFFIX="remastered"
 # Name of the service account
 readonly GCS_SA_NAME="giftstick"
-readonly AUTO_FORENSIC_SCRIPT_NAME="auto_acquire.py"
-
-# Prints an error and terminates execution.
-#
-# Arguments:
-#  Message to display, as string.
-function die {
-  printf 'ERROR: %s\n' "$1" >&2
-  exit 1
-}
 
 # Checks that there is enough space left to work
 #
@@ -98,21 +83,6 @@ function check_available_space {
 function msg {
   local input=$1
   printf '* %s\n' "${input/${CURRENT_DIR}/.}" >&2
-}
-
-# Verifies a package has been installed with DPKG. Exits if package name is
-# missing.
-#
-# Arguments:
-#  Name of the package.
-function check_packages {
-  local pkg="$1"
-  set +e
-  dpkg --get-selections | grep -qE "^${pkg}[[:space:]]*install$" > /dev/null 2>&1
-  if [[ ! $? -eq 0 ]]; then
-    die "Please install package ${pkg}"
-  fi
-  set -e
 }
 
 # Displays the banner
@@ -163,17 +133,6 @@ Optional flags
   --skip_gcs            If set, will skip GCS environment setup
   --skip_image          If set, will skip the Gift image build
   --skip_iso            If set, will skip the ISO remastering"
-}
-
-# Verifies that an option is not empty
-#
-# Arguments:
-#  Option name, as string.
-#  Option value, as string.
-function assert_option_argument {
-  if [[ -z $1 ]]; then
-    die "$2 requires a non-empty option argument"
-  fi
 }
 
 # Make sure that FLAGS_CLOUD_PROJECT_NAME is defined
@@ -245,16 +204,6 @@ function assert_bucket_name {
 function assert_sa_name {
   if [[ ${#GCS_SA_NAME} -gt 30 ]]; then
     die "${GCS_SA_NAME} is too long for a Service Account name (>30)"
-  fi
-}
-
-# Make sure the provided service account credentials file exists and is valid
-function assert_sa_json_path {
-  if [[ ! -f "${FLAGS_SA_JSON_PATH}" ]] ; then
-    die "${FLAGS_SA_JSON_PATH} does not exist"
-  fi
-  if ! grep -q '"type": "service_account",' "${FLAGS_SA_JSON_PATH}" ;  then
-    die "${FLAGS_SA_JSON_PATH} does not look like a valid service account credentials JSON file"
   fi
 }
 
@@ -405,10 +354,13 @@ function parse_arguments {
   fi
 
   if [[ -z "${FLAGS_SA_JSON_PATH}" ]] ; then
+    if [[ "${FLAGS_SKIP_GCS}" == "true" ]]; then
+      die "Please provide path to a valid service account credentials file with --sa_json_file"
+    fi
     readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
     readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
   else
-    assert_sa_json_path
+    assert_sa_json_path "${FLAGS_SA_JSON_PATH}"
     readonly GCS_SA_KEY_PATH="$(readlink -m "${FLAGS_SA_JSON_PATH}")"
     readonly GCS_SA_KEY_NAME="$(basename "${FLAGS_SA_JSON_PATH}")"
   fi
@@ -881,11 +833,16 @@ function main {
   mkdir -p "${REMASTER_WORKDIR_PATH}"
   # Check that we have required disk space, permission and packages.
   check_available_space "${REMASTER_WORKDIR_PATH}"
+
+  # We disable set -e in order to display relevant error message when
+  # checking for package instalation status.
+  set +e
   check_packages gdisk
   check_packages genisoimage
   check_packages grub-efi-amd64-bin
   check_packages squashfs-tools
   check_packages syslinux
+  set -e
 
   parse_arguments "$@"
 
