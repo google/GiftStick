@@ -352,6 +352,9 @@ function parse_arguments {
   fi
 
   if [[ -z "${FLAGS_SA_JSON_PATH}" ]] ; then
+    if [[ "${FLAGS_SKIP_GCS}" == "true" ]]; then
+      die "Please provide path to a valid service account credentials file with --sa_json_file"
+    fi
     readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
     readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
   else
