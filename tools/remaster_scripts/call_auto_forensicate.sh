@@ -24,6 +24,8 @@ if [[ $? -ne 0 ]]; then
   exit 1
 fi
 
+source config.sh
+
 # Make sure have the latest version of the auto_forensicate module
 git clone https://github.com/google/GiftStick
 cd GiftStick
@@ -33,3 +35,8 @@ sudo python setup.py install
 # booting.
 sudo pip install chipsec
 
+sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
+  --gs_keyfile="${GCS_SA_KEY_FILE}" \
+  --logging stdout \
+  --acquire all \
+  ${EXTRA_OPTIONS} "${GCS_REMOTE_URL}/"

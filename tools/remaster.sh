@@ -55,6 +55,8 @@ POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root.sh"
 POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-user.sh"
 readonly TMP_MNT_POINT=$(mktemp -d)
 
+readonly CONFIG_FILENAME="config.sh"
+
 # Global variables
 # TODO: let the user change these
 readonly REMASTERED_SUFFIX="remastered"
@@ -790,25 +792,18 @@ EOGRUB
 
   sudo cp "${GCS_SA_KEY_PATH}" .
 
-  pwd
-  sudo cp "${FORENSICATE_SCRIPT}" "${FORENSICATE_SCRIPT_NAME}"
+  sudo cp "${FORENSICATE_SCRIPT_PATH}" "${FORENSICATE_SCRIPT_NAME}"
+
+  cat <<EOFORENSICSH | sudo tee -a "${CONFIG_FILENAME}" > /dev/null
+AUTO_FORENSIC_SCRIPT_NAME="${AUTO_FORENSIC_SCRIPT_NAME}"
+GCS_SA_KEY_FILE="/home/${GIFT_USERNAME}/${GCS_SA_KEY_NAME}"
+GCS_REMOTE_URL="${GCS_REMOTE_URL}"
+EOFORENSICSH
 
   if $FLAGS_BUILD_TEST ; then
-    cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
-sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
-  --gs_keyfile="../${GCS_SA_KEY_NAME}" \
-  --logging stdout \
-  --acquire all --disk sdb "${GCS_REMOTE_URL}/"
-EOFORENSICSH
-
-  else
-
-    cat <<EOFORENSICSH | sudo tee -a "${FORENSICATE_SCRIPT_NAME}" > /dev/null
-sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
-  --gs_keyfile="../${GCS_SA_KEY_NAME}" \
-  --logging stdout \
-  --acquire all "${GCS_REMOTE_URL}/"
-EOFORENSICSH
+    cat <<EOFORENSICSHEXTRA | sudo tee -a "${CONFIG_FILENAME}" > /dev/null
+      EXTRA_OPTIONS="--disk sdb"
+EOFORENSICSHEXTRA
   fi
 
   if [[ -f "${POST_UBUNTU_USER_SCRIPT}" ]] ; then
