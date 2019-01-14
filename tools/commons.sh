@@ -52,12 +52,10 @@ function die {
 #  Name of the package.
 function check_packages {
   local pkg="$1"
-  set +e
   dpkg --get-selections | grep -qE "^${pkg}[[:space:]]*install$" > /dev/null 2>&1
   if [[ ! $? -eq 0 ]]; then
     die "Please install package ${pkg}"
   fi
-  set -e
 }
 
 # Verifies that an option is not empty

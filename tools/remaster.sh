@@ -838,11 +838,16 @@ function main {
   mkdir -p "${REMASTER_WORKDIR_PATH}"
   # Check that we have required disk space, permission and packages.
   check_available_space "${REMASTER_WORKDIR_PATH}"
+
+  # We disable set -e in order to display relevant error message when
+  # checking for package instalation status.
+  set +e
   check_packages gdisk
   check_packages genisoimage
   check_packages grub-efi-amd64-bin
   check_packages squashfs-tools
   check_packages syslinux
+  set -e
 
   parse_arguments "$@"
 
