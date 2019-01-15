@@ -52,8 +52,7 @@ function die {
 #  Name of the package.
 function check_packages {
   local pkg="$1"
-  dpkg --get-selections | grep -qE "^${pkg}[[:space:]]*install$" > /dev/null 2>&1
-  if [[ ! $? -eq 0 ]]; then
+  if ! dpkg --get-selections | grep -qE "^${pkg}[[:space:]]*install$"; then
     die "Please install package ${pkg}"
   fi
 }
@@ -68,4 +67,3 @@ function assert_option_argument {
     die "$2 requires a non-empty option argument"
   fi
 }
-
