@@ -36,7 +36,7 @@
 set -e
 
 readonly CODE_DIR=$(realpath "$(dirname "$0")")
-# shellcheck source=tools/commons.sh
+# shellcheck source=commons.sh
 . "${CODE_DIR}/commons.sh"
 
 # Default values
@@ -69,8 +69,10 @@ readonly GCS_SA_NAME="giftstick"
 #  The work directory, as string.
 function check_available_space {
   local workdir=$1
-  local available_gb=$(df -BG --output=avail "$workdir" | tail -1 | cut -d "G" -f1)
-  local required_gb=$(($DEFAULT_IMAGE_SIZE * 2))
+  local available_gb
+  local required_gb
+  available_gb=$(df -BG --output=avail "$workdir" | tail -1 | cut -d "G" -f1)
+  available_gb=$(df -BG --output=avail "$workdir" | tail -1 | cut -d "G" -f1)
   if [[ $available_gb -lt $required_gb ]]; then
     die "Not enough space left in ${workdir} (${available_gb} < 2 * ${DEFAULT_IMAGE_SIZE}GB"
   fi
@@ -349,7 +351,7 @@ function parse_arguments {
   # This checks agains a valid GCS object URL, such as
   # gs://bucket/path/to/file
   # See https://cloud.google.com/storage/docs/naming
-  if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.\-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
+  if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
     die "${GCS_REMOTE_URL} is not a valid GCS URL"
   fi
 
@@ -562,7 +564,7 @@ function unpack_initrd {
     # and https://bugs.launchpad.net/ubuntu/+source/live-build/+bug/1778811
     (cpio -id; lzma -d| cpio -id) < "${initrd_file}"
   else
-    cat "${initrd_file}" | "${initrd_pack_method}" -d | cpio -i
+    < "${initrd_file}" "${initrd_pack_method}" -d | cpio -i
   fi
   popd
 }
@@ -630,7 +632,7 @@ function make_custom_ubuntu_iso {
 #   The bucket name, as string
 function create_bucket {
   local bucket=$1
-  if [[ $(gsutil -q ls -p "${FLAGS_CLOUD_PROJECT_NAME}" "gs://" | grep "gs://${bucket}/") ]]; then
+  if gsutil -q ls -p "${FLAGS_CLOUD_PROJECT_NAME}" "gs://" | grep -q "gs://${bucket}/"; then
     msg "Bucket ${bucket} already exists in project ${FLAGS_CLOUD_PROJECT_NAME}"
   else
     gsutil mb -p "${FLAGS_CLOUD_PROJECT_NAME}" "gs://${bucket}/"
@@ -646,7 +648,7 @@ function create_service_account {
   local gcs_bucket_name=$1
   local gcs_sa_name=$2
   local gcs_sa_email="${gcs_sa_name}@${FLAGS_CLOUD_PROJECT_NAME}.iam.gserviceaccount.com"
-  if [[ $(gcloud -q iam service-accounts list --project "${FLAGS_CLOUD_PROJECT_NAME}" --format "get(email)" | grep "${gcs_sa_email}") ]]; then
+  if gcloud -q iam service-accounts list --project "${FLAGS_CLOUD_PROJECT_NAME}" --format "get(email)" | grep -q "${gcs_sa_email}"; then
     msg "${gcs_sa_email} already exists in project ${FLAGS_CLOUD_PROJECT_NAME}"
   else
     gcloud -q iam service-accounts create "${gcs_sa_name}" \
@@ -807,6 +809,7 @@ EOFORENSICSHEXTRA
   fi
 
   if [[ -f "${POST_UBUNTU_USER_SCRIPT}" ]] ; then
+    # shellcheck source=remaster_scripts/post-install-user.sh
     . "${POST_UBUNTU_USER_SCRIPT}"
   else
     msg "No user directory customization \
@@ -874,33 +877,37 @@ pv -s ${FLAGS_IMAGE_SIZE}G > /dev/sdXXX"
   fi
 }
 
-# This trap restores a clean UCK environment. In case of failure, we won't have
+# This trap restores a clean environment. In case of failure, we won't have
 # leftovers mounted filesystems.
+function trap_cleanup {
+  if [[ -d "${CURRENT_DIR}" ]]; then
+    cd "${CURRENT_DIR}"
+    mountpoint -q "${TMP_MNT_POINT}" && sudo -n umount "${TMP_MNT_POINT}"
+    if [[ -f "${FLAGS_IMAGE_FILENAME}" ]]; then
+      loop_device=$(losetup -O NAME --noheadings -j "${FLAGS_IMAGE_FILENAME}")
+      sudo losetup -d "${loop_device}"
+    fi
+    if [[ -d "${TMP_MNT_POINT}" ]] ; then
+      rmdir "${TMP_MNT_POINT}"
+    fi
+    if [[ ${FLAGS_SKIP_ISO_REMASTER} == "false" ]]; then
+      echo "cleaning up remastering leftovers"
+      if [[ -d "${remaster_destroot_dir}" ]]; then
+        unmount_pseudo_fs "${remaster_destroot_dir}"
+      fi
+      if [[ -d "${REMASTER_WORKDIR_PATH}/remaster-iso-mount" ]]; then
+        umount "${REMASTER_WORKDIR_PATH}/remaster-iso-mount"
+      fi
+      if [[ -d "${REMASTER_WORKDIR_PATH}" ]]; then
+        unmount_pseudo_fs "${REMASTER_WORKDIR_PATH}"
+      fi
+      sudo rm -rf --one-file-system "${REMASTER_WORKDIR_PATH}"
+    fi
+  fi
+}
+
 trap "{
-if [[ -d '${CURRENT_DIR}' ]]; then
-  cd ${CURRENT_DIR}
-  mountpoint -q '${TMP_MNT_POINT}' && sudo -n umount '${TMP_MNT_POINT}'
-  if [[ -f '${FLAGS_IMAGE_FILENAME}' ]]; then
-    loop_device=$(losetup -O NAME --noheadings -j '${FLAGS_IMAGE_FILENAME}')
-    sudo losetup -d '${loop_device}'
-  fi
-  if [[ -d '${TMP_MNT_POINT}' ]] ; then
-    rmdir '${TMP_MNT_POINT}'
-  fi
-  if [[ ${FLAGS_SKIP_ISO_REMASTER} -eq 'false' ]]; then
-    echo 'cleaning up remastering leftovers'
-    if [[ -d '${remaster_destroot_dir}' ]]; then
-      unmount_pseudo_fs '${remaster_destroot_dir}'
-    fi
-    if [[ -d '${remaster_srcisomount_dir}' ]]; then
-      umount '${remaster_srcisomount_dir}'
-    fi
-    if [[ -d '${REMASTER_WORKDIR_PATH}' ]]; then
-      unmount_pseudo_fs '${REMASTER_WORKDIR_PATH}'
-    fi
-    sudo rm -rf --one-file-system '${REMASTER_WORKDIR_PATH}'
-  fi
-fi
+  trap_cleanup
 }" INT EXIT
 
 
