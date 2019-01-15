@@ -22,7 +22,7 @@ readonly REMASTER_WORKDIR_NAME="remaster_workdir"
 readonly REMASTER_WORKDIR_PATH=$(readlink -m "${CURRENT_DIR}/${REMASTER_WORKDIR_NAME}")
 readonly REMASTER_SCRIPTS_DIR="${CODE_DIR}/remaster_scripts"
 readonly FORENSICATE_SCRIPT_NAME="call_auto_forensicate.sh"
-readonly FORENSICATE_SCRIPT="${REMASTER_SCRIPTS_DIR}/${FORENSICATE_SCRIPT_NAME}"
+readonly FORENSICATE_SCRIPT_PATH="${REMASTER_SCRIPTS_DIR}/${FORENSICATE_SCRIPT_NAME}"
 readonly AUTO_FORENSIC_SCRIPT_NAME="auto_acquire.py"
 
 # Make sure the provided service account credentials file exists and is valid
