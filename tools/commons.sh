@@ -28,7 +28,8 @@ readonly CONFIG_FILENAME="config.sh"
 
 # Make sure the provided service account credentials file exists and is valid
 function assert_sa_json_path {
-  readonly local sa_json_path="${1}"
+  local sa_json_path
+  sa_json_path="${1}"
   if [[ ! -f "${sa_json_path}" ]] ; then
     die "${sa_json_path} does not exist"
   fi
@@ -83,7 +84,8 @@ function assert_option_argument {
 # Arguments:
 #  Option url, as string.
 function assert_gcs_url {
-  readonly local url="${1}"
+  local gcs_url
+  gcs_url="${1}"
   # Example of a valid URL : gs://bucket/path/to/file
   # See https://cloud.google.com/storage/docs/naming
   if [[ ! "${url}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
