@@ -186,10 +186,10 @@ function trap_cleanup {
   if [[ -d "${CURRENT_DIR}" ]]; then
     cd "${CURRENT_DIR}"
     mountpoint -q "${PARTITION_MOUNTPOINT}" && sudo -n umount "${PARTITION_MOUNTPOINT}"
-    loop_device=$(losetup -O NAME --noheadings -j "${FLAGS_SOURCE_IMAGE}")
-    if [[ ! -z "${loop_device}" ]] ; then
+    loop_devices=$(losetup -O NAME --noheadings -j "${FLAGS_SOURCE_IMAGE}")
+    for loop_device in ${loop_devices}; do
       sudo losetup -d "${loop_device}"
-    fi
+    done
     if [[ -d "${PARTITION_MOUNTPOINT}" ]] ; then
       rmdir "${PARTITION_MOUNTPOINT}"
     fi
