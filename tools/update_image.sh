@@ -123,6 +123,16 @@ function parse_arguments {
   done
 
   assert_source_image_flag
+  if [[ ! -z "${FLAGS_NEW_SA_CREDENTIALS_FILE}" ]] ; then
+    check_packages "jq"
+    assert_sa_json_path "${FLAGS_NEW_SA_CREDENTIALS_FILE}"
+    NEW_SA_CREDENTIALS_PATH=$(readlink -m "${FLAGS_NEW_SA_CREDENTIALS_FILE}")
+    NEW_SA_CREDENTIALS_FILENAME=$(basename "${NEW_SA_CREDENTIALS_PATH}")
+  fi
+
+  if [[ ! -z "${FLAGS_NEW_GCS_REMOTE_URL}" ]] ; then
+    assert_gcs_url "${FLAGS_NEW_GCS_REMOTE_URL}"
+  fi
 
 }
 
@@ -160,15 +170,10 @@ function main {
   fi
 
   if [[ ! -z "${FLAGS_NEW_SA_CREDENTIALS_FILE}" ]] ; then
-    check_packages "jq"
-    assert_sa_json_path "${FLAGS_NEW_SA_CREDENTIALS_FILE}"
-    NEW_SA_CREDENTIALS_PATH=$(readlink -m "${FLAGS_NEW_SA_CREDENTIALS_FILE}")
-    NEW_SA_CREDENTIALS_FILENAME=$(basename "${NEW_SA_CREDENTIALS_PATH}")
     update_sa_credentials
   fi
 
   if [[ ! -z "${FLAGS_NEW_GCS_REMOTE_URL}" ]] ; then
-    assert_gcs_url "${FLAGS_NEW_GCS_REMOTE_URL}"
     update_gcs_remote_url
   fi
 }
