@@ -24,6 +24,7 @@ readonly REMASTER_SCRIPTS_DIR="${CODE_DIR}/remaster_scripts"
 readonly FORENSICATE_SCRIPT_NAME="call_auto_forensicate.sh"
 readonly FORENSICATE_SCRIPT_PATH="${REMASTER_SCRIPTS_DIR}/${FORENSICATE_SCRIPT_NAME}"
 readonly AUTO_FORENSIC_SCRIPT_NAME="auto_acquire.py"
+readonly CONFIG_FILENAME="config.sh"
 
 # Make sure the provided service account credentials file exists and is valid
 function assert_sa_json_path {
@@ -34,6 +35,15 @@ function assert_sa_json_path {
   if ! grep -q '"type": "service_account",' "${sa_json_path}" ;  then
     die "${sa_json_path} does not look like a valid service account credentials JSON file"
   fi
+}
+
+# Prints a message
+#
+# Arguments:
+#  Message to display, as string.
+function msg {
+  local input=$1
+  printf '* %s\n' "${input/${CURRENT_DIR}/.}" >&2
 }
 
 # Prints an error and terminates execution.
@@ -65,5 +75,18 @@ function check_packages {
 function assert_option_argument {
   if [[ -z $1 ]]; then
     die "$2 requires a non-empty option argument"
+  fi
+}
+
+# Verifies that a GCS URL is valid
+#
+# Arguments:
+#  Option url, as string.
+function assert_gcs_url {
+  readonly local url="${1}"
+  # Example of a valid URL : gs://bucket/path/to/file
+  # See https://cloud.google.com/storage/docs/naming
+  if [[ ! "${url}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
+    die "${url} is not a valid GCS URL"
   fi
 }

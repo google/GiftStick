@@ -55,8 +55,6 @@ POST_UBUNTU_ROOT_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-root.sh"
 POST_UBUNTU_USER_SCRIPT="${REMASTER_SCRIPTS_DIR}/post-install-user.sh"
 readonly TMP_MNT_POINT=$(mktemp -d)
 
-readonly CONFIG_FILENAME="config.sh"
-
 # Global variables
 # TODO: let the user change these
 readonly REMASTERED_SUFFIX="remastered"
@@ -76,15 +74,6 @@ function check_available_space {
   if [[ $available_gb -lt $required_gb ]]; then
     die "Not enough space left in ${workdir} (${available_gb} < 2 * ${DEFAULT_IMAGE_SIZE}GB"
   fi
-}
-
-# Prints a message
-#
-# Arguments:
-#  Message to display, as string.
-function msg {
-  local input=$1
-  printf '* %s\n' "${input/${CURRENT_DIR}/.}" >&2
 }
 
 # Displays the banner
@@ -113,7 +102,7 @@ EOBANNER
 function show_usage {
   echo "
 Usage: remaster.sh [OPTIONS]
-Generates a new GiftStick image. Complete usage doc at go/giftstick
+Generates a new GiftStick image.
 
 Example use:
 
@@ -348,12 +337,7 @@ function parse_arguments {
 
   readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/${FLAGS_EXTRA_GCS_PATH}"
 
-  # This checks agains a valid GCS object URL, such as
-  # gs://bucket/path/to/file
-  # See https://cloud.google.com/storage/docs/naming
-  if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
-    die "${GCS_REMOTE_URL} is not a valid GCS URL"
-  fi
+  assert_gcs_url "${GCS_REMOTE_URL}"
 
   if [[ -z "${FLAGS_SA_JSON_PATH}" ]] ; then
     if [[ "${FLAGS_SKIP_GCS}" == "true" ]]; then
