@@ -20,8 +20,9 @@ readonly CODE_DIR=$(realpath "$(dirname "$0")")
 . "${CODE_DIR}/commons.sh"
 
 
-FLAGS_SOURCE_IMAGE=""
+FLAGS_NEW_GCS_REMOTE_URL=""
 FLAGS_NEW_SA_CREDENTIALS_FILE=""
+FLAGS_SOURCE_IMAGE=""
 
 # Hardcoded values
 readonly PARTITION_MOUNTPOINT="${REMASTER_WORKDIR_PATH}/root"
@@ -139,13 +140,14 @@ function parse_arguments {
 function update_sa_credentials {
   pushd "${GIFT_HOMEDIR}" > /dev/null
   sudo cp "${NEW_SA_CREDENTIALS_PATH}" "${NEW_SA_CREDENTIALS_FILENAME}"
-  sed -i "s/GCS_SA_KEY_FILE=.*\$/GCS_SA_KEY_FILE=\"${NEW_SA_CREDENTIALS_FILENAME}\"/" "${CONFIG_FILENAME}"
+  sudo sed -i "s/GCS_SA_KEY_FILE=.*\$/GCS_SA_KEY_FILE=\"${NEW_SA_CREDENTIALS_FILENAME}\"/" "${CONFIG_FILENAME}"
   popd > /dev/null
 }
 
 function update_gcs_remote_url {
   pushd "${GIFT_HOMEDIR}" > /dev/null
-  sed -i "s/GCS_REMOTE_URL=.*\$/GCS_REMOTE_URL=\"${GCS_REMOTE_URL}\"/" "${CONFIG_FILENAME}"
+  # Need to escape all / in FLAGS_NEW_GCS_REMOTE_URL
+  sudo sed -i "s/GCS_REMOTE_URL=.*\$/GCS_REMOTE_URL=\"${FLAGS_NEW_GCS_REMOTE_URL//\//\\\/}\"/" "${CONFIG_FILENAME}"
   popd > /dev/null
 }
 
