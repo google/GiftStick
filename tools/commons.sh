@@ -88,7 +88,7 @@ function assert_gcs_url {
   gcs_url="${1}"
   # Example of a valid URL : gs://bucket/path/to/file
   # See https://cloud.google.com/storage/docs/naming
-  if [[ ! "${url}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
-    die "${url} is not a valid GCS URL"
+  if [[ ! "${gcs_url}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
+    die "${gcs_url} is not a valid GCS URL"
   fi
 }
