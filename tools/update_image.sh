@@ -19,7 +19,6 @@ readonly CODE_DIR=$(realpath "$(dirname "$0")")
 # shellcheck source=commons.sh
 . "${CODE_DIR}/commons.sh"
 
-
 FLAGS_NEW_GCS_REMOTE_URL=""
 FLAGS_NEW_SA_CREDENTIALS_FILE=""
 FLAGS_SOURCE_IMAGE=""
@@ -100,7 +99,6 @@ function parse_arguments {
         die '--gcs_remote_url requires a non-empty option argument.'
         ;;
 
-
       --sa_json_file)
         assert_option_argument "$2" "--sa_json_file"
         FLAGS_NEW_SA_CREDENTIALS_FILE="$2"
@@ -134,7 +132,6 @@ function parse_arguments {
   if [[ ! -z "${FLAGS_NEW_GCS_REMOTE_URL}" ]] ; then
     assert_gcs_url "${FLAGS_NEW_GCS_REMOTE_URL}"
   fi
-
 }
 
 function update_sa_credentials {
@@ -203,6 +200,5 @@ function trap_cleanup {
 trap "{
   trap_cleanup
 }" INT EXIT
-
 
 main "$@"
