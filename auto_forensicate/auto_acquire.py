@@ -72,9 +72,9 @@ class BaBar(IncrementalBar):
       current_bytes(int): the number of bytes uploaded.
     """
     now = time.time()
-    dt = now - self._ts  # pylint: access-member-before-definition
+    dt = now - self._ts  # pylint: disable=access-member-before-definition
     self.update_avg((current_bytes - self.index), dt)  # pylint: disable=access-member-before-definition
-    self._ts = now
+    self._ts = now  # pylint: disable=attribute-defined-outside-init
     self.index = current_bytes  # pylint: disable=attribute-defined-outside-init
 
     self.update()
