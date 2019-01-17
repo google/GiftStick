@@ -76,6 +76,7 @@ class BaBar(IncrementalBar):
     self.update_avg((current_bytes - self.index), dt)
     self._ts = now
     self.index = current_bytes
+    self.update()
 
   @property
   def speed(self):
