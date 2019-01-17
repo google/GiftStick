@@ -884,8 +884,10 @@ function trap_cleanup {
     cd "${CURRENT_DIR}"
     mountpoint -q "${TMP_MNT_POINT}" && sudo -n umount "${TMP_MNT_POINT}"
     if [[ -f "${FLAGS_IMAGE_FILENAME}" ]]; then
-      loop_device=$(losetup -O NAME --noheadings -j "${FLAGS_IMAGE_FILENAME}")
-      sudo losetup -d "${loop_device}"
+      loop_devices=$(losetup -O NAME --noheadings -j "${FLAGS_IMAGE_FILENAME}")
+      for loop_device in $loop_devices; do
+        sudo losetup -d "${loop_device}"
+      done
     fi
     if [[ -d "${TMP_MNT_POINT}" ]] ; then
       rmdir "${TMP_MNT_POINT}"
