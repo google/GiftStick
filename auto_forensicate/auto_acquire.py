@@ -21,6 +21,7 @@ import argparse
 import json
 import logging
 import sys
+import time
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import disk
@@ -29,11 +30,11 @@ from auto_forensicate.recipes import sysinfo
 from auto_forensicate.stamp import manager
 
 import gcs_oauth2_boto_plugin  # pylint: disable=unused-import
-import progressbar
 from google.cloud import logging as google_logging
 from google.cloud.logging.handlers import CloudLoggingHandler
 from google.cloud.logging.handlers import setup_logging as setup_gcp_logging
 from google.oauth2 import service_account
+from progress.bar import IncrementalBar
 
 VALID_RECIPES = {
     'disk': disk.DiskRecipe,
@@ -42,12 +43,47 @@ VALID_RECIPES = {
 }
 
 
-class BaBar(progressbar.ProgressBar):
-  """A ProgressBar object with an extra update method.
+class BaBar(IncrementalBar):
+  """An IncrementalBar object with an extra update method.
 
     This is required because the boto library's callback expects a function that
-    takes two arguments, and ProgressBar only one.
+    takes two arguments (with the cummulated value), while progress.Bar
+    expects an increment.
   """
+
+  def update(self, current_bytes):
+    """Updates the current state of the progress Bar
+
+    Args:
+      current_bytes(int): the number of bytes uploaded.
+    """
+    now = time.time()
+    dt = now - self._ts
+    self.update_avg((current_bytes - self.index), dt)
+    self._ts = now
+    self.index = current_bytes
+
+  @property
+  def speed(self):
+    """Returns a human readable version of the current upload speed."""
+    return self.humanize(1/self.avg)
+
+  def _HumanReadableSpeed(self, speed):
+    """Returns a number of bytes per second into a human readble string.
+
+    Args:
+      speed: a number of bytes per second.
+    """
+    if speed == 1:
+      return '1 Byte'
+    if speed < 1000:
+      return '{0:f} Bytes'.format(speed)
+    suffixes = ['kB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s', 'EB/s', 'ZB/s', 'YB/s']
+    for i,s in enumerate(suffixes):
+      unit = 1000 ** (i+2)
+      if speed < unit:
+        return '{0:f} {1}'.format(1000 * speed / unit, s)
+    return '{0:f} {1}'.format(1000 * speed / unit, s)
 
   def update_with_total(self, current_bytes, total_bytes):  # pylint: disable=unused-argument
     """Called by boto library to update the ProgressBar.
@@ -62,7 +98,6 @@ class BaBar(progressbar.ProgressBar):
       # This is raised when current_bytes > self.maxval, which happens when we
       # didn't have the correct size of an Artifact at its initialization,
       # ie: all ProcessOutputArtifacts
-      self.maxval = current_bytes  # pylint: disable=attribute-defined-outside-init
       self.update(current_bytes)
 
 
@@ -254,10 +289,10 @@ class AutoForensicate(object):
       self._logger.info(message)
     if max_size > 0:
       pb = BaBar(
-          maxval=max_size, widgets=[
-              name, progressbar.Percentage(), ' ',
-              progressbar.Bar('=', '[', ']'), ' ', progressbar.ETA(),
-              progressbar.FileTransferSpeed()])
+          name,
+          max=max_size,
+          message=name+' %(percent).1f%% '
+      )
     else:
       pb = BaBar(maxval=0, widgets=[name, progressbar.AnimatedMarker()])
     return pb
