@@ -72,10 +72,11 @@ class BaBar(IncrementalBar):
       current_bytes(int): the number of bytes uploaded.
     """
     now = time.time()
-    dt = now - self._ts
-    self.update_avg((current_bytes - self.index), dt)
+    dt = now - self._ts  # pylint: access-member-before-definition
+    self.update_avg((current_bytes - self.index), dt)  # pylint: disable=access-member-before-definition
     self._ts = now
-    self.index = current_bytes
+    self.index = current_bytes  # pylint: disable=attribute-defined-outside-init
+
     self.update()
 
   @property
@@ -83,8 +84,7 @@ class BaBar(IncrementalBar):
     """Returns a human readable version of the current upload speed."""
     if self.avg == 0:
       return 'NaN'
-    else:
-      return self._HumanReadableSpeed(1/self.avg)
+    return self._HumanReadableSpeed(1/self.avg)
 
   def _HumanReadableSpeed(self, speed):
     """Returns a number of bytes per second into a human readble string.
@@ -97,7 +97,8 @@ class BaBar(IncrementalBar):
     if speed < 1000:
       return '{0:f} Bytes'.format(speed)
     suffixes = ['kB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s', 'EB/s', 'ZB/s', 'YB/s']
-    for i,s in enumerate(suffixes):
+    s = 'kB/s'
+    for i, s in enumerate(suffixes):
       unit = 1000 ** (i+2)
       if speed < unit:
         return '{0:f} {1}'.format(1000 * speed / unit, s)
