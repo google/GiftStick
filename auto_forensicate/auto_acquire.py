@@ -35,12 +35,26 @@ from google.cloud.logging.handlers import CloudLoggingHandler
 from google.cloud.logging.handlers import setup_logging as setup_gcp_logging
 from google.oauth2 import service_account
 from progress.bar import IncrementalBar
+from progress.spinner import Spinner
 
 VALID_RECIPES = {
     'disk': disk.DiskRecipe,
     'firmware': firmware.ChipsecRecipe,
     'sysinfo': sysinfo.SysinfoRecipe
 }
+
+
+class SpinnerBar(Spinner):
+  """An Spinner object with an extra update method."""
+
+  def update_with_total(self, current_bytes, total_bytes):  # pylint: disable=unused-argument
+    """Called by boto library to update the ProgressBar.
+
+    Args:
+      current_bytes(int): the number of bytes uploaded.
+      total_bytes(int): the total number of bytes to upload.
+    """
+    self.next()
 
 
 class BaBar(IncrementalBar):
@@ -51,7 +65,7 @@ class BaBar(IncrementalBar):
     expects an increment.
   """
 
-  def update(self, current_bytes):
+  def _Update(self, current_bytes):
     """Updates the current state of the progress Bar
 
     Args:
@@ -66,7 +80,10 @@ class BaBar(IncrementalBar):
   @property
   def speed(self):
     """Returns a human readable version of the current upload speed."""
-    return self.humanize(1/self.avg)
+    if self.avg == 0:
+      return 'NaN'
+    else:
+      return self._HumanReadableSpeed(1/self.avg)
 
   def _HumanReadableSpeed(self, speed):
     """Returns a number of bytes per second into a human readble string.
@@ -92,13 +109,7 @@ class BaBar(IncrementalBar):
       current_bytes(int): the number of bytes uploaded.
       total_bytes(int): the total number of bytes to upload.
     """
-    try:
-      self.update(current_bytes)
-    except ValueError:
-      # This is raised when current_bytes > self.maxval, which happens when we
-      # didn't have the correct size of an Artifact at its initialization,
-      # ie: all ProcessOutputArtifacts
-      self.update(current_bytes)
+    self._Update(current_bytes)
 
 
 class AutoForensicate(object):
@@ -289,12 +300,12 @@ class AutoForensicate(object):
       self._logger.info(message)
     if max_size > 0:
       pb = BaBar(
-          name,
           max=max_size,
-          message=name+' %(percent).1f%% '
+          message=name+' %(percent).1f%% ',
+          suffix=' %(eta_td)s %(speed)s'
       )
     else:
-      pb = BaBar(maxval=0, widgets=[name, progressbar.AnimatedMarker()])
+      pb = SpinnerBar(name+' ')
     return pb
 
   def Do(self, recipe):
@@ -341,7 +352,6 @@ class AutoForensicate(object):
           artifact.size, artifact.name,
           'Uploading \'{0:s}\' ({1:s}, Task {2:d}/{3:d})'.format(
               artifact.name, artifact.readable_size, current_task, nb_tasks))
-      progress_bar.start()
       self._UploadArtifact(
           artifact, update_callback=progress_bar.update_with_total)
       progress_bar.finish()
