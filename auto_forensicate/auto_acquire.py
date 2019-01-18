@@ -47,7 +47,7 @@ VALID_RECIPES = {
 class SpinnerBar(Spinner):
   """An Spinner object with an extra update method."""
 
-  def update_with_total(self, current_bytes, total_bytes):  # pylint: disable=unused-argument
+  def update_with_total(self, _unused_current_bytes, _unused_total_bytes):
     """Called by boto library to update the ProgressBar.
 
     Args:
@@ -61,7 +61,7 @@ class BaBar(IncrementalBar):
   """An IncrementalBar object with an extra update method.
 
     This is required because the boto library's callback expects a function that
-    takes two arguments (with the cummulated value), while progress.Bar
+    takes two arguments (with the cumulated value), while progress.Bar
     expects an increment.
   """
 
@@ -71,11 +71,13 @@ class BaBar(IncrementalBar):
     Args:
       current_bytes(int): the number of bytes uploaded.
     """
+    # pylint: disable=access-member-before-definition
+    # pylint: disable=attribute-defined-outside-init
     now = time.time()
-    dt = now - self._ts  # pylint: disable=access-member-before-definition
-    self.update_avg((current_bytes - self.index), dt)  # pylint: disable=access-member-before-definition
-    self._ts = now  # pylint: disable=attribute-defined-outside-init
-    self.index = current_bytes  # pylint: disable=attribute-defined-outside-init
+    dt = now - self._ts
+    self.update_avg((current_bytes - self.index), dt)
+    self._ts = now
+    self.index = current_bytes
 
     self.update()
 
@@ -93,18 +95,17 @@ class BaBar(IncrementalBar):
       speed: a number of bytes per second.
     """
     if speed == 1:
-      return '1 Byte'
+      return '1 B/s'
     if speed < 1000:
-      return '{0:f} Bytes'.format(speed)
-    suffixes = ['kB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s', 'EB/s', 'ZB/s', 'YB/s']
-    s = 'kB/s'
-    for i, s in enumerate(suffixes):
+      return '{0:.1f} B/s'.format(speed)
+    suffixes = ['KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s']
+    for i, current_unit in enumerate(suffixes):
       unit = 1000 ** (i+2)
       if speed < unit:
-        return '{0:f} {1}'.format(1000 * speed / unit, s)
-    return '{0:f} {1}'.format(1000 * speed / unit, s)
+        return '{0:.1f} {1}'.format(1000 * speed / unit, current_unit)
+    return '{0:.1f} {1}'.format(1000 * speed / unit, 'PB/s')
 
-  def update_with_total(self, current_bytes, total_bytes):  # pylint: disable=unused-argument
+  def update_with_total(self, current_bytes, _unused_total_bytes):
     """Called by boto library to update the ProgressBar.
 
     Args:
@@ -303,11 +304,13 @@ class AutoForensicate(object):
     if max_size > 0:
       pb = BaBar(
           max=max_size,
-          message=name+' %(percent).1f%% ',
+          # Cf https://github.com/verigak/progress/blob/master/README.rst
+          # for the message and suffix templates.
+          message=name + ' %(percent).1f%% ',
           suffix=' %(eta_td)s %(speed)s'
       )
     else:
-      pb = SpinnerBar(name+' ')
+      pb = SpinnerBar(name + ' ')
     return pb
 
   def Do(self, recipe):
