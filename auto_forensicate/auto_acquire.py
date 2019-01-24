@@ -45,7 +45,7 @@ VALID_RECIPES = {
 
 
 class SpinnerBar(Spinner):
-  """An Spinner object with an extra update method."""
+  """A Spinner object with an extra update method."""
 
   def update_with_total(self, _unused_current_bytes, _unused_total_bytes):
     """Called by boto library to update the ProgressBar.
