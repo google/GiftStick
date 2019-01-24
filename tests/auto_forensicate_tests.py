@@ -90,7 +90,7 @@ class BarTest(unittest.TestCase):
     ]
     for index, value in enumerate(expected):
       self.assertEqual(
-        progressbar._HumanReadableSpeed(1.23 * (10**index)), value)
+        progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
 
 
 class AutoForensicateTest(unittest.TestCase):
