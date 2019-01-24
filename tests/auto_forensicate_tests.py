@@ -71,6 +71,28 @@ class FileCopyUploader(object):
       update_callback(len(data), len(data))
 
 
+class BarTest(unittest.TestCase):
+  """Tests for the progress bar classes."""
+
+  def testHumanReadableSpeed(self):
+    """Tests _HumanReadableSpeed."""
+    progressbar = auto_acquire.BaBar()
+
+    self.assertEqual(progressbar._HumanReadableSpeed(0.0), '0.0 B/s')
+    expected = [
+        '1.2 B/s', '12.3 B/s', '123.0 B/s',
+        '1.2 KB/s', '12.3 KB/s', '123.0 KB/s',
+        '1.2 MB/s', '12.3 MB/s', '123.0 MB/s',
+        '1.2 GB/s', '12.3 GB/s', '123.0 GB/s',
+        '1.2 TB/s', '12.3 TB/s', '123.0 TB/s',
+        '1.2 PB/s', '12.3 PB/s', '123.0 PB/s',
+        '1230.0 PB/s', '12300.0 PB/s', '123000.0 PB/s',
+    ]
+    for index, value in enumerate(expected):
+      self.assertEqual(
+        progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
+
+
 class AutoForensicateTest(unittest.TestCase):
   """Tests for the AutoForensicate class.
 
