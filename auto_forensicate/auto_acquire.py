@@ -86,7 +86,7 @@ class BaBar(IncrementalBar):
     """Returns a human readable version of the current upload speed."""
     if self.avg == 0:
       return 'NaN'
-    return self._HumanReadableSpeed(1/self.avg)
+    return self._HumanReadableSpeed(1 / self.avg)
 
   def _HumanReadableSpeed(self, speed):
     """Returns a number of bytes per second into a human readble string.
