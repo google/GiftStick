@@ -14,11 +14,12 @@
 # limitations under the License.
 """Run all tests inside the tests folder."""
 import unittest
+import os
 import sys
 
 
 loader = unittest.TestLoader()
-start_dir = 'tests'
+start_dir = os.path.join(os.path.dirname(__file__), 'tests')
 suite = loader.discover(start_dir, pattern='*_tests.py')
 
 runner = unittest.TextTestRunner()

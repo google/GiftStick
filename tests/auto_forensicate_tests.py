@@ -109,43 +109,6 @@ class AutoForensicateTest(unittest.TestCase):
   def FakeMakeProgressBar(self, max_size, name, message=None):  # pylint: disable=unused-argument
     return mock.create_autospec(auto_acquire.BaBar, spec_set=True)
 
-  def testParseArgsHelp(self):
-    """Test for help message option."""
-    recipes = {
-        'test1': None,
-        'test2': None
-    }
-    self.maxDiff = None
-    af = auto_acquire.AutoForensicate(recipes=recipes)
-    parser = af._CreateParser()
-    expected_help = (
-        'usage: run_tests.py [-h] --acquire {all,test1,test2} [--gs_keyfile '
-        'GS_KEYFILE]\n'
-        '                    [--logging {stackdriver,stdout}] [--select_disks]'
-        '\n                    [--disk DISK]'
-        '\n'
-        '                    destination\n\n'
-        'Autopush forensics evidence to Cloud Storage\n\n'
-        'positional arguments:\n'
-        '  destination           Sets the destination for uploads. For example'
-        '\n                        gs://bucket_name/path will upload to GCS in'
-        ' bucket\n                        <bucket_name> in the folder </path/>'
-        '\n\n'
-        'optional arguments:\n'
-        '  -h, --help            show this help message and exit\n'
-        '  --acquire {all,test1,test2}\n'
-        '                        Evidence to acquire\n'
-        '  --gs_keyfile GS_KEYFILE\n'
-        '                        Path to the service account private key JSON '
-        'file for\n                        Google Cloud\n'
-        '  --logging {stackdriver,stdout}\n'
-        '                        Selects logging methods.\n'
-        '  --select_disks        Asks the user to select which disk to acquire'
-        '\n  --disk DISK           Specify a disk to acquire (eg: sda)'
-        '\n'
-    )
-    self.assertEqual(parser.format_help(), expected_help)
-
   def testParseDestination(self):
     recipes = {
         'test1': None,
