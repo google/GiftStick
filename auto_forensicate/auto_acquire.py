@@ -100,7 +100,7 @@ class BaBar(IncrementalBar):
       return '{0:.1f} B/s'.format(speed)
     suffixes = ['KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s']
     for i, current_unit in enumerate(suffixes):
-      unit = 1000 ** (i+2)
+      unit = 1000 ** (i + 2)
       if speed < unit:
         return '{0:.1f} {1}'.format(1000 * speed / unit, current_unit)
     return '{0:.1f} {1}'.format(1000 * speed / unit, 'PB/s')
