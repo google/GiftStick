@@ -39,7 +39,7 @@ setup(
         'http://brianramos.com/software/PyZenity/PyZenity-0.1.8.tar.gz'
         '#egg=PyZenity-0.1.8'],
     install_requires=[
-        'progressbar',
+        'progress',
         'boto',
         'gcs_oauth2_boto_plugin',
         'google-cloud-storage',
