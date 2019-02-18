@@ -16,8 +16,8 @@
 
 from __future__ import unicode_literals
 
+from auto_forensicate import errors
 from auto_forensicate.recipes import base
-import errors
 
 
 class ChipsecRecipe(base.BaseRecipe):

@@ -125,7 +125,7 @@ class DiskArtifact(base.BaseArtifact):
     return error
 
   def GetDescription(self):
-     return 'Name: {0} (Size: {1:d}'.format(self.name, self.size)
+     return 'Name: {0} (Size: {1:d})'.format(self.name, self.size)
 
   def ProbablyADisk(self):
      return True
@@ -137,6 +137,8 @@ class MacDiskArtifact(DiskArtifact):
 
   def ProbablyADisk(self):
     m_disk = macdisk.Disk(self.name)
+    if m_disk.busprotocol=='USB':
+      return False
     return m_disk.internal and not (m_disk._attributes['VirtualOrPhysical']=='Virtual')
 
 class LinuxDiskArtifact(DiskArtifact):
