@@ -21,7 +21,7 @@ from auto_forensicate.recipes import base
 from auto_forensicate.recipes import sysinfo
 
 
-class SysinfoRecipeTest(unittest.TestCase):
+class LinuxSysinfoRecipeTest(unittest.TestCase):
   """Tests for the SysinfoRecipe class."""
 
   _DMIDECODE_OUTPUT_FAIL_STRING = (
@@ -45,6 +45,7 @@ class SysinfoRecipeTest(unittest.TestCase):
 
   def testGetArtifactsFail(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('failsysinfo')
+    sysinfo_recipe._platform = 'linux'
     sysinfo_recipe._DMI_DECODE_CMD = [
         'echo', '-n', self._DMIDECODE_OUTPUT_FAIL_STRING]
     artifacts = sysinfo_recipe.GetArtifacts()
@@ -59,6 +60,7 @@ class SysinfoRecipeTest(unittest.TestCase):
 
   def testGetArtifacts(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('sysinfo')
+    sysinfo_recipe._platform = 'linux'
     sysinfo_recipe._DMI_DECODE_CMD = [
         'echo', '-n', self._DMIDECODE_OUTPUT_STRING]
     artifacts = sysinfo_recipe.GetArtifacts()
@@ -70,3 +72,73 @@ class SysinfoRecipeTest(unittest.TestCase):
     self.assertEqual(artifact.remote_path, 'system_info.txt')
     artifact_content = artifact.OpenStream().read()
     self.assertEqual(artifact_content, self._DMIDECODE_OUTPUT_STRING)
+
+class MacSysinfoRecipeTest(unittest.TestCase):
+  """Tests for the SysinfoRecipe class."""
+
+  _SYSTEM_PROFILER_FAIL_STRING = (
+      b'/dev/mem: Permission denied\n Error running dmidecode')
+
+  _SYSTEM_PROFILER_OUTPUT_STRING = b"""\
+Hardware:
+
+    Hardware Overview:
+
+      Model Name: MacBook Pro
+      Model Identifier: MacBookPro14,3
+      Processor Name: Intel Core i7
+      Processor Speed: 2.8 GHz
+      Number of Processors: 1
+      Total Number of Cores: 4
+      L2 Cache (per Core): 256 KB
+      L3 Cache: 6 MB
+      Memory: 16 GB
+      Boot ROM Version: 185.0.0.0.0
+      SMC Version (system): 2.45f0
+      Serial Number (system): CAAAAAAAAAAA
+      Hardware UUID: 12345678-E004-5158-AAA-BBBBB52F3949
+
+Software:
+
+    System Software Overview:
+
+      System Version: macOS 10.14.3 (18D42)
+      Kernel Version: Darwin 18.2.0
+      Boot Volume: Macintosh HD
+      Boot Mode: Normal
+      Computer Name: macbookpro2
+      User Name: Someone Else (someoneelse)
+      Secure Virtual Memory: Enabled
+      System Integrity Protection: Enabled
+      Time since boot: 4 days 3:38
+    """
+
+  def testGetArtifactsFail(self):
+    sysinfo_recipe = sysinfo.SysinfoRecipe('failsysinfo')
+    sysinfo_recipe._platform = 'darwin'
+    sysinfo_recipe._SYSTEM_PROFILER_CMD = [
+        'echo', '-n', self._SYSTEM_PROFILER_FAIL_STRING]
+    artifacts = sysinfo_recipe.GetArtifacts()
+    self.assertEqual(len(artifacts), 1)
+
+    artifact = artifacts[0]
+    self.assertIsInstance(artifact, base.ProcessOutputArtifact)
+    self.assertEqual(artifact.name, 'system_info.txt')
+    self.assertEqual(artifact.remote_path, 'system_info.txt')
+    artifact_content = artifact.OpenStream().read()
+    self.assertEqual(artifact_content, self._SYSTEM_PROFILER_FAIL_STRING)
+
+  def testGetArtifacts(self):
+    sysinfo_recipe = sysinfo.SysinfoRecipe('sysinfo')
+    sysinfo_recipe._platform = 'darwin'
+    sysinfo_recipe._SYSTEM_PROFILER_CMD = [
+        'echo', '-n', self._SYSTEM_PROFILER_OUTPUT_STRING]
+    artifacts = sysinfo_recipe.GetArtifacts()
+    self.assertEqual(len(artifacts), 1)
+
+    artifact = artifacts[0]
+    self.assertIsInstance(artifact, base.ProcessOutputArtifact)
+    self.assertEqual(artifact.name, 'system_info.txt')
+    self.assertEqual(artifact.remote_path, 'system_info.txt')
+    artifact_content = artifact.OpenStream().read()
+    self.assertEqual(artifact_content, self._SYSTEM_PROFILER_OUTPUT_STRING)

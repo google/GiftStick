@@ -17,6 +17,7 @@
 from __future__ import unicode_literals
 
 from auto_forensicate.recipes import base
+import errors
 
 
 class ChipsecRecipe(base.BaseRecipe):
@@ -33,6 +34,10 @@ class ChipsecRecipe(base.BaseRecipe):
     Returns:
       list (BaseArtifact): the artifacts for the system's firmware.
     """
+    if self._platform=='darwin':
+      self._logger.warn('Firmware acquisition only works on Linux, skipping.')
+      return []
+
     firmware_artifact = base.ProcessOutputArtifact(
         self._CHIPSEC_CMD, 'Firmware/rom.bin')
     return [firmware_artifact]

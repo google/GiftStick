@@ -22,6 +22,7 @@ from io import BytesIO
 import six
 import shutil
 import subprocess
+import sys
 import tempfile
 
 
@@ -243,6 +244,7 @@ class BaseRecipe(object):
     Raises:
       ValueError: if the name parameter is None.
     """
+    self._platform = sys.platform
     self._workdir = None
     if name:
       self.name = name

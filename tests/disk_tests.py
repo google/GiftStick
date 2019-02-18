@@ -52,22 +52,25 @@ class DiskArtifactTests(unittest.TestCase):
     d = disk.DiskArtifact(path, 100)
     self.assertEqual(d._GenerateDDCommand(), dd_command)
 
+class LinuxDiskArtifactTests(unittest.TestCase):
+  """Tests for the LinuxDiskArtifact class."""
+
   def testIsFloppy(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 12345)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 12345)
     disk_object._udevadm_metadata = {'MAJOR': '2'}
     self.assertTrue(disk_object._IsFloppy())
     disk_object._udevadm_metadata = {'MAJOR': '12'}
     self.assertFalse(disk_object._IsFloppy())
 
   def testIsUsb(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 12345)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 12345)
     disk_object._udevadm_metadata = {'ID_BUS': 'usb'}
     self.assertTrue(disk_object._IsUsb())
     disk_object._udevadm_metadata = {'ID_BUS': 'ata'}
     self.assertFalse(disk_object._IsUsb())
 
   def testProbablyADisk(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 123456789)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 123456789)
     disk_object._udevadm_metadata = {'ID_BUS': 'ata'}
     self.assertTrue(disk_object.ProbablyADisk())
 
@@ -88,7 +91,7 @@ class DiskArtifactTests(unittest.TestCase):
     self.assertTrue(disk_object.ProbablyADisk())
 
   def testGetDescription(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 123456789)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 123456789)
     disk_object._udevadm_metadata = {
         'ID_BUS': 'ata',
         'ID_MODEL': 'TestDisk'
@@ -111,7 +114,7 @@ class DiskArtifactTests(unittest.TestCase):
 
 
 class DiskRecipeTests(unittest.TestCase):
-  """Tests for the DiskRecipe class."""
+  """Tests for the DiskRecipe (on linux) class."""
 
   def setUp(self):
     self._lsblk_dict = {
@@ -152,11 +155,13 @@ class DiskRecipeTests(unittest.TestCase):
 
   def testListDisksZero(self):
     recipe = disk.DiskRecipe('Disk')
+    recipe._platform = 'linux'
     disk.DiskRecipe._GetLsblkDict = self._GetLsblkDictZeroDisks
     self.assertEqual(0, len(recipe._ListDisks()))
 
   def testListAllDisks(self):
     recipe = disk.DiskRecipe('Disk')
+    recipe._platform = 'linux'
     disk.DiskRecipe._GetLsblkDict = self._GetLsblkDictThreeDisks
     disk_list = recipe._ListDisks(all_devices=True)
     self.assertEqual(len(disk_list), 3)
@@ -167,6 +172,7 @@ class DiskRecipeTests(unittest.TestCase):
 
   def testListDisksWithNames(self):
     recipe = disk.DiskRecipe('Disk')
+    recipe._platform = 'linux'
     disk.DiskRecipe._GetLsblkDict = self._GetLsblkDictThreeDisks
     disk_list = recipe._ListDisks(all_devices=True, names=['sdz_not_present'])
     self.assertEqual(len(disk_list), 0)
@@ -182,13 +188,14 @@ class DiskRecipeTests(unittest.TestCase):
     ) as patched_listdisk:
       patched_listdisk.return_value = []
       recipe = disk.DiskRecipe('Disk')
+      recipe._platform = 'linux'
       with self.assertRaises(errors.RecipeException):
         recipe.GetArtifacts()
 
   def testGetArtifacts(self):
     disk_name = 'sdx'
     disk_size = 20 * 1024 * 1024 * 1024  # 20GB
-    disk_object = disk.DiskArtifact('/dev/{0:s}'.format(disk_name), disk_size)
+    disk_object = disk.LinuxDiskArtifact('/dev/{0:s}'.format(disk_name), disk_size)
     disk_object._udevadm_metadata = {'udevadm_text_output': 'fake disk info'}
     with mock.patch(
         'auto_forensicate.recipes.disk.DiskRecipe._ListDisks'
@@ -199,15 +206,16 @@ class DiskRecipeTests(unittest.TestCase):
       ) as patched_lsblk:
         patched_lsblk.return_value = self._lsblk_dict
         recipe = disk.DiskRecipe('Disk')
+        recipe._platform = 'linux'
         artifacts = recipe.GetArtifacts()
         self.assertEqual(len(artifacts), 4)
 
-        udevadm_artifact = artifacts[0]
+        udevadm_artifact = artifacts[1]
         self.assertIsInstance(udevadm_artifact, base.StringArtifact)
         self.assertEqual(udevadm_artifact._GetStream().read(), b'fake disk info')
         self.assertEqual(udevadm_artifact.remote_path, 'Disks/sdx.udevadm.txt')
 
-        lsblk_artifact = artifacts[1]
+        lsblk_artifact = artifacts[0]
         self.assertIsInstance(lsblk_artifact, base.StringArtifact)
         self.assertEqual(
             lsblk_artifact._GetStream().read(), json.dumps(self._lsblk_dict).encode('utf-8'))
