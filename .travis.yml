@@ -5,6 +5,8 @@ python:
 install:
     - pip install -r requirements.txt
     - pip install coverage
+    - git clone https://github.com/google/macops
+    - cd macops/gmacpyutil ; python setup.py install
 script:
     - export BOTO_CONFIG=/dev/null
     - coverage run run_tests.py
