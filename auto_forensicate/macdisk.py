@@ -17,135 +17,107 @@
 import subprocess
 import biplist
 
+
 class MacDiskError(Exception):
   """Module specific exception class."""
   pass
 
-def RunProcess(cmd):
-  """Executes cmd using suprocess.
-
-  Args:
-    cmd: An array of strings as the command to run
-  Returns:
-    Tuple: two strings and an integer: (stdout, stderr, returncode);
-    stdout/stderr may also be None.
-  """
-  try:
-    task = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-  except OSError as e:
-    raise OSError('Could not execute: %s' % e.strerror)
-  (stdout, stderr) = task.communicate()
-  return (stdout, stderr, task.returncode)
 
 def _DictFromSubprocess(command):
   """returns a dict based upon a subprocess call with a -plist argument.
 
   Args:
-    command: the command to be executed as a list
+    command: the command to be executed as a list.
   Returns:
-    dict: dictionary from command output
+    dict: dictionary from command output.
+  Raises:
+    MacDiskError: if the command failed to run.
   """
 
-  task = {}
+  try:
+    task = subprocess.Popen(
+        command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+  except OSError as e:
+    raise MacDiskError('Could not execute: {0}'.format(e.strerror))
+  (stdout, stderr) = task.communicate()
 
-  (task['stdout'], task['stderr'], task['returncode']) = RunProcess(command)
-
-  if task['returncode'] is not 0:
+  if task.returncode is not 0:
     raise MacDiskError(
-        'Error running command: {0}, stderr: {1}' .format(
-            command, task['stderr']))
+        'Error running command: {0}, stderr: {1}' .format(command, stderr))
   else:
     try:
-      return biplist.readPlistFromString(task['stdout'])
+      return biplist.readPlistFromString(stdout)
     except (biplist.InvalidPlistException, biplist.NotBinaryPlistException):
       raise MacDiskError(
-          'Error creating plist from output: {0}'.format(task['stdout']))
+          'Error creating plist from output: {0}'.format(stdout))
+
 
 def _DictFromDiskutilInfo(deviceid):
   """calls diskutil info for a specific device id.
 
   Args:
-    deviceid: a given device id for a disk like object
+    deviceid(string): a given device id for a disk like object.
   Returns:
-    info: dictionary from resulting plist output
+    dict: resulting plist output.
   Raises:
-    MacDiskError: deviceid is invalid
+    MacDiskError: if deviceid is invalid.
   """
-  # Do we want to do this? can trigger optical drive noises...
-  if deviceid not in PartitionDeviceIds():
-    raise MacDiskError("%s is not a valid disk id" % deviceid)
-  else:
-    command = ["/usr/sbin/diskutil", "info", "-plist", deviceid]
-    return _DictFromSubprocess(command)
+  command = ['/usr/sbin/diskutil', 'info', '-plist', deviceid]
+  return _DictFromSubprocess(command)
+
 
 def _DictFromDiskutilList():
-  """calls diskutil list -plist and returns as dict."""
+  """Calls diskutil list -plist and returns as dict.
+
+  Returns:
+    dict: resulting plist output
+  """
 
   command = ["/usr/sbin/diskutil", "list", "-plist"]
   return _DictFromSubprocess(command)
 
-def PartitionDeviceIds():
-  """Returns a list of all device ids that are partitions."""
-  try:
-    return _DictFromDiskutilList()["AllDisks"]
-  except KeyError:
-    # TODO(user): fix errors to actually provide info...
-    raise MacDiskError("Unable to list all partitions.")
-
-def WholeDiskDeviceIds():
-  """Returns a list of device ids for all whole disks."""
-  try:
-    return _DictFromDiskutilList()["WholeDisks"]
-  except KeyError:
-    # TODO(user): fix errors to actually provide info...
-    raise MacDiskError("Unable to list all partitions.")
 
 def WholeDisks():
   """Returns a list of all disk objects that are whole disks."""
   wholedisks = []
-  for deviceid in WholeDiskDeviceIds():
-    wholedisks.append(Disk(deviceid))
+  try:
+    diskutilDict = _DictFromDiskutilList()
+    for deviceid in diskutilDict['WholeDisks']:
+      wholedisks.append(Disk(deviceid))
+  except KeyError:
+    raise MacDiskError('Unable to list all partitions.')
   return wholedisks
+
 
 class Disk(object):
   """Represents a Mac disk object.
 
   Note that this also is used for currently mounted disk images as they
-  really are just 'disks'. Mostly. Can take device ids of the form "disk1" or
-  of the form "/dev/disk1".
+  really are just 'disks'. Mostly. Can take device ids of the form 'disk1' or
+  of the form '/dev/disk1'.
   """
 
   def __init__(self, deviceid):
-    if deviceid.startswith("/dev/"):
-      deviceid = deviceid.replace("/dev/", "", 1)
+    """Initializes a MacDisk object.
+
+    Args:
+      deviceid(str): Name (or path) to a disk
+    """
+    if deviceid.startswith('/dev/'):
+      deviceid = deviceid.replace('/dev/', '', 1)
     self.deviceid = deviceid
     self.Refresh()
 
   def Refresh(self):
-    """convenience attrs for direct querying really."""
+    """Builds a list of convenience attributes for direct querying."""
 
     self._attributes = _DictFromDiskutilInfo(self.deviceid)
-    # We iterate over all known keys, yes this includes DeviceIdentifier
-    # even though we"re using deviceid internally for init.
-    # This is why the rest of the code has gratuitous use of
-    # disable-msg=E1101 due to constructing the attributes this way.
-    keys = ["Content", "Internal", "CanBeMadeBootableRequiresDestroy",
-            "MountPoint", "DeviceNode", "SystemImage", "CanBeMadeBootable",
-            "SupportsGlobalPermissionsDisable", "VolumeName",
-            "DeviceTreePath", "DeviceIdentifier", "VolumeUUID", "Bootable",
-            "BusProtocol", "Ejectable", "MediaType", "RAIDSlice",
-            "FilesystemName", "RAIDMaster", "WholeDisk", "FreeSpace",
-            "TotalSize", "GlobalPermissionsEnabled", "SMARTStatus",
-            "Writable", "ParentWholeDisk", "MediaName"]
+    # These are the keys we are interested in
+    keys = ['Internal', 'BusProtocol', 'VirtualOrPhysical']
 
     for key in keys:
       try:
-        attribute = key.lower().replace(" ", "")
+        attribute = key.lower().replace(' ', '')
         setattr(self, attribute, self._attributes[key])
       except KeyError:  # not all objects have all these attributes
         pass
-
-    if self.busprotocol == "Disk Image":  # pylint: disable=no-member
-      self.diskimage = True
-    else:
-      self.diskimage = False

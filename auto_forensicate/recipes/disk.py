@@ -177,8 +177,7 @@ class MacDiskArtifact(DiskArtifact):
     if self._macdisk.internal and (
         # TODO: this needs more research on how to autodetect "interesting"
         # disks to copy on MacOS.
-        # pylint: disable=protected-access
-        self._macdisk._attributes['VirtualOrPhysical'] != 'Virtual'):
+        self._macdisk.virtualorphysical != 'Virtual'):
       return True
     return False
 
