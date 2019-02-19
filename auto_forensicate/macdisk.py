@@ -96,6 +96,21 @@ def PartitionDeviceIds():
     # TODO(user): fix errors to actually provide info...
     raise MacDiskError("Unable to list all partitions.")
 
+def WholeDiskDeviceIds():
+  """Returns a list of device ids for all whole disks."""
+  try:
+    return _DictFromDiskutilList()["WholeDisks"]
+  except KeyError:
+    # TODO(user): fix errors to actually provide info...
+    raise MacDiskError("Unable to list all partitions.")
+
+def WholeDisks():
+  """Returns a list of all disk objects that are whole disks."""
+  wholedisks = []
+  for deviceid in WholeDiskDeviceIds():
+    wholedisks.append(Disk(deviceid))
+  return wholedisks
+
 class Disk(object):
   """Represents a Mac disk object.
 
