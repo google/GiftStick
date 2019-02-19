@@ -20,6 +20,7 @@ import json
 import unittest
 import mock
 from auto_forensicate import errors
+from auto_forensicate import macdisk
 from auto_forensicate.recipes import base
 from auto_forensicate.recipes import disk
 
@@ -230,47 +231,42 @@ class DiskRecipeTests(unittest.TestCase):
             file_artifact.remote_path, 'Disks/{0:s}.hash'.format(disk_name))
 
 
-try:
-  #pylint: disable=unused-import
-  import gmacpyutil
-  class MacDiskArtifactTests(unittest.TestCase):
-    """Tests for the MacDiskArtifact class."""
+class MacDiskArtifactTests(unittest.TestCase):
+  """Tests for the MacDiskArtifact class."""
 
-    def setUp(self):
-      self._fake_disks_list_dict = {
-          'AllDisks': ['diskInternal', 'diskUSB'],
-      }
-      self._fake_disk_infos = {
-          'diskInternal': {
-              'BusProtocol': 'PCI-Express',
-              'Internal': True,
-              'VirtualOrPhysical': 'Unknown'
-          },
-          'diskUSB': {
-              'BusProtocol': 'USB',
-              'Internal': False,
-              'VirtualOrPhysical': 'Physical'
-          }
-      }
+  def setUp(self):
+    self._fake_disks_list_dict = {
+        'AllDisks': ['diskInternal', 'diskUSB'],
+    }
+    self._fake_disk_infos = {
+        'diskInternal': {
+            'BusProtocol': 'PCI-Express',
+            'Internal': True,
+            'VirtualOrPhysical': 'Unknown'
+        },
+        'diskUSB': {
+            'BusProtocol': 'USB',
+            'Internal': False,
+            'VirtualOrPhysical': 'Physical'
+        }
+    }
 
-    @mock.patch('gmacpyutil.macdisk._DictFromDiskutilInfo')
-    @mock.patch('gmacpyutil.macdisk._DictFromDiskutilList')
-    def testProbablyADisk(self, patched_list_dict, patched_info_dict):
-      patched_list_dict.return_value = self._fake_disks_list_dict
-      patched_info_dict.return_value = self._fake_disk_infos['diskInternal']
-      disk_object = disk.MacDiskArtifact('/dev/diskInternal', 123456789)
-      self.assertTrue(disk_object.ProbablyADisk())
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilInfo')
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilList')
+  def testProbablyADisk(self, patched_list_dict, patched_info_dict):
+    patched_list_dict.return_value = self._fake_disks_list_dict
+    patched_info_dict.return_value = self._fake_disk_infos['diskInternal']
+    disk_object = disk.MacDiskArtifact('/dev/diskInternal', 123456789)
+    self.assertTrue(disk_object.ProbablyADisk())
 
-      # We ignore USB to try to avoid copying the GiftStick itself.
-      patched_info_dict.return_value = self._fake_disk_infos['diskUSB']
-      disk_object = disk.MacDiskArtifact('/dev/diskUSB', 123456789)
-      self.assertFalse(disk_object.ProbablyADisk())
+    # We ignore USB to try to avoid copying the GiftStick itself.
+    patched_info_dict.return_value = self._fake_disk_infos['diskUSB']
+    disk_object = disk.MacDiskArtifact('/dev/diskUSB', 123456789)
+    self.assertFalse(disk_object.ProbablyADisk())
 
-    @mock.patch('gmacpyutil.macdisk._DictFromDiskutilInfo')
-    @mock.patch('gmacpyutil.macdisk._DictFromDiskutilList')
-    def testGetDescription(self, patched_list_dict, patched_info_dict):
-      disk_object = disk.MacDiskArtifact('/dev/sdInternal', 123456789)
-      self.assertEqual(
-          'Name: sdInternal (Size: 123456789)', disk_object.GetDescription())
-except ImportError:
-  pass
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilInfo')
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilList')
+  def testGetDescription(self, patched_list_dict, patched_info_dict):
+    disk_object = disk.MacDiskArtifact('/dev/sdInternal', 123456789)
+    self.assertEqual(
+        'Name: sdInternal (Size: 123456789)', disk_object.GetDescription())

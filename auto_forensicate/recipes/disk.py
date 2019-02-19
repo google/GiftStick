@@ -22,16 +22,9 @@ import subprocess
 
 from auto_forensicate import errors
 from auto_forensicate import hostinfo
+from auto_forensicate import macdisk
 from auto_forensicate.recipes import base
 from auto_forensicate.ux import gui
-
-try:
-  # This is not in pip, can be installed from:
-  # https://github.com/google/macops/tree/master/gmacpyutil
-  # If not present, code should still run on a Linux machine.
-  from gmacpyutil import macdisk
-except ImportError:
-  pass
 
 
 class DiskArtifact(base.BaseArtifact):
