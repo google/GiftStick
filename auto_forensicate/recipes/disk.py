@@ -25,6 +25,14 @@ from auto_forensicate import hostinfo
 from auto_forensicate.recipes import base
 from auto_forensicate.ux import gui
 
+try:
+  # This is not in pip, can be installed from:
+  # https://github.com/google/macops/tree/master/gmacpyutil
+  # If not present, code should still run on a Linux machine.
+  from gmacpyutil import macdisk
+except ImportError:
+  pass
+
 
 class DiskArtifact(base.BaseArtifact):
   """The DiskArtifact class.
@@ -36,18 +44,19 @@ class DiskArtifact(base.BaseArtifact):
     size (int): the size of the artifact, in bytes.
   """
 
-  _DD_BINARY = '/usr/bin/dcfldd'
   _DD_OPTIONS = ['hash=md5,sha1', 'bs=2M', 'conv=noerror', 'hashwindow=128M']
 
   def __init__(self, path, size):
     """Initializes a DiskArtifact object.
+
+    Only supported implementations are MacOS and Linux.
 
     Args:
       path(str): the path to the disk.
       size(str): the size of the disk.
 
     Raises:
-      ValueError: if path is None, doesn't start with '/dev' or size is =< 0.
+      valueerror: if path is none, doesn't start with '/dev' or size is =< 0.
     """
     super(DiskArtifact, self).__init__(os.path.basename(path))
     if not path.startswith('/dev'):
@@ -61,8 +70,6 @@ class DiskArtifact(base.BaseArtifact):
       raise ValueError('Disk size must be an integer > 0')
     self.hashlog_filename = '{0:s}.hash'.format(self.name)
     self.remote_path = 'Disks/{0:s}.image'.format(self.name)
-
-    self._udevadm_metadata = None
 
   def _GenerateDDCommand(self):
     """Builds the DD command to run on the disk.
@@ -123,23 +130,90 @@ class DiskArtifact(base.BaseArtifact):
       raise subprocess.CalledProcessError(code, self._DD_BINARY, error)
     return error
 
+  def GetDescription(self):
+    """Get a human readable description about the device.
+
+    Returns:
+      str: the description
+    """
+    return 'Name: {0} (Size: {1:d})'.format(self.name, self.size)
+
   def ProbablyADisk(self):
     """Returns whether this is probably one of the system's internal disks."""
-    if self._IsFloppy():
-      return False
-    if self._IsUsb():
-      # We ignore USB to try to avoid copying the GiftStick itself.
-      return False
     return True
 
-  def _IsFloppy(self):
-    """Whether this block device is a floppy disk."""
-    # see https://www.kernel.org/doc/html/latest/admin-guide/devices.html
-    return self.GetUdevadmProperty('MAJOR') == '2'
+
+class MacDiskArtifact(DiskArtifact):
+  """The MacDiskArtifact class.
+
+  Attributes:
+    hashlog_filename (str): where dcfldd will store the hashes.
+    name (str): the name of the artifact.
+    remote_path (str): the path to the artifact in the remote storage.
+    size (int): the size of the artifact, in bytes.
+  """
+
+  # When installed with HomeBrew
+  _DD_BINARY = '/usr/local/bin/dcfldd'
+
+  def __init__(self, path, size):
+    """Initializes a MacDiskArtifact object.
+
+    Only supported implementations are MacOS and Linux.
+
+    Args:
+      path(str): the path to the disk.
+      size(str): the size of the disk.
+
+    Raises:
+      valueerror: if path is none, doesn't start with '/dev' or size is =< 0.
+    """
+    super(MacDiskArtifact, self).__init__(path, size)
+    self._macdisk = macdisk.Disk(self.name)
 
   def _IsUsb(self):
     """Whether this device is connected on USB."""
-    return self.GetUdevadmProperty('ID_BUS') == 'usb'
+    return self._macdisk.busprotocol == 'USB'
+
+  def ProbablyADisk(self):
+    """Returns whether this is probably one of the system's internal disks."""
+    if self._IsUsb():
+      # We ignore USB to try to avoid copying the GiftStick itself.
+      return False
+    if self._IsUsb():
+      return False
+    if self._macdisk.internal and (
+        # pylint: disable=protected-access
+        self._macdisk._attributes['VirtualOrPhysical'] != 'Virtual'):
+      return False
+    return True
+
+class LinuxDiskArtifact(DiskArtifact):
+  """The DiskArtifact class.
+
+  Attributes:
+    hashlog_filename (str): where dcfldd will store the hashes.
+    name (str): the name of the artifact.
+    remote_path (str): the path to the artifact in the remote storage.
+    size (int): the size of the artifact, in bytes.
+  """
+
+  _DD_BINARY = '/usr/bin/dcfldd'
+
+  def __init__(self, path, size):
+    """Initializes a LinuxDiskArtifact object.
+
+    Args:
+      path(str): the path to the disk.
+      size(str): the size of the disk.
+
+    Raises:
+      valueerror: if path is none, doesn't start with '/dev' or size is =< 0.
+    """
+
+    super(LinuxDiskArtifact, self).__init__(path, size)
+
+    self._udevadm_metadata = None
 
   def GetDescription(self):
     """Get a human readable description about the device.
@@ -147,18 +221,18 @@ class DiskArtifact(base.BaseArtifact):
     Returns:
       str: the description
     """
-    model = self.GetUdevadmProperty('ID_MODEL')
+    model = self._GetUdevadmProperty('ID_MODEL')
     if self._IsFloppy():
       model = 'Floppy Disk'
     if not model:
-      model = self.GetUdevadmProperty('ID_SERIAL')
+      model = self._GetUdevadmProperty('ID_SERIAL')
     connection = '(internal)'
     if self._IsUsb():
-      model = '{0} {1}'.format(self.GetUdevadmProperty('ID_VENDOR'), model)
+      model = '{0} {1}'.format(self._GetUdevadmProperty('ID_VENDOR'), model)
       connection = '(usb)'
     return '{0}: {1} {2}'.format(self.name, model, connection)
 
-  def GetUdevadmProperty(self, prop):
+  def _GetUdevadmProperty(self, prop):
     """Get a udevadm property.
 
     Args:
@@ -171,12 +245,41 @@ class DiskArtifact(base.BaseArtifact):
       self._udevadm_metadata = hostinfo.GetUdevadmInfo(self.name)
     return self._udevadm_metadata.get(prop, None)
 
+  def ProbablyADisk(self):
+    """Returns whether this is probably one of the system's internal disks."""
+    if self._IsFloppy():
+      return False
+    if self._IsUsb():
+      # We ignore USB to try to avoid copying the GiftStick itself.
+      return False
+    return True
+
+  def _IsFloppy(self):
+    """Whether this block device is a floppy disk."""
+    # see https://www.kernel.org/doc/html/latest/admin-guide/devices.html
+    return self._GetUdevadmProperty('MAJOR') == '2'
+
+  def _IsUsb(self):
+    """Whether this device is connected on USB."""
+    return self._GetUdevadmProperty('ID_BUS') == 'usb'
+
 
 class DiskRecipe(base.BaseRecipe):
   """The DiskRecipe class.
 
   This Recipe acquires the raw image of all disks on the system.
   """
+
+  def __init__(self, name, options=None):
+    """Initializes a DiskRecipe object.
+
+    Args:
+      name (str): the name of the artifact.
+
+    Raises:
+      ValueError: if the name is empty or None.
+    """
+    super(DiskRecipe, self).__init__(name, options=options)
 
   def _GetLsblkDict(self):
     """Calls lsblk.
@@ -188,35 +291,93 @@ class DiskRecipe(base.BaseRecipe):
         ['/bin/lsblk', '-J', '--bytes', '-o', '+UUID,FSTYPE,SERIAL'])
     return json.loads(lsblk_output)
 
-  def _ListDisks(self, all_devices=False, names=None):
+  def _ListDisksMac(self):
     """Lists disks connected to the machine.
 
-    Args:
-      all_devices(bool): whether to also list devices that aren't internal to
-        the system's (ie: removable media).
-      names(list(str)): list of disk names (ie: ['sda', 'sdc']) to acquire.
+    Returns:
+      list(MacDiskArtifact): a list of disks.
+    """
+    disk_list = []
+    for mac_disk in macdisk.WholeDisks():
+      disk_name = mac_disk.deviceidentifier
+      disk_size = mac_disk.totalsize
+      disk = MacDiskArtifact(os.path.join('/dev', disk_name), disk_size)
+      disk_list.append(disk)
+    return disk_list
+
+  def _ListDisksLinux(self):
+    """Lists disks connected to the machine.
 
     Returns:
-      list(DiskArtifact): a list of disks.
-
-    Raises:
-      errors.RecipeException: when no disk could be detected.
+      list(LinuxDiskArtifact): a list of disks.
     """
     lsblk_dict = self._GetLsblkDict()
     disk_list = []
     for blockdevice in lsblk_dict.get('blockdevices', None):
       if blockdevice.get('type') == 'disk':
         disk_name = blockdevice.get('name')
-        if names:
-          if disk_name not in names:
-            continue
         disk_size_str = blockdevice.get('size')
         disk_size = int(disk_size_str)
-        disk = DiskArtifact(os.path.join('/dev', disk_name), disk_size)
-        if all_devices or disk.ProbablyADisk():
-          disk_list.append(disk)
+        disk = LinuxDiskArtifact(os.path.join('/dev', disk_name), disk_size)
+        disk_list.append(disk)
+    return disk_list
+
+  def _ListDisks(self, all_devices=False, names=None):
+    """
+
+    Args:
+      all_devices(bool): whether to also list devices that aren't internal to
+        the system's (ie: removable media).
+      names(list(str)): list of disk names (ie: ['sda', 'sdc']) to acquire.
+    """
+    disk_list = []
+    if self._platform == 'darwin':
+      disk_list = self._ListDisksMac()
+    else:
+      disk_list = self._ListDisksLinux()
+
     # We order the list by size, descending.
-    return sorted(disk_list, reverse=True, key=lambda disk: disk.size)
+    disk_list = sorted(disk_list, reverse=True, key=lambda disk: disk.size)
+    if names:
+      return [disk for disk in disk_list if disk.name in names]
+    if not all_devices:
+      # We resort to guessing
+      return [disk for disk in disk_list if disk.ProbablyADisk()]
+    return disk_list
+
+  def _GetListDisksArtifact(self):
+    """Generates a StringArtifact containing information about all disks.
+
+    Returns:
+      StringArtifact: the artifact.
+    """
+    if self._platform == 'darwin':
+      #pylint: disable=protected-access
+      diskutil_artifact = base.StringArtifact(
+          'Disks/diskutil.txt', json.dumps(
+              [md._attributes for md in macdisk.WholeDisks()]))
+      return diskutil_artifact
+
+    lsblk_artifact = base.StringArtifact(
+        'Disks/lsblk.txt', json.dumps(self._GetLsblkDict()))
+    return lsblk_artifact
+
+  def _GetDiskInfoArtifact(self, disk):
+    """Returns an StringArtifact containing information about a disk being
+    copied.
+
+    Args:
+      disk(DiskArtifact): the disk object to get info from.
+    """
+    if self._platform == 'darwin':
+      # TODO
+      return None
+
+    #pylint: disable=protected-access
+    udevadm_artifact = base.StringArtifact(
+        'Disks/{0:s}.udevadm.txt'.format(disk.name),
+        disk._GetUdevadmProperty('udevadm_text_output'))
+    return udevadm_artifact
 
   def GetArtifacts(self):
     """Selects the Artifacts to acquire.
@@ -243,12 +404,10 @@ class DiskRecipe(base.BaseRecipe):
     if not disks_to_collect:
       raise errors.RecipeException('No disk to collect')
 
-    lsblk_artifact = base.StringArtifact(
-        'Disks/lsblk.txt', json.dumps(self._GetLsblkDict()))
+    disk_list_artifact = self._GetListDisksArtifact()
+    artifacts.append(disk_list_artifact)
+
     for disk in disks_to_collect:
-      udevadm_artifact = base.StringArtifact(
-          'Disks/{0:s}.udevadm.txt'.format(disk.name),
-          disk.GetUdevadmProperty('udevadm_text_output'))
 
       hashlog_artifact = base.FileArtifact(disk.hashlog_filename)
       hashlog_artifact.remote_path = 'Disks/{0:s}'.format(
@@ -256,8 +415,9 @@ class DiskRecipe(base.BaseRecipe):
 
       # It is necessary for the DiskArtifact to be appended before the
       # hashlog, as the hashlog is generated when dcfldd completes.
-      artifacts.append(udevadm_artifact)
-      artifacts.append(lsblk_artifact)
+      disk_info_artifact = self._GetDiskInfoArtifact(disk)
+      if disk_info_artifact:
+        artifacts.append(disk_info_artifact)
       artifacts.append(disk)
       artifacts.append(hashlog_artifact)
     return artifacts

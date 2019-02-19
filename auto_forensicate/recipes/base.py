@@ -19,10 +19,11 @@ from __future__ import unicode_literals
 import logging
 import os
 from io import BytesIO
-import six
 import shutil
 import subprocess
+import sys
 import tempfile
+import six
 
 
 class BaseArtifact(object):
@@ -243,6 +244,7 @@ class BaseRecipe(object):
     Raises:
       ValueError: if the name parameter is None.
     """
+    self._platform = sys.platform
     self._workdir = None
     if name:
       self.name = name

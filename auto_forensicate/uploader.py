@@ -28,8 +28,8 @@ try:
   from urlparse import urlparse
 except ImportError:
   from urllib.parse import urlparse
-from auto_forensicate import errors
 import boto
+from auto_forensicate import errors
 
 
 class GCSUploader(object):
