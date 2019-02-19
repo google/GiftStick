@@ -70,4 +70,3 @@ def AskDiskList(disk_list):
   if choices == ['']:
     return []
   return [disk_description_map[choice] for choice in choices]
-

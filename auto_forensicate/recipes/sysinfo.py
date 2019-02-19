@@ -16,8 +16,6 @@
 
 from __future__ import unicode_literals
 
-import sys
-
 from auto_forensicate.recipes import base
 
 
@@ -25,7 +23,8 @@ class SysinfoRecipe(base.BaseRecipe):
   """The SysinfoRecipe class."""
 
   _DMI_DECODE_CMD = ['/usr/sbin/dmidecode', '--type=1']
-  _SYSTEM_PROFILER_CMD = ['/usr/sbin/system_profiler', 'SPHardwareDataType', 'SPSoftwareDataType']
+  _SYSTEM_PROFILER_CMD = [
+      '/usr/sbin/system_profiler', 'SPHardwareDataType', 'SPSoftwareDataType']
 
   def GetArtifacts(self):
     """Provides a list of Artifacts to upload.
@@ -33,11 +32,9 @@ class SysinfoRecipe(base.BaseRecipe):
     Returns:
       list (BaseArtifact): the artifacts corresponding to copy.
     """
-    if self._platform=='darwin':
-      return [base.ProcessOutputArtifact(
-        self._SYSTEM_PROFILER_CMD, 'system_info.txt')]
-    else:
-      return [base.ProcessOutputArtifact(
-        self._DMI_DECODE_CMD, 'system_info.txt')]
-
-    return [artifact]
+    if self._platform == 'darwin':
+      return [
+          base.ProcessOutputArtifact(
+              self._SYSTEM_PROFILER_CMD, 'system_info.txt')]
+    return [
+        base.ProcessOutputArtifact(self._DMI_DECODE_CMD, 'system_info.txt')]
