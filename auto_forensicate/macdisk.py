@@ -113,7 +113,8 @@ class Disk(object):
 
     self._attributes = _DictFromDiskutilInfo(self.deviceid)
     # These are the keys we are interested in
-    keys = ['Internal', 'DeviceIdentifier', 'BusProtocol', 'VirtualOrPhysical']
+    keys = ['Internal', 'DeviceIdentifier', 'BusProtocol', 'VirtualOrPhysical',
+            'DeviceIdentifier', 'TotalSize']
 
     for key in keys:
       try:
