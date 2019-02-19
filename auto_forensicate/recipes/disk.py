@@ -181,13 +181,13 @@ class MacDiskArtifact(DiskArtifact):
     if self._IsUsb():
       # We ignore USB to try to avoid copying the GiftStick itself.
       return False
-    if self._IsUsb():
-      return False
     if self._macdisk.internal and (
+        # TODO: this needs more research on how to autodetect "interesting"
+        # disks to copy on MacOS.
         # pylint: disable=protected-access
         self._macdisk._attributes['VirtualOrPhysical'] != 'Virtual'):
-      return False
-    return True
+      return True
+    return False
 
 class LinuxDiskArtifact(DiskArtifact):
   """The DiskArtifact class.
