@@ -44,6 +44,7 @@ class DiskArtifact(base.BaseArtifact):
     size (int): the size of the artifact, in bytes.
   """
 
+  _DD_BINARY = '/usr/bin/dcfldd'
   _DD_OPTIONS = ['hash=md5,sha1', 'bs=2M', 'conv=noerror', 'hashwindow=128M']
 
   def __init__(self, path, size):
@@ -198,8 +199,6 @@ class LinuxDiskArtifact(DiskArtifact):
     size (int): the size of the artifact, in bytes.
   """
 
-  _DD_BINARY = '/usr/bin/dcfldd'
-
   def __init__(self, path, size):
     """Initializes a LinuxDiskArtifact object.
 
@@ -291,8 +290,8 @@ class DiskRecipe(base.BaseRecipe):
         ['/bin/lsblk', '-J', '--bytes', '-o', '+UUID,FSTYPE,SERIAL'])
     return json.loads(lsblk_output)
 
-  def _ListDisksMac(self):
-    """Lists disks connected to the machine.
+  def _ListAllDisksMac(self):
+    """Lists all disks connected to the machine.
 
     Returns:
       list(MacDiskArtifact): a list of disks.
@@ -305,8 +304,8 @@ class DiskRecipe(base.BaseRecipe):
       disk_list.append(disk)
     return disk_list
 
-  def _ListDisksLinux(self):
-    """Lists disks connected to the machine.
+  def _ListAllDisksLinux(self):
+    """Lists all disks connected to the machine.
 
     Returns:
       list(LinuxDiskArtifact): a list of disks.
@@ -323,18 +322,21 @@ class DiskRecipe(base.BaseRecipe):
     return disk_list
 
   def _ListDisks(self, all_devices=False, names=None):
-    """
+    """Between all disks connected to the machine, selects the one we want to
+    acquired.
 
     Args:
       all_devices(bool): whether to also list devices that aren't internal to
         the system's (ie: removable media).
       names(list(str)): list of disk names (ie: ['sda', 'sdc']) to acquire.
+    Returns:
+      list(DiskArtifact): a sorted (and curated) list of disks to acquire.
     """
     disk_list = []
     if self._platform == 'darwin':
-      disk_list = self._ListDisksMac()
+      disk_list = self._ListAllDisksMac()
     else:
-      disk_list = self._ListDisksLinux()
+      disk_list = self._ListAllDisksLinux()
 
     # We order the list by size, descending.
     disk_list = sorted(disk_list, reverse=True, key=lambda disk: disk.size)
