@@ -14,9 +14,8 @@
 # limitations under the License.
 """Helper functions to handle Mac OS information."""
 
-import plistlib
-import xml.parsers.expat
 import subprocess
+import biplist
 
 class MacDiskError(Exception):
   """Module specific exception class."""
@@ -29,10 +28,7 @@ def RunProcess(cmd):
     cmd: An array of strings as the command to run
   Returns:
     Tuple: two strings and an integer: (stdout, stderr, returncode);
-    stdout/stderr may also be None. If the process is set to launch in
-    background mode, an instance of <subprocess.Popen object> is
-    returned, in order to be able to read from its pipes *and* use poll() to
-    check when it is finished.
+    stdout/stderr may also be None.
   """
   try:
     task = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -60,8 +56,8 @@ def _DictFromSubprocess(command):
             command, task['stderr']))
   else:
     try:
-      return plistlib.readPlistFromString(task['stdout'])
-    except xml.parsers.expat.ExpatError:
+      return biplist.readPlistFromString(task['stdout'])
+    except (biplist.InvalidPlistException, biplist.NotBinaryPlistException):
       raise MacDiskError(
           'Error creating plist from output: {0}'.format(task['stdout']))
 
