@@ -22,12 +22,6 @@ import json
 import logging
 import sys
 import time
-from auto_forensicate import errors
-from auto_forensicate import uploader
-from auto_forensicate.recipes import disk
-from auto_forensicate.recipes import firmware
-from auto_forensicate.recipes import sysinfo
-from auto_forensicate.stamp import manager
 
 import gcs_oauth2_boto_plugin  # pylint: disable=unused-import
 from google.cloud import logging as google_logging
@@ -36,6 +30,13 @@ from google.cloud.logging.handlers import setup_logging as setup_gcp_logging
 from google.oauth2 import service_account
 from progress.bar import IncrementalBar
 from progress.spinner import Spinner
+
+from auto_forensicate import errors
+from auto_forensicate import uploader
+from auto_forensicate.recipes import disk
+from auto_forensicate.recipes import firmware
+from auto_forensicate.recipes import sysinfo
+from auto_forensicate.stamp import manager
 
 VALID_RECIPES = {
     'disk': disk.DiskRecipe,
@@ -238,7 +239,7 @@ class AutoForensicate(object):
       return uploader.GCSUploader(
           options.destination, options.gs_keyfile, client_id, stamp_manager)
 
-    return
+    return None
 
   def ParseArguments(self, args):
     """Parses the arguments.

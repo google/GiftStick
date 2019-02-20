@@ -18,10 +18,13 @@ from __future__ import unicode_literals
 
 import json
 import unittest
+import mock
 from auto_forensicate import errors
+#pylint: disable=unused-import
+from auto_forensicate import hostinfo
+from auto_forensicate import macdisk
 from auto_forensicate.recipes import base
 from auto_forensicate.recipes import disk
-import mock
 
 
 # pylint: disable=missing-docstring
@@ -43,31 +46,36 @@ class DiskArtifactTests(unittest.TestCase):
     name = 'sdx'
     path = '/dev/{0:s}'.format(name)
     dd_command = [
-        '/usr/bin/dcfldd', 'if={0:s}'.format(path),
+        '/some/place/random/bin/dcfldd', 'if={0:s}'.format(path),
         'hashlog={0:s}.hash'.format(name)]
     dd_static_options = [
         'hash=md5,sha1', 'bs=2M', 'conv=noerror', 'hashwindow=128M']
     dd_command.extend(dd_static_options)
 
-    d = disk.DiskArtifact(path, 100)
-    self.assertEqual(d._GenerateDDCommand(), dd_command)
+    with mock.patch('auto_forensicate.hostinfo.Which') as patched_which:
+      patched_which.return_value = '/some/place/random/bin/dcfldd'
+      d = disk.DiskArtifact(path, 100)
+      self.assertEqual(d._GenerateDDCommand(), dd_command)
+
+class LinuxDiskArtifactTests(unittest.TestCase):
+  """Tests for the LinuxDiskArtifact class."""
 
   def testIsFloppy(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 12345)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 12345)
     disk_object._udevadm_metadata = {'MAJOR': '2'}
     self.assertTrue(disk_object._IsFloppy())
     disk_object._udevadm_metadata = {'MAJOR': '12'}
     self.assertFalse(disk_object._IsFloppy())
 
   def testIsUsb(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 12345)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 12345)
     disk_object._udevadm_metadata = {'ID_BUS': 'usb'}
     self.assertTrue(disk_object._IsUsb())
     disk_object._udevadm_metadata = {'ID_BUS': 'ata'}
     self.assertFalse(disk_object._IsUsb())
 
   def testProbablyADisk(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 123456789)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 123456789)
     disk_object._udevadm_metadata = {'ID_BUS': 'ata'}
     self.assertTrue(disk_object.ProbablyADisk())
 
@@ -88,7 +96,7 @@ class DiskArtifactTests(unittest.TestCase):
     self.assertTrue(disk_object.ProbablyADisk())
 
   def testGetDescription(self):
-    disk_object = disk.DiskArtifact('/dev/sdX', 123456789)
+    disk_object = disk.LinuxDiskArtifact('/dev/sdX', 123456789)
     disk_object._udevadm_metadata = {
         'ID_BUS': 'ata',
         'ID_MODEL': 'TestDisk'
@@ -111,7 +119,7 @@ class DiskArtifactTests(unittest.TestCase):
 
 
 class DiskRecipeTests(unittest.TestCase):
-  """Tests for the DiskRecipe class."""
+  """Tests for the DiskRecipe (on linux) class."""
 
   def setUp(self):
     self._lsblk_dict = {
@@ -152,11 +160,13 @@ class DiskRecipeTests(unittest.TestCase):
 
   def testListDisksZero(self):
     recipe = disk.DiskRecipe('Disk')
+    recipe._platform = 'linux'
     disk.DiskRecipe._GetLsblkDict = self._GetLsblkDictZeroDisks
     self.assertEqual(0, len(recipe._ListDisks()))
 
   def testListAllDisks(self):
     recipe = disk.DiskRecipe('Disk')
+    recipe._platform = 'linux'
     disk.DiskRecipe._GetLsblkDict = self._GetLsblkDictThreeDisks
     disk_list = recipe._ListDisks(all_devices=True)
     self.assertEqual(len(disk_list), 3)
@@ -167,6 +177,7 @@ class DiskRecipeTests(unittest.TestCase):
 
   def testListDisksWithNames(self):
     recipe = disk.DiskRecipe('Disk')
+    recipe._platform = 'linux'
     disk.DiskRecipe._GetLsblkDict = self._GetLsblkDictThreeDisks
     disk_list = recipe._ListDisks(all_devices=True, names=['sdz_not_present'])
     self.assertEqual(len(disk_list), 0)
@@ -182,13 +193,14 @@ class DiskRecipeTests(unittest.TestCase):
     ) as patched_listdisk:
       patched_listdisk.return_value = []
       recipe = disk.DiskRecipe('Disk')
+      recipe._platform = 'linux'
       with self.assertRaises(errors.RecipeException):
         recipe.GetArtifacts()
 
   def testGetArtifacts(self):
     disk_name = 'sdx'
     disk_size = 20 * 1024 * 1024 * 1024  # 20GB
-    disk_object = disk.DiskArtifact('/dev/{0:s}'.format(disk_name), disk_size)
+    disk_object = disk.LinuxDiskArtifact('/dev/{0:s}'.format(disk_name), disk_size)
     disk_object._udevadm_metadata = {'udevadm_text_output': 'fake disk info'}
     with mock.patch(
         'auto_forensicate.recipes.disk.DiskRecipe._ListDisks'
@@ -199,15 +211,16 @@ class DiskRecipeTests(unittest.TestCase):
       ) as patched_lsblk:
         patched_lsblk.return_value = self._lsblk_dict
         recipe = disk.DiskRecipe('Disk')
+        recipe._platform = 'linux'
         artifacts = recipe.GetArtifacts()
         self.assertEqual(len(artifacts), 4)
 
-        udevadm_artifact = artifacts[0]
+        udevadm_artifact = artifacts[1]
         self.assertIsInstance(udevadm_artifact, base.StringArtifact)
         self.assertEqual(udevadm_artifact._GetStream().read(), b'fake disk info')
         self.assertEqual(udevadm_artifact.remote_path, 'Disks/sdx.udevadm.txt')
 
-        lsblk_artifact = artifacts[1]
+        lsblk_artifact = artifacts[0]
         self.assertIsInstance(lsblk_artifact, base.StringArtifact)
         self.assertEqual(
             lsblk_artifact._GetStream().read(), json.dumps(self._lsblk_dict).encode('utf-8'))
@@ -220,3 +233,44 @@ class DiskRecipeTests(unittest.TestCase):
         self.assertEqual(file_artifact.name, '{0:s}.hash'.format(disk_name))
         self.assertEqual(
             file_artifact.remote_path, 'Disks/{0:s}.hash'.format(disk_name))
+
+
+class MacDiskArtifactTests(unittest.TestCase):
+  """Tests for the MacDiskArtifact class."""
+
+  def setUp(self):
+    self._fake_disks_list_dict = {
+        'AllDisks': ['diskInternal', 'diskUSB'],
+    }
+    self._fake_disk_infos = {
+        'diskInternal': {
+            'BusProtocol': 'PCI-Express',
+            'Internal': True,
+            'VirtualOrPhysical': 'Unknown'
+        },
+        'diskUSB': {
+            'BusProtocol': 'USB',
+            'Internal': False,
+            'VirtualOrPhysical': 'Physical'
+        }
+    }
+
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilInfo')
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilList')
+  def testProbablyADisk(self, patched_list_dict, patched_info_dict):
+    patched_list_dict.return_value = self._fake_disks_list_dict
+    patched_info_dict.return_value = self._fake_disk_infos['diskInternal']
+    disk_object = disk.MacDiskArtifact('/dev/diskInternal', 123456789)
+    self.assertTrue(disk_object.ProbablyADisk())
+
+    # We ignore USB to try to avoid copying the GiftStick itself.
+    patched_info_dict.return_value = self._fake_disk_infos['diskUSB']
+    disk_object = disk.MacDiskArtifact('/dev/diskUSB', 123456789)
+    self.assertFalse(disk_object.ProbablyADisk())
+
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilInfo')
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilList')
+  def testGetDescription(self, patched_list_dict, patched_info_dict):
+    disk_object = disk.MacDiskArtifact('/dev/sdInternal', 123456789)
+    self.assertEqual(
+        'Name: sdInternal (Size: 123456789)', disk_object.GetDescription())

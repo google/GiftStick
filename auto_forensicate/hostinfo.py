@@ -122,3 +122,21 @@ def GetUdevadmInfo(device_name):
 def GetTime():
   """Returns the current time as a iso string."""
   return time.strftime('%Y%m%d-%H%M%S', time.gmtime())
+
+
+def Which(cmd):
+  """Searches for a binary in the current PATH environment variable.
+
+  Args:
+    cmd(str): the binary to search for.
+  Returns:
+    str: the first found path to a binary with the same name, or None.
+  """
+  path_list = os.environ.get('PATH', os.defpath).split(os.pathsep)
+  for directory in path_list:
+    name = os.path.join(directory, cmd)
+    if os.path.isdir(name):
+      continue
+    if os.path.exists(name) and os.access(name, os.F_OK | os.X_OK):
+      return name
+  return None

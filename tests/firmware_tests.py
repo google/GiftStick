@@ -28,6 +28,7 @@ class ChipsecRecipeTests(unittest.TestCase):
 
   def testGetArtifacts(self):
     chipsec_recipe = firmware.ChipsecRecipe('chipsec')
+    chipsec_recipe._platform = 'linux'
     chipsec_recipe._CHIPSEC_CMD = [
         'echo', '-n', self._CHIPSEC_OUTPUT_STRING]
 
