@@ -271,7 +271,9 @@ class MacDiskArtifactTests(unittest.TestCase):
     disk_object = disk.MacDiskArtifact('/dev/diskUSB', 123456789)
     self.assertFalse(disk_object.ProbablyADisk())
 
-  def testGetDescription(self):
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilInfo')
+  @mock.patch('auto_forensicate.macdisk._DictFromDiskutilList')
+  def testGetDescription(self, _patched_list_dict, _patched_info_dict):
     disk_object = disk.MacDiskArtifact('/dev/sdInternal', 123456789)
     self.assertEqual(
         'Name: sdInternal (Size: 123456789)', disk_object.GetDescription())
