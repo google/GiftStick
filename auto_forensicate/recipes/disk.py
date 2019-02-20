@@ -37,7 +37,7 @@ class DiskArtifact(base.BaseArtifact):
     size (int): the size of the artifact, in bytes.
   """
 
-  _DD_BINARY = '/usr/bin/dcfldd'
+  _DD_BINARY = 'dcfldd'
   _DD_OPTIONS = ['hash=md5,sha1', 'bs=2M', 'conv=noerror', 'hashwindow=128M']
 
   def __init__(self, path, size):
@@ -71,8 +71,12 @@ class DiskArtifact(base.BaseArtifact):
     Returns:
       list: the argument list for the dd command
     """
+    dd_binary = hostinfo.Which(self._DD_BINARY)
+    if not dd_binary:
+      raise errors.RecipeException(
+          'Could not find \'{0}\''.format(self._DD_BINARY))
     command = [
-        self._DD_BINARY, 'if={0:s}'.format(self._path),
+        dd_binary, 'if={0:s}'.format(self._path),
         'hashlog={0:s}'.format(self.hashlog_filename)]
     command.extend(self._DD_OPTIONS)
     return command
@@ -146,9 +150,6 @@ class MacDiskArtifact(DiskArtifact):
     remote_path (str): the path to the artifact in the remote storage.
     size (int): the size of the artifact, in bytes.
   """
-
-  # When installed with HomeBrew
-  _DD_BINARY = '/usr/local/bin/dcfldd'
 
   def __init__(self, path, size):
     """Initializes a MacDiskArtifact object.
