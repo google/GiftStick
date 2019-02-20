@@ -74,7 +74,7 @@ class DiskArtifact(base.BaseArtifact):
     dd_binary = hostinfo.Which(self._DD_BINARY)
     if not dd_binary:
       raise errors.RecipeException(
-          'Could not find \'{0}\''.format(self._DD_BINARY))
+          'Could not find \'{0:s}\''.format(self._DD_BINARY))
     command = [
         dd_binary, 'if={0:s}'.format(self._path),
         'hashlog={0:s}'.format(self.hashlog_filename)]
@@ -134,7 +134,7 @@ class DiskArtifact(base.BaseArtifact):
     Returns:
       str: the description
     """
-    return 'Name: {0} (Size: {1:d})'.format(self.name, self.size)
+    return 'Name: {0:s} (Size: {1:d})'.format(self.name, self.size)
 
   def ProbablyADisk(self):
     """Returns whether this is probably one of the system's internal disks."""
@@ -222,9 +222,9 @@ class LinuxDiskArtifact(DiskArtifact):
       model = self._GetUdevadmProperty('ID_SERIAL')
     connection = '(internal)'
     if self._IsUsb():
-      model = '{0} {1}'.format(self._GetUdevadmProperty('ID_VENDOR'), model)
+      model = '{0:s} {1:s}'.format(self._GetUdevadmProperty('ID_VENDOR'), model)
       connection = '(usb)'
-    return '{0}: {1} {2}'.format(self.name, model, connection)
+    return '{0:s}: {1:s} {2:s}'.format(self.name, model, connection)
 
   def _GetUdevadmProperty(self, prop):
     """Get a udevadm property.

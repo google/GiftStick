@@ -106,8 +106,8 @@ class BaBar(IncrementalBar):
     for i, current_unit in enumerate(suffixes):
       unit = 1000 ** (i + 2)
       if speed < unit:
-        return '{0:.1f} {1}'.format(1000 * speed / unit, current_unit)
-    return '{0:.1f} {1}'.format(1000 * speed / unit, 'PB/s')
+        return '{0:.1f} {1:s}'.format(1000 * speed / unit, current_unit)
+    return '{0:.1f} {1:s}'.format(1000 * speed / unit, 'PB/s')
 
   #pylint: disable=invalid-name
   def update_with_total(self, current_bytes, _unused_total_bytes):
@@ -262,8 +262,9 @@ class AutoForensicate(object):
 
     if options.select_disks and 'disk' not in options.acquire:
       raise errors.BadConfigOption(
-          '--select_disks needs the disk recipe (current recipes : {0})'.format(
-              ', '.join(options.acquire))
+          ('--select_disks needs the disk recipe ('
+           'current recipes : {0:s})').format(
+               ', '.join(options.acquire))
       )
 
     return options
