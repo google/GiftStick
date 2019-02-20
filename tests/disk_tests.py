@@ -20,6 +20,8 @@ import json
 import unittest
 import mock
 from auto_forensicate import errors
+#pylint: disable=unused-import
+from auto_forensicate import hostinfo
 from auto_forensicate import macdisk
 from auto_forensicate.recipes import base
 from auto_forensicate.recipes import disk
@@ -44,14 +46,16 @@ class DiskArtifactTests(unittest.TestCase):
     name = 'sdx'
     path = '/dev/{0:s}'.format(name)
     dd_command = [
-        '/usr/bin/dcfldd', 'if={0:s}'.format(path),
+        '/some/place/random/bin/dcfldd', 'if={0:s}'.format(path),
         'hashlog={0:s}.hash'.format(name)]
     dd_static_options = [
         'hash=md5,sha1', 'bs=2M', 'conv=noerror', 'hashwindow=128M']
     dd_command.extend(dd_static_options)
 
-    d = disk.DiskArtifact(path, 100)
-    self.assertEqual(d._GenerateDDCommand(), dd_command)
+    with mock.patch('auto_forensicate.hostinfo.Which') as patched_which:
+      patched_which.return_value = '/some/place/random/bin/dcfldd'
+      d = disk.DiskArtifact(path, 100)
+      self.assertEqual(d._GenerateDDCommand(), dd_command)
 
 class LinuxDiskArtifactTests(unittest.TestCase):
   """Tests for the LinuxDiskArtifact class."""
