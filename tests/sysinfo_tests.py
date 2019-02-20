@@ -21,6 +21,7 @@ from auto_forensicate.recipes import base
 from auto_forensicate.recipes import sysinfo
 
 
+#pylint: disable=missing-docstring
 class LinuxSysinfoRecipeTest(unittest.TestCase):
   """Tests for the SysinfoRecipe class."""
 
@@ -45,6 +46,7 @@ class LinuxSysinfoRecipeTest(unittest.TestCase):
 
   def testGetArtifactsFail(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('failsysinfo')
+    #pylint: disable=protected-access
     sysinfo_recipe._platform = 'linux'
     sysinfo_recipe._DMI_DECODE_CMD = [
         'echo', '-n', self._DMIDECODE_OUTPUT_FAIL_STRING]
@@ -60,6 +62,7 @@ class LinuxSysinfoRecipeTest(unittest.TestCase):
 
   def testGetArtifacts(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('sysinfo')
+    #pylint: disable=protected-access
     sysinfo_recipe._platform = 'linux'
     sysinfo_recipe._DMI_DECODE_CMD = [
         'echo', '-n', self._DMIDECODE_OUTPUT_STRING]
@@ -115,6 +118,7 @@ Software:
 
   def testGetArtifactsFail(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('failsysinfo')
+    #pylint: disable=protected-access
     sysinfo_recipe._platform = 'darwin'
     sysinfo_recipe._SYSTEM_PROFILER_CMD = [
         'echo', '-n', self._SYSTEM_PROFILER_FAIL_STRING]
@@ -130,6 +134,7 @@ Software:
 
   def testGetArtifacts(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('sysinfo')
+    #pylint: disable=protected-access
     sysinfo_recipe._platform = 'darwin'
     sysinfo_recipe._SYSTEM_PROFILER_CMD = [
         'echo', '-n', self._SYSTEM_PROFILER_OUTPUT_STRING]

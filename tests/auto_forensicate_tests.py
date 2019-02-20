@@ -26,12 +26,12 @@ except ImportError:
 import sys
 import tempfile
 import unittest
+import mock
 
 from auto_forensicate import auto_acquire
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import base
-import mock
 
 DEFAULT_ARTIFACT_CONTENT = os.urandom(1000)
 
@@ -90,7 +90,7 @@ class BarTest(unittest.TestCase):
     ]
     for index, value in enumerate(expected):
       self.assertEqual(
-        progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
+          progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
 
 
 class AutoForensicateTest(unittest.TestCase):

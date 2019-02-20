@@ -22,6 +22,7 @@ from auto_forensicate.stamp.manager import BaseStamp
 from auto_forensicate.stamp.manager import StampManager
 
 
+#pylint: disable=missing-docstring
 class StampManagerTests(unittest.TestCase):
   """Tests for the StampManager class."""
 

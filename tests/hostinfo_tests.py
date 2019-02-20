@@ -18,10 +18,11 @@ from __future__ import unicode_literals
 
 import unittest
 import uuid
-from auto_forensicate import hostinfo
 import mock
 
+from auto_forensicate import hostinfo
 
+#pylint: disable=missing-docstring
 class HostInfoTests(unittest.TestCase):
   """Tests for the HostInfo class."""
 

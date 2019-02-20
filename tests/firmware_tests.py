@@ -27,7 +27,9 @@ class ChipsecRecipeTests(unittest.TestCase):
   _CHIPSEC_OUTPUT_STRING = b'\xff' * 256
 
   def testGetArtifacts(self):
+    """Tests for the GetArtifacts() method."""
     chipsec_recipe = firmware.ChipsecRecipe('chipsec')
+    #pylint: disable=protected-access
     chipsec_recipe._platform = 'linux'
     chipsec_recipe._CHIPSEC_CMD = [
         'echo', '-n', self._CHIPSEC_OUTPUT_STRING]
