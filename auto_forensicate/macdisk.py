@@ -24,7 +24,7 @@ class MacDiskError(Exception):
 
 
 def _DictFromSubprocess(command):
-  """returns a dict based upon a subprocess call with a -plist argument.
+  """Returns a dict based upon a subprocess call with a -plist argument.
 
   Args:
     command: the command to be executed as a list.
@@ -53,7 +53,7 @@ def _DictFromSubprocess(command):
 
 
 def _DictFromDiskutilInfo(deviceid):
-  """calls diskutil info for a specific device id.
+  """Calls diskutil info for a specific device id.
 
   Args:
     deviceid(string): a given device id for a disk like object.
@@ -73,7 +73,7 @@ def _DictFromDiskutilList():
     dict: resulting plist output
   """
 
-  command = ["/usr/sbin/diskutil", "list", "-plist"]
+  command = ['/usr/sbin/diskutil', 'list', '-plist']
   return _DictFromSubprocess(command)
 
 

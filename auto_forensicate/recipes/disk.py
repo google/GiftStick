@@ -50,7 +50,7 @@ class DiskArtifact(base.BaseArtifact):
       size(str): the size of the disk.
 
     Raises:
-      valueerror: if path is none, doesn't start with '/dev' or size is =< 0.
+      ValueError: if path is none, doesn't start with '/dev' or size is =< 0.
     """
     super(DiskArtifact, self).__init__(os.path.basename(path))
     if not path.startswith('/dev'):
@@ -160,7 +160,7 @@ class MacDiskArtifact(DiskArtifact):
       size(str): the size of the disk.
 
     Raises:
-      valueerror: if path is none, doesn't start with '/dev' or size is =< 0.
+      ValueError: if path is none, doesn't start with '/dev' or size is =< 0.
     """
     super(MacDiskArtifact, self).__init__(path, size)
     self._macdisk = macdisk.Disk(self.name)
@@ -199,7 +199,7 @@ class LinuxDiskArtifact(DiskArtifact):
       size(str): the size of the disk.
 
     Raises:
-      valueerror: if path is none, doesn't start with '/dev' or size is =< 0.
+      ValueError: if path is none, doesn't start with '/dev' or size is =< 0.
     """
 
     super(LinuxDiskArtifact, self).__init__(path, size)
@@ -207,7 +207,7 @@ class LinuxDiskArtifact(DiskArtifact):
     self._udevadm_metadata = None
 
   def GetDescription(self):
-    """Get a human readable description about the device.
+    """Get a human readable description of the device.
 
     Returns:
       str: the description
@@ -261,17 +261,6 @@ class DiskRecipe(base.BaseRecipe):
   This Recipe acquires the raw image of all disks on the system.
   """
 
-  def __init__(self, name, options=None):
-    """Initializes a DiskRecipe object.
-
-    Args:
-      name (str): the name of the artifact.
-
-    Raises:
-      ValueError: if the name is empty or None.
-    """
-    super(DiskRecipe, self).__init__(name, options=options)
-
   def _GetLsblkDict(self):
     """Calls lsblk.
 
@@ -315,12 +304,12 @@ class DiskRecipe(base.BaseRecipe):
 
   def _ListDisks(self, all_devices=False, names=None):
     """Between all disks connected to the machine, selects the one we want to
-    acquired.
+    acquire.
 
     Args:
       all_devices(bool): whether to also list devices that aren't internal to
         the system's (ie: removable media).
-      names(list(str)): list of disk names (ie: ['sda', 'sdc']) to acquire.
+      names(list(str)): list of disk names (eg: ['sda', 'sdc']) to acquire.
     Returns:
       list(DiskArtifact): a sorted (and curated) list of disks to acquire.
     """
