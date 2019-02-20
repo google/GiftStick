@@ -53,7 +53,7 @@ def _DictFromSubprocess(command):
 
 
 def _DictFromDiskutilInfo(deviceid):
-  """calls diskutil info for a specific device id.
+  """Calls diskutil info for a specific device ID.
 
   Args:
     deviceid(string): a given device id for a disk like object.
