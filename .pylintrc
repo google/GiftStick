@@ -261,7 +261,7 @@ attr-name-hint=(([a-z][a-z0-9_]*)|(_[a-z0-9_]*))$
 attr-rgx=(([a-z][a-z0-9_]*)|(_[a-z0-9_]*))$
 
 # Bad variable names which should always be refused, separated by a comma
-bad-names=foo,bar,baz,toto,tutu,tata
+bad-names=foo,bar,baz,toto,tutu,tata,lol
 
 # Naming hint for class attribute names
 # class-attribute-name-hint=([A-Za-z_][A-Za-z0-9_]{2,30}|(__.*__))$

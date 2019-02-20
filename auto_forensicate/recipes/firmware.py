@@ -31,7 +31,7 @@ class ChipsecRecipe(base.BaseRecipe):
     """Provides a list of Artifacts to upload.
 
     Returns:
-      list (BaseArtifact): the artifacts for the system's firmware.
+      list(BaseArtifact): the artifacts for the system's firmware.
     """
     if self._platform == 'darwin':
       self._logger.warn('Firmware acquisition only works on Linux, skipping.')

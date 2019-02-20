@@ -27,7 +27,7 @@ def _DictFromSubprocess(command):
   """Returns a dict based upon a subprocess call with a -plist argument.
 
   Args:
-    command: the command to be executed as a list.
+    command(list(str)): the command to be executed as a list.
   Returns:
     dict: dictionary from command output.
   Raises:
@@ -81,8 +81,8 @@ def WholeDisks():
   """Returns a list of all disk objects that are whole disks."""
   wholedisks = []
   try:
-    diskutilDict = _DictFromDiskutilList()
-    for deviceid in diskutilDict['WholeDisks']:
+    diskutil_dict = _DictFromDiskutilList()
+    for deviceid in diskutil_dict['WholeDisks']:
       wholedisks.append(Disk(deviceid))
   except KeyError:
     raise MacDiskError('Unable to list all partitions.')

@@ -168,6 +168,7 @@ class MacDiskArtifact(DiskArtifact):
 
   def _IsUsb(self):
     """Whether this device is connected on USB."""
+    #pylint: disable=no-member
     return self._macdisk.busprotocol == 'USB'
 
   def ProbablyADisk(self):
@@ -175,6 +176,7 @@ class MacDiskArtifact(DiskArtifact):
     if self._IsUsb():
       # We ignore USB to try to avoid copying the GiftStick itself.
       return False
+    #pylint: disable=no-member
     if self._macdisk.internal and (
         # TODO: this needs more research on how to autodetect "interesting"
         # disks to copy on MacOS.
@@ -352,6 +354,9 @@ class DiskRecipe(base.BaseRecipe):
 
     Args:
       disk(DiskArtifact): the disk object to get info from.
+
+    Returns:
+      StringArtifact: the disk info artifact.
     """
     if self._platform == 'darwin':
       # TODO

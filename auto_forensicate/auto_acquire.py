@@ -48,12 +48,13 @@ VALID_RECIPES = {
 class SpinnerBar(Spinner):
   """A Spinner object with an extra update method."""
 
+  #pylint: disable=invalid-name
   def update_with_total(self, _unused_current_bytes, _unused_total_bytes):
     """Called by boto library to update the ProgressBar.
 
     Args:
-      current_bytes(int): the number of bytes uploaded.
-      total_bytes(int): the total number of bytes to upload.
+      _unused_current_bytes(int): the number of bytes uploaded.
+      _unused_total_bytes(int): the total number of bytes to upload.
     """
     self.next()
 
@@ -93,7 +94,9 @@ class BaBar(IncrementalBar):
     """Returns a number of bytes per second into a human readble string.
 
     Args:
-      speed: a number of bytes per second.
+      speed(int): a number of bytes per second.
+    Returns:
+      str: the speed.
     """
     if speed == 1:
       return '1 B/s'
@@ -106,12 +109,13 @@ class BaBar(IncrementalBar):
         return '{0:.1f} {1}'.format(1000 * speed / unit, current_unit)
     return '{0:.1f} {1}'.format(1000 * speed / unit, 'PB/s')
 
+  #pylint: disable=invalid-name
   def update_with_total(self, current_bytes, _unused_total_bytes):
     """Called by boto library to update the ProgressBar.
 
     Args:
       current_bytes(int): the number of bytes uploaded.
-      total_bytes(int): the total number of bytes to upload.
+      _unused_total_bytes(int): the total number of bytes to upload.
     """
     self._Update(current_bytes)
 
@@ -331,8 +335,6 @@ class AutoForensicate(object):
       artifact (BaseArtifact): the artifact representing the file to upload.
       update_callback (func): the function called with the arguments:
         number_bytes_uploaded, number_bytes_total
-    Returns:
-      str: the url in the remote storage for the uploaded item.
     """
     try:
       remote_path = self._uploader.UploadArtifact(
