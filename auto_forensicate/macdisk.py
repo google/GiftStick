@@ -44,12 +44,12 @@ def _DictFromSubprocess(command):
   if task.returncode is not 0:
     raise MacDiskError(
         'Error running command: {0}, stderr: {1}' .format(command, stderr))
-  else:
-    try:
-      return biplist.readPlistFromString(stdout)
-    except (biplist.InvalidPlistException, biplist.NotBinaryPlistException):
-      raise MacDiskError(
-          'Error creating plist from output: {0}'.format(stdout))
+
+  try:
+    return biplist.readPlistFromString(stdout)
+  except (biplist.InvalidPlistException, biplist.NotBinaryPlistException):
+    raise MacDiskError(
+        'Error creating plist from output: {0}'.format(stdout))
 
 
 def _DictFromDiskutilInfo(deviceid):
