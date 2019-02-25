@@ -15,7 +15,13 @@
 """Helper functions to handle Mac OS information."""
 
 import subprocess
-import biplist
+import sys
+try:
+  import biplist
+except ImportError as e:
+  if sys.platform == 'darwin':
+    print('It looks like you are acquiring raw disk on a MacOS platform. \n'
+          'Please install the biplist python module')
 
 
 class MacDiskError(Exception):
