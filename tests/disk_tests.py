@@ -200,7 +200,8 @@ class DiskRecipeTests(unittest.TestCase):
   def testGetArtifacts(self):
     disk_name = 'sdx'
     disk_size = 20 * 1024 * 1024 * 1024  # 20GB
-    disk_object = disk.LinuxDiskArtifact('/dev/{0:s}'.format(disk_name), disk_size)
+    disk_object = disk.LinuxDiskArtifact(
+        '/dev/{0:s}'.format(disk_name), disk_size)
     disk_object._udevadm_metadata = {'udevadm_text_output': 'fake disk info'}
     with mock.patch(
         'auto_forensicate.recipes.disk.DiskRecipe._ListDisks'
@@ -217,13 +218,15 @@ class DiskRecipeTests(unittest.TestCase):
 
         udevadm_artifact = artifacts[1]
         self.assertIsInstance(udevadm_artifact, base.StringArtifact)
-        self.assertEqual(udevadm_artifact._GetStream().read(), b'fake disk info')
+        self.assertEqual(
+            udevadm_artifact._GetStream().read(), b'fake disk info')
         self.assertEqual(udevadm_artifact.remote_path, 'Disks/sdx.udevadm.txt')
 
         lsblk_artifact = artifacts[0]
         self.assertIsInstance(lsblk_artifact, base.StringArtifact)
         self.assertEqual(
-            lsblk_artifact._GetStream().read(), json.dumps(self._lsblk_dict).encode('utf-8'))
+            lsblk_artifact._GetStream().read(),
+            json.dumps(self._lsblk_dict).encode('utf-8'))
         self.assertEqual(lsblk_artifact.remote_path, 'Disks/lsblk.txt')
 
         self.assertEqual(artifacts[2], disk_object)
@@ -270,7 +273,7 @@ class MacDiskArtifactTests(unittest.TestCase):
 
   @mock.patch('auto_forensicate.macdisk._DictFromDiskutilInfo')
   @mock.patch('auto_forensicate.macdisk._DictFromDiskutilList')
-  def testGetDescription(self, patched_list_dict, patched_info_dict):
+  def testGetDescription(self, _patched_list_dict, _patched_info_dict):
     disk_object = disk.MacDiskArtifact('/dev/sdInternal', 123456789)
     self.assertEqual(
         'Name: sdInternal (Size: 123456789)', disk_object.GetDescription())

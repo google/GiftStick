@@ -30,7 +30,7 @@ class SysinfoRecipe(base.BaseRecipe):
     """Provides a list of Artifacts to upload.
 
     Returns:
-      list (BaseArtifact): the artifacts corresponding to copy.
+      list(BaseArtifact): the artifacts to copy.
     """
     if self._platform == 'darwin':
       return [

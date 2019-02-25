@@ -74,7 +74,7 @@ class DiskArtifact(base.BaseArtifact):
     dd_binary = hostinfo.Which(self._DD_BINARY)
     if not dd_binary:
       raise errors.RecipeException(
-          'Could not find \'{0}\''.format(self._DD_BINARY))
+          'Could not find \'{0:s}\''.format(self._DD_BINARY))
     command = [
         dd_binary, 'if={0:s}'.format(self._path),
         'hashlog={0:s}'.format(self.hashlog_filename)]
@@ -134,7 +134,7 @@ class DiskArtifact(base.BaseArtifact):
     Returns:
       str: the description
     """
-    return 'Name: {0} (Size: {1:d})'.format(self.name, self.size)
+    return 'Name: {0:s} (Size: {1:d})'.format(self.name, self.size)
 
   def ProbablyADisk(self):
     """Returns whether this is probably one of the system's internal disks."""
@@ -168,6 +168,7 @@ class MacDiskArtifact(DiskArtifact):
 
   def _IsUsb(self):
     """Whether this device is connected on USB."""
+    #pylint: disable=no-member
     return self._macdisk.busprotocol == 'USB'
 
   def ProbablyADisk(self):
@@ -175,6 +176,7 @@ class MacDiskArtifact(DiskArtifact):
     if self._IsUsb():
       # We ignore USB to try to avoid copying the GiftStick itself.
       return False
+    #pylint: disable=no-member
     if self._macdisk.internal and (
         # TODO: this needs more research on how to autodetect "interesting"
         # disks to copy on MacOS.
@@ -220,9 +222,9 @@ class LinuxDiskArtifact(DiskArtifact):
       model = self._GetUdevadmProperty('ID_SERIAL')
     connection = '(internal)'
     if self._IsUsb():
-      model = '{0} {1}'.format(self._GetUdevadmProperty('ID_VENDOR'), model)
+      model = '{0:s} {1:s}'.format(self._GetUdevadmProperty('ID_VENDOR'), model)
       connection = '(usb)'
-    return '{0}: {1} {2}'.format(self.name, model, connection)
+    return '{0:s}: {1:s} {2:s}'.format(self.name, model, connection)
 
   def _GetUdevadmProperty(self, prop):
     """Get a udevadm property.
@@ -352,6 +354,9 @@ class DiskRecipe(base.BaseRecipe):
 
     Args:
       disk(DiskArtifact): the disk object to get info from.
+
+    Returns:
+      StringArtifact: the disk info artifact.
     """
     if self._platform == 'darwin':
       # TODO

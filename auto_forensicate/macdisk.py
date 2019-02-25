@@ -33,7 +33,7 @@ def _DictFromSubprocess(command):
   """Returns a dict based upon a subprocess call with a -plist argument.
 
   Args:
-    command: the command to be executed as a list.
+    command(list(str)): the command to be executed as a list.
   Returns:
     dict: dictionary from command output.
   Raises:
@@ -44,18 +44,19 @@ def _DictFromSubprocess(command):
     task = subprocess.Popen(
         command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   except OSError as e:
-    raise MacDiskError('Could not execute: {0}'.format(e.strerror))
+    raise MacDiskError('Could not execute: {0:s}'.format(e.strerror))
   (stdout, stderr) = task.communicate()
 
   if task.returncode is not 0:
     raise MacDiskError(
-        'Error running command: {0}, stderr: {1}' .format(command, stderr))
+        'Error running command: {0:s}, stderr: {1:s}' .format(
+            ' '.join(command), stderr))
 
   try:
     return biplist.readPlistFromString(stdout)
   except (biplist.InvalidPlistException, biplist.NotBinaryPlistException):
     raise MacDiskError(
-        'Error creating plist from output: {0}'.format(stdout))
+        'Error creating plist from output: {0:s}'.format(stdout))
 
 
 def _DictFromDiskutilInfo(deviceid):
@@ -87,8 +88,8 @@ def WholeDisks():
   """Returns a list of all disk objects that are whole disks."""
   wholedisks = []
   try:
-    diskutilDict = _DictFromDiskutilList()
-    for deviceid in diskutilDict['WholeDisks']:
+    diskutil_dict = _DictFromDiskutilList()
+    for deviceid in diskutil_dict['WholeDisks']:
       wholedisks.append(Disk(deviceid))
   except KeyError:
     raise MacDiskError('Unable to list all partitions.')

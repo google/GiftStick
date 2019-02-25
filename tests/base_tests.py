@@ -19,14 +19,16 @@ from __future__ import unicode_literals
 import os
 import tempfile
 import unittest
-from auto_forensicate.recipes import base
 import mock
+
+from auto_forensicate.recipes import base
 
 
 class BaseArtifactTests(unittest.TestCase):
   """Tests for the BaseArtifact class."""
 
   def testInstantiate(self):
+    """Tests instanciating a BaseArtifact object."""
     artifact_name = 'artifact'
     artifact = base.BaseArtifact(artifact_name)
 
@@ -36,10 +38,12 @@ class BaseArtifactTests(unittest.TestCase):
     self.assertEqual(artifact.remote_path, expected_remote_path)
 
   def testReadableSize(self):
+    """Tests ReadableSize() method."""
     artifact_name = 'artifact'
     artifact = base.BaseArtifact(artifact_name)
     self.assertEqual(artifact.readable_size, 'Unknown size')
 
+    #pylint: disable=protected-access
     artifact._size = 12345
     self.assertEqual(artifact.readable_size, '12.1KiB')
 
@@ -62,6 +66,7 @@ class BaseArtifactTests(unittest.TestCase):
     self.assertEqual(artifact.readable_size, '10,965.2PiB')
 
   def testOpenStream(self):
+    """Tests OpenStream."""
     artifact = base.BaseArtifact('artifact')
     with self.assertRaises(NotImplementedError) as err:
       artifact.OpenStream()
@@ -75,9 +80,11 @@ class ProcessOutputArtifactTest(unittest.TestCase):
   _TEST_OUTPUT = b'this is some command output'
 
   def testRunCommand(self):
+    """Tests RunCommand"""
     cmd = ['echo', '-n', self._TEST_OUTPUT]
     artifact = base.ProcessOutputArtifact(cmd, 'output.txt')
 
+    #pylint: disable=protected-access
     self.assertEqual(artifact._command, cmd)
     self.assertEqual(artifact.name, 'output.txt')
     # Size is unknown until the command is run
@@ -96,8 +103,10 @@ class BaseRecipeTests(unittest.TestCase):
     self.temp_directory = tempfile.mkdtemp()
 
   def testContextManager(self):
+    """Tests creating temp directories in a 'with' statement."""
     with mock.patch('tempfile.mkdtemp', lambda: self.temp_directory):
       with base.BaseRecipe('fake_recipe') as recipe:
         self.assertTrue(os.path.isdir(self.temp_directory))
+        #pylint: disable=protected-access
         self.assertEqual(recipe._workdir, self.temp_directory)
       self.assertFalse(os.path.isdir(self.temp_directory))

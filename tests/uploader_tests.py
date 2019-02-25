@@ -24,16 +24,18 @@ try:
 except ImportError:
   from io import StringIO
 import unittest
+
+import boto
+import mock
+
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import base
 from auto_forensicate.stamp.manager import StampManager
-import boto
-import mock
+
 
 # pylint: disable=missing-docstring
 # pylint: disable=protected-access
-
 
 class FakeStamp(
     namedtuple('Stamp', [
