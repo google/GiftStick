@@ -96,7 +96,7 @@ class BaBar(IncrementalBar):
     Args:
       speed(int): a number of bytes per second.
     Returns:
-      str: the speed.
+      str: A human-readable speed reading.
     """
     if speed == 1:
       return '1 B/s'
