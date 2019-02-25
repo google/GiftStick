@@ -71,7 +71,9 @@ class GCSUploader(object):
   def _InitBoto(self):
     """Initializes the boto library with credentials from self._gs_keyfile."""
 
-    boto.config.add_section('Credentials')
+    if not boto.config.has_section('Credentials'):
+      boto.config.add_section('Credentials')
+
     boto.config.set(
         'Credentials', 'gs_service_key_file', self._gs_keyfile)
     boto.config.set(
