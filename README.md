@@ -40,7 +40,7 @@ in](https://cloud.google.com/sdk/docs/initializing). Then run:
 
 ```
 bash tools/remaster.sh \
-  --project apt-connection-376 \
+  --project some-forensics-project-XYZ \
   --bucket giftstick-uploads-XYZ
   --source_iso gift_stick/xubuntu-18.04-desktop-amd64.iso
 ```
