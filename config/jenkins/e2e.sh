@@ -57,7 +57,7 @@ function die {
 function setup {
   local evidence_disk_url
   sudo apt update -y
-  sudo apt install --allow-downgrade -y \
+  sudo apt install --allow-downgrades -y \
     gdisk \
     genisoimage \
     kpartx \
@@ -81,9 +81,9 @@ Pin-Priority: 150
 EOAPT
 
   apt update -y
-  apt install -y --allow-downgrade grub-common=2.02-2ubuntu8
-  apt install -y --allow-downgrade grub2-common=2.02-2ubuntu8
-  apt install -y --allow-downgrade grub-efi-amd64-bin=2.02-2ubuntu8
+  apt install -y --allow-downgrades grub-common=2.02-2ubuntu8
+  apt install -y --allow-downgrades grub2-common=2.02-2ubuntu8
+  apt install -y --allow-downgrades grub-efi-amd64-bin=2.02-2ubuntu8
 
   if [ ! -f "${ISO_FILENAME}" ]; then
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
