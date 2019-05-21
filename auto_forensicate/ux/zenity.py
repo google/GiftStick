@@ -16,6 +16,7 @@
 
 import subprocess
 
+
 def GetText(text):
   """Ask user for a string.
 
@@ -26,7 +27,7 @@ def GetText(text):
   """
 
   process = subprocess.Popen(
-      ['zenity', '--entry', '--text=\"{0:s}\"'.format(text)],
+      ['/usr/bin/zenity', '--entry', '--text="{0:s}"'.format(text)],
       stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
   if process.wait() == 0:
@@ -47,7 +48,7 @@ def CheckList(column_names, data, title=None):
     list[str]: the selected fields.
   """
 
-  command = ['zenity', '--list', '--checklist', '--editable=False']
+  command = ['/usr/bin/zenity', '--list', '--checklist', '--editable=False']
   for column in column_names:
     command.append('--column="{0:s}"'.format(column))
 
