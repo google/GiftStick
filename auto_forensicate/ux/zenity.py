@@ -56,7 +56,6 @@ def CheckList(column_names, data, title=None):
     command.append('--title="{0:s}"'.format(title))
 
   command = command + data
-  print ' '.join(command)
 
   process = subprocess.Popen(
       command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
