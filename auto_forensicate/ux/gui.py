@@ -14,7 +14,7 @@
 # limitations under the License.
 """Function to interact with the user in a graphic environment."""
 
-import PyZenity
+from auto_forensicate.ux import zenity
 
 
 def AskText(message, mandatory=False):
@@ -27,10 +27,10 @@ def AskText(message, mandatory=False):
   Returns:
     str: the user's answer to the question.
   """
-  text = PyZenity.GetText(message)
+  text = zenity.GetText(message)
   if mandatory and not text:
     while not text:
-      text = PyZenity.GetText(message)
+      text = zenity.GetText(message)
   # TODO: Sanitize input here, as this will be used to construct GCS paths.
   return text
 
@@ -51,19 +51,17 @@ def AskDiskList(disk_list):
       )
   )
 
-  data = [
-      (
-          # Default is to un-check block devices that are not internal disks.
-          disk.ProbablyADisk(),
-          disk.GetDescription()
-      ) for disk in disk_list]
+  data = []
+  for disk in disk_list:
+    # Default is to un-check block devices that are not internal disks.
+    data.append(str(disk.ProbablyADisk()))
+    data.append(disk.GetDescription())
+
   choices = []
   while not choices:
-    choices = PyZenity.List(
+    choices = zenity.CheckList(
         ['', 'Disks'],
         title='Please select which disks to copy.',
-        boolstyle='checklist',
-        editable=False,
         data=data
     )
 

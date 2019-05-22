@@ -35,16 +35,12 @@ setup(
     author='giftstick development team',
     license='Apache License, Version 2.0',
     packages=find_packages(),
-    dependency_links=[
-        'http://brianramos.com/software/PyZenity/PyZenity-0.1.8.tar.gz'
-        '#egg=PyZenity-0.1.8'],
     install_requires=[
         'progress',
         'boto',
         'gcs_oauth2_boto_plugin',
         'google-cloud-storage',
-        'google-cloud-logging',
-        'PyZenity'
+        'google-cloud-logging'
     ],
     classifiers=[
         'Development Status :: 4 - Beta',

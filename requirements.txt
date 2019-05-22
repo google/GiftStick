@@ -5,4 +5,3 @@ google-cloud-storage
 mock
 progress
 six
-http://brianramos.com/software/PyZenity/PyZenity-0.1.8.tar.gz
