@@ -16,6 +16,8 @@
 
 import subprocess
 
+from auto_forensicate.hostinfo import Which
+
 
 def GetText(text):
   """Ask user for a string.
@@ -26,8 +28,10 @@ def GetText(text):
     str: the user input.
   """
 
+  zenity_binary = Which('zenity')
+
   process = subprocess.Popen(
-      ['/usr/bin/zenity', '--entry', '--text="{0:s}"'.format(text)],
+      [zenity_binary, '--entry', '--text="{0:s}"'.format(text)],
       stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
   if process.wait() == 0:
@@ -48,9 +52,10 @@ def CheckList(column_names, data, title=None):
     list[str]: the selected fields.
   """
 
-  command = ['/usr/bin/zenity', '--list', '--checklist', '--editable=False']
+  zenity_binary = Which('zenity')
+  command = [zenity_binary, '--list', '--checklist', '--editable=False']
   for column in column_names:
-    command.append('--column="{0:s}"'.format(column))
+    command.append('--column="{2:s}"'.format(column))
 
   if title:
     command.append('--title="{0:s}"'.format(title))
