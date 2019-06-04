@@ -245,13 +245,7 @@ class AutoForensicate(object):
           options.destination, options.gs_keyfile, client_id, stamp_manager)
 
     elif options.destination.startswith('/'):
-      if not os.path.isdir(options.destination):
-        raise errors.BadConfigOption(
-            '{0:s} is not a valid directory. '
-            'Please provide a valid path to copy evidence to. '
-        )
       return uploader.LocalCopier(options.destination, stamp_manager)
-
 
     return None
 
