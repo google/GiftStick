@@ -20,9 +20,9 @@ import argparse
 from collections import namedtuple
 import json
 try:
-  from StringIO import StringIO
+  from BytesIO import BytesIO
 except ImportError:
-  from io import StringIO
+  from io import BytesIO
 import tempfile
 import unittest
 
@@ -85,7 +85,7 @@ class FakeGCSUploader(uploader.GCSUploader):
       remote_path (str): the remote path to store the data to.
       update_callback (func): an optional function called as upload progresses.
     """
-    self._uploaded_streams[remote_path] = stream.read()
+    self._uploaded_streams[remote_path] = stream.read().decode('utf-8')
 
 
 class FakeStampManager(StampManager):
@@ -110,7 +110,7 @@ class LocalCopierTests(unittest.TestCase):
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   def testUploadArtifact(self, patched_getstream):
     test_artifact = base.BaseArtifact('test_artifact')
-    patched_getstream.return_value = StringIO('fake_content')
+    patched_getstream.return_value = BytesIO(b'fake_content')
 
     uploader_object = uploader.LocalCopier(
         self.temp_dir, FakeStampManager(), stamp=FAKE_STAMP)
@@ -193,7 +193,7 @@ class GCSUploaderTests(unittest.TestCase):
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   def testUploadArtifact(self, patched_getstream):
     test_artifact = base.BaseArtifact('test_artifact')
-    patched_getstream.return_value = StringIO('fake_content')
+    patched_getstream.return_value = BytesIO(b'fake_content')
 
     uploader_object = FakeGCSUploader(self.gcs_url)
 
@@ -215,7 +215,7 @@ class GCSUploaderTests(unittest.TestCase):
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   @mock.patch.object(boto, 'storage_uri')
   def testFailUploadRetryWorthy(self, patched_storage, patched_getstream):
-    patched_getstream.return_value = StringIO('fake_content')
+    patched_getstream.return_value = BytesIO(b'fake_content')
     patched_storage.side_effect = boto.exception.GSDataError('boom')
 
     test_artifact = base.BaseArtifact('test_artifact')
@@ -231,7 +231,7 @@ class GCSUploaderTests(unittest.TestCase):
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   @mock.patch.object(boto, 'storage_uri')
   def testFailUploadNoRetry(self, patched_storage, patched_getstream):
-    patched_getstream.return_value = StringIO('fake_content')
+    patched_getstream.return_value = BytesIO(b'fake_content')
     patched_storage.side_effect = errors.ForensicateError('random_error')
 
     test_artifact = base.BaseArtifact('test_artifact')

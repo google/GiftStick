@@ -21,9 +21,9 @@ import json
 import logging
 import os
 try:
-  from StringIO import StringIO
+  from BytesIO import BytesIO
 except ImportError:
-  from io import StringIO
+  from io import BytesIO
 try:
   from urlparse import urlparse
 except ImportError:
@@ -53,7 +53,7 @@ class BaseUploader(object):
     """Upload the 'stamp' (a json file containing metadata)."""
 
     # TODO: if this fails, raise an Exception that will stop execution
-    stream = StringIO(json.dumps(self._stamp._asdict()))
+    stream = BytesIO(json.dumps(self._stamp._asdict()).encode('utf-8'))
     remote_path = self._MakeRemotePath('stamp.json')
     self._UploadStream(stream, remote_path)
     self._stamp_uploaded = True
