@@ -20,6 +20,7 @@ from __future__ import unicode_literals
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 
@@ -242,6 +243,9 @@ class AutoForensicate(object):
 
       return uploader.GCSUploader(
           options.destination, options.gs_keyfile, client_id, stamp_manager)
+
+    elif options.destination.startswith('/'):
+      return uploader.LocalCopier(options.destination, stamp_manager)
 
     return None
 
