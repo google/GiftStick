@@ -68,3 +68,14 @@ def AskDiskList(disk_list):
   if choices == ['']:
     return []
   return [disk_description_map[choice] for choice in choices]
+
+
+def Confirm(text):
+  """Asks the user to confirm something.
+
+  Args:
+    text(str): the text of the question.
+  Returns:
+    bool: whether the user confirmed.
+  """
+  return zenity.GetYesNo(text)

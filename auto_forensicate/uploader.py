@@ -257,6 +257,9 @@ class GCSUploader(BaseUploader):
       stream (file): the file-like object pointing to data to upload.
       remote_path (str): the remote path to store the data to.
       update_callback (func): an optional function called as upload progresses.
+    Raises:
+      errors.RetryableError: when the upload encounters an error that's worth
+        retrying.
     """
     if not self._boto_configured:
       self._InitBoto()
