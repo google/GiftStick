@@ -18,8 +18,7 @@ from __future__ import unicode_literals
 
 import unittest
 import mock
-from auto_forensicate.stamp.manager import BaseStamp
-from auto_forensicate.stamp.manager import StampManager
+from auto_forensicate.stamp import manager
 
 
 #pylint: disable=missing-docstring
@@ -27,23 +26,23 @@ class StampManagerTests(unittest.TestCase):
   """Tests for the StampManager class."""
 
   def setUp(self):
-    self.test_stamp = BaseStamp(
+    self.test_stamp = manager.BaseStamp(
         identifier='test_uuid',
         start_time='20171012-135619')
 
   def testBaseElements(self):
     path_elements = ['20171012-135619', 'test_uuid']
-    stamp_manager = StampManager()
+    stamp_manager = manager.BaseStampManager()
     self.assertEqual(
         stamp_manager.BasePathElements(self.test_stamp), path_elements)
 
   def testGetStamp(self):
-    test_stamp = BaseStamp(
+    test_stamp = manager.BaseStamp(
         identifier='test_uuid',
         start_time='20171012-135619')
     with mock.patch('auto_forensicate.hostinfo.GetTime') as faked_time:
       faked_time.return_value = '20171012-135619'
       with mock.patch('auto_forensicate.hostinfo.GetIdentifier') as faked_id:
         faked_id.return_value = 'test_uuid'
-        stamp_manager = StampManager()
+        stamp_manager = manager.BaseStampManager()
         self.assertEqual(stamp_manager.GetStamp(), test_stamp)
