@@ -225,7 +225,7 @@ class AutoForensicate(object):
       errors.BadConfigOption: if the options are invalid.
     """
 
-    stamp_manager = manager.StampManager()
+    stamp_manager = manager.BaseStampManager()
 
     if options.destination.startswith('gs://'):
       if not self._gcs_settings:
