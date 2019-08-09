@@ -4,7 +4,7 @@
 
 ## Summary
 
-This project contains code which allows an inexperimented user to easily (one
+This project contains code which allows an inexperienced user to easily (one
 click) upload forensics evidence (such as some information about the system,
 a full disk image as well as the system's firmware, if supported) from a
 target device (that will boot on an external device containing the code)
