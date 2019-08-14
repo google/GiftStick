@@ -91,7 +91,7 @@ class BaBar(IncrementalBar):
     return self._HumanReadableSpeed(1 / self.avg)
 
   def _HumanReadableSpeed(self, speed):
-    """Returns a number of bytes per second into a human readble string.
+    """Returns a number of bytes per second into a human readable string.
 
     Args:
       speed(int): a number of bytes per second.
@@ -224,7 +224,7 @@ class AutoForensicate(object):
       errors.BadConfigOption: if the options are invalid.
     """
 
-    stamp_manager = manager.StampManager()
+    stamp_manager = manager.BaseStampManager()
 
     if options.destination.startswith('gs://'):
       if not self._gcs_settings:

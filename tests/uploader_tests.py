@@ -33,7 +33,7 @@ import shutil
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import base
-from auto_forensicate.stamp.manager import StampManager
+from auto_forensicate.stamp import manager
 
 
 # pylint: disable=missing-docstring
@@ -88,7 +88,7 @@ class FakeGCSUploader(uploader.GCSUploader):
     self._uploaded_streams[remote_path] = stream.read().decode('utf-8')
 
 
-class FakeStampManager(StampManager):
+class FakeStampManager(manager.BaseStampManager):
 
   def GetStamp(self):
     return FakeStamp(

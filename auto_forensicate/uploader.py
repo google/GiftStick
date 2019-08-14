@@ -24,10 +24,7 @@ try:
   from BytesIO import BytesIO
 except ImportError:
   from io import BytesIO
-try:
-  from urlparse import urlparse
-except ImportError:
-  from urllib.parse import urlparse
+from six.moves.urllib.parse import urlparse
 import boto
 from auto_forensicate import errors
 
