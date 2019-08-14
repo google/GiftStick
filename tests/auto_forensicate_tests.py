@@ -19,13 +19,10 @@ from __future__ import unicode_literals
 import argparse
 import logging
 import os
-try:
-  from StringIO import StringIO
-except ImportError:
-  from io import StringIO
 import sys
 import tempfile
 import unittest
+from six import StringIO
 import mock
 
 from auto_forensicate import auto_acquire
