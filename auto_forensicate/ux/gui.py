@@ -76,6 +76,6 @@ def Confirm(text):
   Args:
     text(str): the text of the question.
   Returns:
-    bool: whether the user confirmed.
+    bool: True if the user confirms, False otherwise.
   """
   return zenity.GetYesNo(text)
