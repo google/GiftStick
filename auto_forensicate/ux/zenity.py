@@ -24,7 +24,7 @@ def GetYesNo(text):
   Args:
     text(str): The message to display.
   Returns:
-    bool: the user answer.
+    bool: the user's answer.
   """
 
   zenity_binary = Which('zenity')
