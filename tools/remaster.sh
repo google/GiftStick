@@ -652,16 +652,16 @@ function create_service_account {
   local gcs_sa_name=$2
   local gcs_sa_email="${gcs_sa_name}@${FLAGS_CLOUD_PROJECT_NAME}.iam.gserviceaccount.com"
   if gcloud -q iam service-accounts list --project "${FLAGS_CLOUD_PROJECT_NAME}" --format "get(email)" | grep -q "${gcs_sa_email}"; then
-    msg "${gcs_sa_email} already exists in project ${FLAGS_CLOUD_PROJECT_NAME}"
+    msg "${gcs_sa_email} already exists in project ${FLAGS_CLOUD_PROJECT_NAME}. Reusing."
   else
     gcloud -q iam service-accounts create "${gcs_sa_name}" \
       --project "${FLAGS_CLOUD_PROJECT_NAME}" --display-name "${gcs_sa_name}"
-    # Give the SA create permissions
-    gsutil iam ch "serviceAccount:${gcs_sa_email}:objectCreator" "gs://${gcs_bucket_name}"
     # Enable logging
     gcloud projects add-iam-policy-binding "${FLAGS_CLOUD_PROJECT_NAME}" \
       --member "serviceAccount:${gcs_sa_email}" --role "roles/logging.logWriter"
   fi
+  # Give the SA create permissions
+  gsutil iam ch "serviceAccount:${gcs_sa_email}:objectCreator" "gs://${gcs_bucket_name}"
 }
 
 # Creates and downloads a service account private key
@@ -680,7 +680,7 @@ function create_sa_key {
     gcloud iam service-accounts --project "${FLAGS_CLOUD_PROJECT_NAME}" keys create \
       --iam-account "${gcs_sa_email}" "${gcs_sa_key_path}"
   else
-    msg "${gcs_sa_key_path} already exists"
+    msg "${gcs_sa_key_path} already exists. Reusing."
   fi
 }
 
