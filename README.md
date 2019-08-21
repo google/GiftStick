@@ -66,6 +66,12 @@ gcloud iam service-accounts --project giftstick-project keys create \
         credentials.json
 ```
 
+Be sure to also give this Service Account access to the GCS cloud bucket:
+
+```
+gsutil iam ch "serviceAccount:uploader@giftstick-project.iam.gserviceaccount.com:objectCreator" gs://giftstick-bucket/
+```
+
 You can now then include the `auto_forensicate` folder, as well as the
 `credentials.json` file on a bootable USB of your choice, where the dependencies
 have been installed (see below).
