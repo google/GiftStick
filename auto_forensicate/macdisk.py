@@ -26,7 +26,6 @@ except ImportError as e:
 
 class MacDiskError(Exception):
   """Module specific exception class."""
-  pass
 
 
 def _DictFromSubprocess(command):
@@ -47,7 +46,7 @@ def _DictFromSubprocess(command):
     raise MacDiskError('Could not execute: {0:s}'.format(e.strerror))
   (stdout, stderr) = task.communicate()
 
-  if task.returncode is not 0:
+  if task.returncode != 0:
     raise MacDiskError(
         'Error running command: {0:s}, stderr: {1:s}' .format(
             ' '.join(command), stderr))

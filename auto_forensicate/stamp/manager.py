@@ -20,7 +20,7 @@ from auto_forensicate import hostinfo
 BaseStamp = namedtuple('Stamp', ['identifier', 'start_time'])
 
 
-class StampManager(object):
+class BaseStampManager(object):
   """Base class to generate the stamp file."""
 
   def BasePathElements(self, stamp):

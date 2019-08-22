@@ -180,25 +180,23 @@ function assert_image_size_flag {
 # Check FLAGS_GCS_BUCKET_NAME against Bucket Name Requirements:
 # https://cloud.google.com/storage/docs/naming#requirements
 function assert_bucket_name {
-  if [[ "${FLAGS_SKIP_GCS}" == "false" ]]; then
-    if [[ ! "${FLAGS_GCS_BUCKET_NAME}" ]]; then
-        die "Please specify a GCS bucket name with --bucket"
-    fi
-    if [[ ${#FLAGS_GCS_BUCKET_NAME} -lt 3 ]]; then
-      die "${FLAGS_GCS_BUCKET_NAME} is too short for a Bucket Name (<3)"
-    fi
-    if [[ ${#FLAGS_GCS_BUCKET_NAME} -gt 63 ]]; then
-      die "${FLAGS_GCS_BUCKET_NAME} is too long for a Bucket Name (>63)"
-    fi
-    if [[ ${FLAGS_GCS_BUCKET_NAME} = *"goog"* ]]; then
-      die "${FLAGS_GCS_BUCKET_NAME} can't contain 'goog'"
-    fi
-    if [[ ! ${FLAGS_GCS_BUCKET_NAME} =~ ^[a-z0-9][a-z0-9_-]+[a-z0-9]$ ]]; then
-      echo -n "A bucket name can contain lowercase alphanumeric characters, "
-      echo "hyphens."
-      echo "Bucket names must start and end with an alphanumeric character."
-      die "Wrong bucket name : ${FLAGS_GCS_BUCKET_NAME}"
-    fi
+  if [[ ! "${FLAGS_GCS_BUCKET_NAME}" ]]; then
+    die "Please specify a GCS bucket name with --bucket"
+  fi
+  if [[ ${#FLAGS_GCS_BUCKET_NAME} -lt 3 ]]; then
+    die "${FLAGS_GCS_BUCKET_NAME} is too short for a Bucket Name (<3)"
+  fi
+  if [[ ${#FLAGS_GCS_BUCKET_NAME} -gt 63 ]]; then
+    die "${FLAGS_GCS_BUCKET_NAME} is too long for a Bucket Name (>63)"
+  fi
+  if [[ ${FLAGS_GCS_BUCKET_NAME} = *"goog"* ]]; then
+    die "${FLAGS_GCS_BUCKET_NAME} can't contain 'goog'"
+  fi
+  if [[ ! ${FLAGS_GCS_BUCKET_NAME} =~ ^[a-z0-9][a-z0-9_-]+[a-z0-9]$ ]]; then
+    echo -n "A bucket name can contain lowercase alphanumeric characters, "
+    echo "hyphens."
+    echo "Bucket names must start and end with an alphanumeric character."
+    die "Wrong bucket name : ${FLAGS_GCS_BUCKET_NAME}"
   fi
 }
 
@@ -334,39 +332,44 @@ function parse_arguments {
   done
 
   # Verify arguments and set defaults.
-  assert_project_flag
-  assert_bucket_name
-  assert_sa_name
-  assert_sourceiso_flag
-  assert_image_flag
-  assert_image_size_flag
-
-  readonly UBUNTU_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
-  if [[ ! "${FLAGS_REMASTERED_ISO}" ]] ; then
-    readonly FLAGS_REMASTERED_ISO=$(basename "${UBUNTU_ISO}.${REMASTERED_SUFFIX}")
+  if [[ "${FLAGS_SKIP_GCS}" == "false" ]]; then
+   assert_project_flag
+   assert_bucket_name
+   assert_sa_name
   fi
+  if [[ "${FLAGS_SKIP_ISO_REMASTER}" == "false" ]]; then
+    assert_sourceiso_flag
 
-  readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/${FLAGS_EXTRA_GCS_PATH}"
-
-  # This checks agains a valid GCS object URL, such as
-  # gs://bucket/path/to/file
-  # See https://cloud.google.com/storage/docs/naming
-  if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+)+/?$ ]] ; then
-    die "${GCS_REMOTE_URL} is not a valid GCS URL"
-  fi
-
-  if [[ -z "${FLAGS_SA_JSON_PATH}" ]] ; then
-    if [[ "${FLAGS_SKIP_GCS}" == "true" ]]; then
-      die "Please provide path to a valid service account credentials file with --sa_json_file"
+    readonly UBUNTU_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
+    if [[ ! "${FLAGS_REMASTERED_ISO}" ]] ; then
+      readonly FLAGS_REMASTERED_ISO=$(basename "${UBUNTU_ISO}.${REMASTERED_SUFFIX}")
     fi
-    readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
-    readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
-  else
-    assert_sa_json_path "${FLAGS_SA_JSON_PATH}"
-    readonly GCS_SA_KEY_PATH="$(readlink -m "${FLAGS_SA_JSON_PATH}")"
-    readonly GCS_SA_KEY_NAME="$(basename "${FLAGS_SA_JSON_PATH}")"
   fi
 
+  if [[ "${FLAGS_SKIP_IMAGE}" == "false" ]]; then
+    assert_image_flag
+    assert_image_size_flag
+    readonly GCS_REMOTE_URL="gs://${FLAGS_GCS_BUCKET_NAME}/forensic_evidence/${FLAGS_EXTRA_GCS_PATH}"
+
+    # This checks agains a valid GCS object URL, such as
+    # gs://bucket/path/to/file
+    # See https://cloud.google.com/storage/docs/naming
+    if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+/?)*$ ]] ; then
+      die "${GCS_REMOTE_URL} is not a valid GCS URL"
+    fi
+
+    if [[ -z "${FLAGS_SA_JSON_PATH}" ]] ; then
+      if [[ "${FLAGS_SKIP_GCS}" == "true" ]]; then
+        die "Please provide path to a valid service account credentials file with --sa_json_file"
+      fi
+      readonly GCS_SA_KEY_NAME="${GCS_SA_NAME}_${FLAGS_CLOUD_PROJECT_NAME}_key.json"
+      readonly GCS_SA_KEY_PATH="${REMASTER_SCRIPTS_DIR}/${GCS_SA_KEY_NAME}"
+    else
+      assert_sa_json_path "${FLAGS_SA_JSON_PATH}"
+      readonly GCS_SA_KEY_PATH="$(readlink -m "${FLAGS_SA_JSON_PATH}")"
+      readonly GCS_SA_KEY_NAME="$(basename "${FLAGS_SA_JSON_PATH}")"
+    fi
+  fi
 }
 
 # Builds the remaster LiveCD iso file.
@@ -649,16 +652,16 @@ function create_service_account {
   local gcs_sa_name=$2
   local gcs_sa_email="${gcs_sa_name}@${FLAGS_CLOUD_PROJECT_NAME}.iam.gserviceaccount.com"
   if gcloud -q iam service-accounts list --project "${FLAGS_CLOUD_PROJECT_NAME}" --format "get(email)" | grep -q "${gcs_sa_email}"; then
-    msg "${gcs_sa_email} already exists in project ${FLAGS_CLOUD_PROJECT_NAME}"
+    msg "${gcs_sa_email} already exists in project ${FLAGS_CLOUD_PROJECT_NAME}. Reusing."
   else
     gcloud -q iam service-accounts create "${gcs_sa_name}" \
       --project "${FLAGS_CLOUD_PROJECT_NAME}" --display-name "${gcs_sa_name}"
-    # Give the SA create permissions
-    gsutil iam ch "serviceAccount:${gcs_sa_email}:objectCreator" "gs://${gcs_bucket_name}"
     # Enable logging
     gcloud projects add-iam-policy-binding "${FLAGS_CLOUD_PROJECT_NAME}" \
       --member "serviceAccount:${gcs_sa_email}" --role "roles/logging.logWriter"
   fi
+  # Give the SA create permissions
+  gsutil iam ch "serviceAccount:${gcs_sa_email}:objectCreator" "gs://${gcs_bucket_name}"
 }
 
 # Creates and downloads a service account private key
@@ -677,7 +680,7 @@ function create_sa_key {
     gcloud iam service-accounts --project "${FLAGS_CLOUD_PROJECT_NAME}" keys create \
       --iam-account "${gcs_sa_email}" "${gcs_sa_key_path}"
   else
-    msg "${gcs_sa_key_path} already exists"
+    msg "${gcs_sa_key_path} already exists. Reusing."
   fi
 }
 

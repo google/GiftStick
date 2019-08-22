@@ -85,6 +85,7 @@ class BaseArtifact(object):
     """
     self._logger.debug('Opening stream')
     if not self._stream:
+      # pylint: disable=assignment-from-no-return
       self._stream = self._GetStream()
 
     return self._stream

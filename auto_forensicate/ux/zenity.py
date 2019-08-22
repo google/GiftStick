@@ -18,6 +18,23 @@ import subprocess
 
 from auto_forensicate.hostinfo import Which
 
+def GetYesNo(text):
+  """Ask user a Yes/No question.
+
+  Args:
+    text(str): The message to display.
+  Returns:
+    bool: the user's answer.
+  """
+
+  zenity_binary = Which('zenity')
+
+  process = subprocess.Popen(
+      [zenity_binary, '--question', '--text="{0:s}"'.format(text)],
+      stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+  return process.wait() == 0
+
 
 def GetText(text):
   """Ask user for a string.
