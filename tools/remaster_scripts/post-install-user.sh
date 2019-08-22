@@ -40,8 +40,8 @@ function user_customise_desktop {
 EOXFCONF
 
 
-  # Install click-able shortcut on Desktop
-  cat << EOCHIPSHORT | sudo tee "Desktop/auto_forensicate.desktop" > /dev/null
+  # Install click-able shortcut on Desktop for forensication
+  cat << EOFORENSICATE | sudo tee "Desktop/auto_forensicate.desktop" > /dev/null
 [Desktop Entry]
 Version=1.0
 Type=Application
@@ -51,9 +51,25 @@ Exec=bash -c 'sudo bash call_auto_forensicate.sh; $SHELL'
 Icon=applications-utilities
 Terminal=true
 StartupNotify=false
-EOCHIPSHORT
+EOFORENSICATE
 
   sudo chmod a+x "Desktop/auto_forensicate.desktop"
+
+  # Install click-able shortcut on Desktop for browser
+  cat << EOCHROMIUM | sudo tee "Desktop/chromium.desktop" > /dev/null
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Chromium
+Comment=Runs chromium
+Exec=chromium-browser
+Icon=chromium-browser
+Terminal=false
+Comment=Chromium Browser
+StartupNotify=false
+EOCHROMIUM
+
+  sudo chmod a+x "Desktop/chromium.desktop"
 
 }
 

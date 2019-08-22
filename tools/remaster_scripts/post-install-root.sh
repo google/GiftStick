@@ -23,20 +23,18 @@ function ubuntu_remove_packages {
   apt-get -y remove "${BAD_PKG[@]}"
 }
 
-function install_forensication_tools {
-  readonly local CHIPSEC_PKG=( python-dev libffi-dev build-essential gcc nasm )
-  readonly local FORENSIC_PKG=( dcfldd )
-
-  # install common utils
-  apt-get -y install "${FORENSIC_PKG[@]}" "${CHIPSEC_PKG[@]}"
+function install_extra_pkg {
+  apt-get -y install "chromium-browser"
 }
 
-function install_basic_pkg {
+function install_required_pkg {
+  readonly local CHIPSEC_PKG=( python-dev libffi-dev build-essential gcc nasm )
   readonly local COMMON_UTILS=( git jq python-pip pv zenity )
+  readonly local FORENSIC_PKG=( dcfldd )
   readonly local WIRELESS_PKG=( firmware-b43-installer bcmwl-kernel-source )
 
   apt-get -y update
-  apt-get -y install "${COMMON_UTILS[@]}" "${WIRELESS_PKG[@]}"
+  apt-get -y install "${COMMON_UTILS[@]}" "${WIRELESS_PKG[@]}" "${FORENSIC_PKG[@]}" "${CHIPSEC_PKG[@]}"
 
   echo "PasswordAuthentication no" >>  /etc/ssh/sshd_config
 }
@@ -93,7 +91,7 @@ if [[ "${newest_ubuntus[@]}" =~ "${DISTRIB_CODENAME}" ]]; then
 fi
 
 ignore_chipsec_logs
-install_basic_pkg
-install_forensication_tools
+install_required_pkg
+install_extra_pkg
 ubuntu_remove_packages
 ubuntu_fix_mbp
