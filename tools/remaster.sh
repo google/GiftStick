@@ -354,7 +354,7 @@ function parse_arguments {
     # This checks agains a valid GCS object URL, such as
     # gs://bucket/path/to/file
     # See https://cloud.google.com/storage/docs/naming
-    if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]+/?)*$ ]] ; then
+    if [[ ! "${GCS_REMOTE_URL}" =~ ^gs://[a-zA-Z0-9_\.-]{3,63}(/[a-zA-Z0-9_\.\-]*/?)*$ ]] ; then
       die "${GCS_REMOTE_URL} is not a valid GCS URL"
     fi
 
