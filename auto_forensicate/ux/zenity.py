@@ -72,7 +72,7 @@ def CheckList(column_names, data, title=None):
   zenity_binary = Which('zenity')
   command = [zenity_binary, '--list', '--checklist', '--editable=False']
   for column in column_names:
-    command.append('--column="{2:s}"'.format(column))
+    command.append('--column="{0:s}"'.format(column))
 
   if title:
     command.append('--title="{0:s}"'.format(title))
