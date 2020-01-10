@@ -36,6 +36,7 @@ setup(
     license='Apache License, Version 2.0',
     packages=find_packages(),
     install_requires=[
+        'cachetools==3.1.1',  # Because 4.0 breaks on Py2 installs
         'progress',
         'boto',
         'gcs_oauth2_boto_plugin',
