@@ -26,7 +26,7 @@
 # you specify the destination with --image
 #
 # It requires the following packages, on ubuntu:
-#   gdisk genisoimage grub-efi-amd64-bin syslinux
+#   gdisk genisoimage grub-efi-amd64-bin syslinux initramfs-tools-core
 #
 # gdisk and grub-efi-amd64-bin are used for the EFI booting part.
 #
@@ -540,36 +540,19 @@ function pack_initrd {
 function unpack_initrd {
   local -r unpacked_iso_dir=$1
   local -r initrd_dir=$2
+
   local initrd_file
-  local initrd_pack_method
 
   msg "Unpacking initrd to modify casper"
-  mkdir "${initrd_dir}"
-  pushd "${initrd_dir}"
+
   if [[ -e "${unpacked_iso_dir}/casper/initrd.lz" ]]; then
     initrd_file="${unpacked_iso_dir}/casper/initrd.lz"
-    initrd_pack_method=lzma
-  elif [[ -e "${unpacked_iso_dir}/casper/initrd.gz" ]]; then
-    initrd_file="${unpacked_iso_dir}/casper/initrd.gz"
-    initrd_pack_method=gzip
-  elif [[ -e "${unpacked_iso_dir}/install/initrd.gz" ]]; then
-    initrd_file="${unpacked_iso_dir}/install/initrd.gz"
-    initrd_pack_method=gzip
   elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
     initrd_file="${unpacked_iso_dir}/casper/initrd"
-    initrd_pack_method=""
-  else
-    die "Can't find initrd.gz nor initrd.lz file in ${unpacked_iso_dir}"
   fi
-  if [[ -z "${initrd_pack_method}" ]] ; then
-    # Ubuntu changed their initramfs building method in Bionic
-    # See https://unix.stackexchange.com/a/329937
-    # and https://bugs.launchpad.net/ubuntu/+source/live-build/+bug/1778811
-    (cpio -id; lzma -d| cpio -id) < "${initrd_file}"
-  else
-    < "${initrd_file}" "${initrd_pack_method}" -d | cpio -i
-  fi
-  popd
+
+  mkdir "${initrd_dir}"
+  unmkinitramfs "${initrd_file}"  "${initrd_dir}"
 }
 
 # Cleans up all remastering working directories.
@@ -585,11 +568,11 @@ function clean_all_remaster_directories {
 # The generated remastered ISO will be available in the current directory.
 function make_custom_ubuntu_iso {
   # Let's define some directories for all the remaster subfunctions
-  readonly remaster_initrd_dir="${REMASTER_WORKDIR_PATH}/remaster-initrd"
   readonly remaster_destiso_dir="${REMASTER_WORKDIR_PATH}/remaster-iso"
   readonly remaster_destroot_dir="${REMASTER_WORKDIR_PATH}/remaster-root"
   readonly remaster_destsquashfs_dir="${remaster_destiso_dir}/squashfs"
 
+  local remaster_initrd_dir="${REMASTER_WORKDIR_PATH}/remaster-initrd"
   local post_ubuntu_script_name
 
   msg "Making a custom ISO image from $(basename "${SOURCE_ISO}")"
@@ -598,13 +581,18 @@ function make_custom_ubuntu_iso {
   mkdir "${remaster_destroot_dir}"
   unpack_rootfs "${remaster_destiso_dir}" "${remaster_destroot_dir}"
   unpack_initrd "${remaster_destiso_dir}" "${remaster_initrd_dir}"
+
+  if [[ -d "${remaster_initrd_dir}/main" ]] ; then
+    remaster_initrd_dir="${remaster_initrd_dir}/main"
+  fi
+
   msg "Customizing initrd"
   sudo sed -i "s/USERNAME=\".*\"$/USERNAME=\"${GIFT_USERNAME}\"/" \
-    "${REMASTER_WORKDIR_PATH}/remaster-initrd/etc/casper.conf"
+    "${remaster_initrd_dir}/etc/casper.conf"
   sudo sed -i "s/HOST=\".*\"$/HOST=\"gift-stick\"/" \
-    "${REMASTER_WORKDIR_PATH}/remaster-initrd/etc/casper.conf"
+    "${remaster_initrd_dir}/etc/casper.conf"
   echo "export FLAVOUR=\"GIFTSTICK\"" | \
-    sudo tee -a "${REMASTER_WORKDIR_PATH}/remaster-initrd/etc/casper.conf"
+    sudo tee -a "${remaster_initrd_dir}/etc/casper.conf"
 
   pack_initrd "${remaster_destiso_dir}" "${remaster_initrd_dir}"
 
