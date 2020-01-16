@@ -270,8 +270,9 @@ class DiskRecipe(base.BaseRecipe):
     Returns:
       dict: the output of the lsblk command.
     """
+    lsblk_path = hostinfo.Which('lsblk')
     lsblk_output = subprocess.check_output(
-        ['/bin/lsblk', '-J', '--bytes', '-o', '+UUID,FSTYPE,SERIAL'])
+        [lsblk_path, '-J', '--bytes', '-o', '+UUID,FSTYPE,SERIAL'])
     return json.loads(lsblk_output)
 
   def _ListAllDisksMac(self):
