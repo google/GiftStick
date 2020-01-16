@@ -215,7 +215,7 @@ class ProcessOutputArtifact(BaseArtifact):
           'Command \'{0!s}\' failed with \'{1!s}\' return code {2:d})'.format(
               self._command, error.strip(), process.returncode))
       self._logger.error(command_output)
-      command_output = command_output.decode('utf-8', 'ignore')
+      command_output = command_output
 
     return command_output
 
