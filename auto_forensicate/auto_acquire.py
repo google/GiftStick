@@ -68,7 +68,7 @@ class BaBar(IncrementalBar):
   """
 
   def _Update(self, current_bytes):
-    """Updates the current state of the progress Bar
+    """Updates the current state of the progress Bar.
 
     Args:
       current_bytes(int): the number of bytes uploaded.
@@ -399,7 +399,7 @@ class AutoForensicate(object):
     if not self._uploader:
       raise Exception('Could not instantiate uploader')
 
-    message = 'Acquisition starting with args \'{0:s}\''.format(sys.argv)
+    message = 'Acquisition starting with args \'{0!s}\''.format(sys.argv)
     self._logger.info(message)
     for recipe_name in options.acquire:
       recipe_class = self._recipes.get(recipe_name, None)
