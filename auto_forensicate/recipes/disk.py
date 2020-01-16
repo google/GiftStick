@@ -115,7 +115,7 @@ class DiskArtifact(base.BaseArtifact):
     # If there is anything still to read from the subprocess then CloseStream
     # has been called early, terminate the child process to avoid deadlock.
     c = self._ddprocess.stdout.read(1)
-    if c != '':
+    if c:
       # TODO log this
       self._ddprocess.terminate()
       raise subprocess.CalledProcessError(
