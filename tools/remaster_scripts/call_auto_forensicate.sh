@@ -39,14 +39,14 @@ if grep -qe "sendall.*encode" "${boto_dir}/connection.py" ; then
   echo "skipping patching of ${boto_dir}/connection.py"
 else
   echo "patching ${boto_dir}/connection.py"
-  sudo patch -d/ -p0 "${boto_dir}/connection.py" config/patches/boto_pr3561_connection.py.patch
+  sudo patch -p0 "${boto_dir}/connection.py" config/patches/boto_pr3561_connection.py.patch
 fi
 
 if grep -qe "send.*encode" "${boto_dir}/s3/key.py" ; then
   echo "skipping patching of ${boto_dir}/s3/key.py"
 else
   echo "patching ${boto_dir}/s3/key.py"
-  patch -d/ -p0 "${boto_dir}/s3/key.py" config/patches/boto_pr3561_key.py.patch
+  sudo patch -p0 "${boto_dir}/s3/key.py" config/patches/boto_pr3561_key.py.patch
 fi
 
 
