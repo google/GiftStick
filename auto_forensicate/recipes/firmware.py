@@ -23,9 +23,7 @@ class ChipsecRecipe(base.BaseRecipe):
   """The ChipsecRecipe class, which acquires the system's Firmware."""
 
   _CHIPSEC_CMD = [
-      '/usr/bin/python',
-      '/usr/local/lib/python2.7/dist-packages/chipsec_util.py', '-l',
-      '/dev/stderr', 'spi', 'dump', '/dev/stdout']
+      'chipsec_util.py', '-l', '/dev/stderr', 'spi', 'dump', '/dev/stdout']
 
   def GetArtifacts(self):
     """Provides a list of Artifacts to upload.
