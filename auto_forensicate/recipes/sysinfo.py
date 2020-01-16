@@ -23,6 +23,9 @@ from auto_forensicate.recipes import base
 class SysinfoRecipe(base.BaseRecipe):
   """The SysinfoRecipe class."""
 
+  _SYSTEM_PROFILER_CMD = [
+      '/usr/sbin/system_profiler', 'SPHardwareDataType', 'SPSoftwareDataType']
+
   def GetArtifacts(self):
     """Provides a list of Artifacts to upload.
 
@@ -31,14 +34,13 @@ class SysinfoRecipe(base.BaseRecipe):
     """
     artifacts_list = []
     if self._platform == 'darwin':
-      system_profiler_cmd = [
-          # TODO: have hostinfo.Which work on darwin
-          '/usr/sbin/system_profiler', 'SPHardwareDataType',
-          'SPSoftwareDataType']
+      # TODO: have hostinfo.Which work on darwin
       artifacts_list.append(
-          base.ProcessOutputArtifact(system_profiler_cmd, 'system_info.txt'))
+          base.ProcessOutputArtifact(
+              self._SYSTEM_PROFILER_CMD, 'system_info.txt'))
     else:
       dmidecode_path = hostinfo.Which('dmidecode')
       dmidecode_cmd = [dmidecode_path, '--type=1']
       artifacts_list.append(
           base.ProcessOutputArtifact(dmidecode_cmd, 'system_info.txt'))
+    return artifacts_list
