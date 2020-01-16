@@ -58,7 +58,7 @@ def GetSystemInformation():
   """
   dmi_info = None
   try:
-    dmi_info = subprocess.check_output(['dmidecode', '--type=system'])
+    dmi_info = subprocess.check_output(['dmidecode', '--type=system']).decode()
   except subprocess.CalledProcessError:
     pass
   return dmi_info
@@ -108,7 +108,7 @@ def GetUdevadmInfo(device_name):
   """
   device_metadata = {}
   cmd = ['/sbin/udevadm', 'info', '--query', 'property', '--name', device_name]
-  udevadm_output = subprocess.check_output(cmd)
+  udevadm_output = subprocess.check_output(cmd).decode()
   device_metadata['udevadm_text_output'] = udevadm_output
   for line in udevadm_output.split('\n'):
     try:
