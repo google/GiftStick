@@ -14,17 +14,13 @@
 # limitations under the License.
 """Set of helper functions for the end to end tests."""
 
-from __future__ import print_function
 from __future__ import unicode_literals
 
 import argparse
 import json
 import re
 
-try:
-  from urlparse import urlparse
-except ImportError:
-  from urllib.parse import urlparse
+from urllib.parse import urlparse
 
 
 def NormalizeGCSURL(url):
@@ -40,6 +36,7 @@ def NormalizeGCSURL(url):
   path_with_no_double_slash = parsed_url.path.replace('//', '/')
   parsed_url = parsed_url._replace(path=path_with_no_double_slash)
   return parsed_url.geturl()
+
 
 def CheckStamp(stamp_path):
   """Checks the content of a GiftStick stamp.json file.
@@ -61,6 +58,7 @@ def CheckStamp(stamp_path):
   start_time_regex = re.compile(r'^[0-9]{8}-[0-9]{6}$')
   assert start_time_regex.match(stamp_dict.get('start_time'))
 
+
 def CheckSystemInfo(system_info_path):
   """Checks the content of a GiftStick stamp.json file.
 
@@ -78,6 +76,7 @@ def CheckSystemInfo(system_info_path):
   sysinfo_regex = re.compile(
       r'System Information\n\W+Manufacturer: QEMU', re.MULTILINE)
   assert sysinfo_regex.search(system_info)
+
 
 def CheckLsblk(lsblk_path):
   """Checks the content of a GiftStick lsblk.txt file.
@@ -124,6 +123,7 @@ Total (sha1): 11840d13e5e9462f6acfa7bb9f700268202e29bf
     hash_file_content = hash_file.read()
     assert hash_file_content == expected
 
+
 def CheckUdevadm(udevadm_path):
   """Checks the content of a GiftStick udevadm.txt file.
 
@@ -148,8 +148,9 @@ def CheckUdevadm(udevadm_path):
 
     assert data_to_check == expected
 
+
 def ParseArguments():
-  """Parse arguments
+  """Parse arguments.
 
   Returns:
     argparse.Namespace: the parsed command-line arguments.

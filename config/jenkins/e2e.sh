@@ -174,7 +174,7 @@ function run_acquisition_script {
 function normalize_gcs_url {
   local GCS_URL="$1"
   # 'echo' is needed here because we catch the output of the command
-  echo "$(python config/jenkins/e2e_tools.py normalize "${GCS_URL}")"
+  echo "$(python3 config/jenkins/e2e_tools.py normalize "${GCS_URL}")"
 }
 
 # Checks that the stamp.json file has been uploaded, and contains
@@ -184,7 +184,7 @@ function check_stamp {
   stamp_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/stamp.json")
   gsutil -q cp "${stamp_url}" stamp.json
   # Check that the stamp is a valid JSON file
-  python config/jenkins/e2e_tools.py check_stamp stamp.json
+  python3 config/jenkins/e2e_tools.py check_stamp stamp.json
 }
 
 # Checks the system_info.txt file.
@@ -192,7 +192,7 @@ function check_system_info {
   local system_info_url
   system_info_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/system_info.txt")
   gsutil -q cp "${system_info_url}" system_info.txt
-  python config/jenkins/e2e_tools.py check_system_info system_info.txt
+  python3 config/jenkins/e2e_tools.py check_system_info system_info.txt
 }
 
 # Checks that an (empty) rom.bin has been uploaded
@@ -223,15 +223,15 @@ function check_disk {
 
   msg "Checking ${lsblk_url}"
   gsutil cp "${lsblk_url}" "lsblk.txt"
-  python config/jenkins/e2e_tools.py check_lsblk lsblk.txt
+  python3 config/jenkins/e2e_tools.py check_lsblk lsblk.txt
 
   msg "Checking ${hash_url}"
   gsutil cp "${hash_url}" "sdb.hash"
-  python config/jenkins/e2e_tools.py check_hash "sdb.hash"
+  python3 config/jenkins/e2e_tools.py check_hash "sdb.hash"
 
   msg "Checking ${udevadm_url}"
   gsutil cp "${udevadm_url}" sdb.udevadm.txt
-  python config/jenkins/e2e_tools.py check_udevadm sdb.udevadm.txt
+  python3 config/jenkins/e2e_tools.py check_udevadm sdb.udevadm.txt
 }
 
 # Checks that files pushed to GCS are present and contains the proper
