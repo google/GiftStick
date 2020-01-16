@@ -35,11 +35,18 @@ sudo python setup.py install
 # See https://github.com/boto/boto/pull/3699
 boto_dir=$(python -c "import boto; print(boto.__path__[0])")
 
-if grep -e "sendall.*encode" "${boto_dir}/connection.py" ; then
+if grep -qe "sendall.*encode" "${boto_dir}/connection.py" ; then
   echo "skipping patching of ${boto_dir}/connection.py"
 else
   echo "patching ${boto_dir}/connection.py"
-  sudo cat config/patches/boto_pr3561.patch | patch -d/ -p0
+  sudo patch -d/ -p0 "${boto_dir}/connection.py" config/patches/boto_pr3561_connection.py.patch
+fi
+
+if grep -qe "send.*encode" "${boto_dir}/s3/key.py" ; then
+  echo "skipping patching of ${boto_dir}/s3/key.py"
+else
+  echo "patching ${boto_dir}/s3/key.py"
+  patch -d/ -p0 "${boto_dir}/s3/key.py" config/patches/boto_pr3561_key.py.patch
 fi
 
 
