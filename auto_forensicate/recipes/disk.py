@@ -92,7 +92,7 @@ class DiskArtifact(base.BaseArtifact):
     """
     if self._ddprocess is None:
       command = self._GenerateDDCommand()
-      self._logger.info('Opening disk with command \'{0:s}\''.format(command))
+      self._logger.info('Opening disk with command \'{0!s}\''.format(command))
       self._ddprocess = subprocess.Popen(
           command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
