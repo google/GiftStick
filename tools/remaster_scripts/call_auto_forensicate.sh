@@ -32,7 +32,16 @@ cd GiftStick
 sudo python setup.py install
 
 # Apply patch for boto py3 compatibility
-sudo cat config/patches/boto_pr3561.patch | patch -d/ -p0
+# See https://github.com/boto/boto/pull/3699
+boto_dir=$(python -c "import boto; print(boto.__path__[0])")
+
+if grep -e "sendall.*encode" "${boto_dir}/connection.py" ; then
+  echo "skipping patching of ${boto_dir}/connection.py"
+else
+  echo "patching ${boto_dir}/connection.py"
+  sudo cat config/patches/boto_pr3561.patch | patch -d/ -p0
+fi
+
 
 # We need to build a module for this system, this can't be installed before
 # booting.
