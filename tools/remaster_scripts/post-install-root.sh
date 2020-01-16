@@ -24,7 +24,7 @@ function ubuntu_remove_packages {
 }
 
 function install_forensication_tools {
-  readonly local CHIPSEC_PKG=( python-dev libffi-dev build-essential gcc nasm )
+  readonly local CHIPSEC_PKG=( python3-dev libffi-dev build-essential gcc nasm )
   readonly local FORENSIC_PKG=( dcfldd )
 
   # install common utils
@@ -32,13 +32,18 @@ function install_forensication_tools {
 }
 
 function install_basic_pkg {
-  readonly local COMMON_UTILS=( git jq python-pip pv zenity )
+  readonly local COMMON_UTILS=( git jq python3-pip pv zenity )
   readonly local WIRELESS_PKG=( firmware-b43-installer bcmwl-kernel-source )
 
   apt-get -y update
   apt-get -y install "${COMMON_UTILS[@]}" "${WIRELESS_PKG[@]}"
 
   echo "PasswordAuthentication no" >>  /etc/ssh/sshd_config
+
+  # Force python3
+  update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+  update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
 }
 
 function ubuntu_fix_systemd {
