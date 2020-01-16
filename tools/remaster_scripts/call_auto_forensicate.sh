@@ -31,6 +31,9 @@ git clone https://github.com/google/GiftStick
 cd GiftStick
 sudo python setup.py install
 
+# Apply patch for boto py3 compatibility
+sudo cat config/patches/boto_pr3561.patch | patch -d/ -p0
+
 # We need to build a module for this system, this can't be installed before
 # booting.
 sudo pip install chipsec
