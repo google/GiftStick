@@ -17,11 +17,14 @@
 from __future__ import unicode_literals
 
 import unittest
+
 from auto_forensicate.recipes import base
 from auto_forensicate.recipes import sysinfo
 
+import mock
 
-#pylint: disable=missing-docstring
+
+# pylint: disable=missing-docstring
 class LinuxSysinfoRecipeTest(unittest.TestCase):
   """Tests for the SysinfoRecipe class."""
 
@@ -46,35 +49,38 @@ class LinuxSysinfoRecipeTest(unittest.TestCase):
 
   def testGetArtifactsFail(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('failsysinfo')
-    #pylint: disable=protected-access
+    # pylint: disable=protected-access
     sysinfo_recipe._platform = 'linux'
-    sysinfo_recipe._DMI_DECODE_CMD = [
-        'echo', '-n', self._DMIDECODE_OUTPUT_FAIL_STRING]
-    artifacts = sysinfo_recipe.GetArtifacts()
-    self.assertEqual(len(artifacts), 1)
+    # pylint: disable=line-too-long
+    with mock.patch('auto_forensicate.recipes.base.ProcessOutputArtifact._RunCommand') as patched_run:
+      patched_run.return_value = self._DMIDECODE_OUTPUT_FAIL_STRING
+      artifacts = sysinfo_recipe.GetArtifacts()
+      self.assertEqual(len(artifacts), 1)
 
-    artifact = artifacts[0]
-    self.assertIsInstance(artifact, base.ProcessOutputArtifact)
-    self.assertEqual(artifact.name, 'system_info.txt')
-    self.assertEqual(artifact.remote_path, 'system_info.txt')
-    artifact_content = artifact.OpenStream().read()
-    self.assertEqual(artifact_content, self._DMIDECODE_OUTPUT_FAIL_STRING)
+      artifact = artifacts[0]
+      self.assertIsInstance(artifact, base.ProcessOutputArtifact)
+      self.assertEqual(artifact.name, 'system_info.txt')
+      self.assertEqual(artifact.remote_path, 'system_info.txt')
+      artifact_content = artifact.OpenStream().read()
+      self.assertEqual(artifact_content, self._DMIDECODE_OUTPUT_FAIL_STRING)
 
   def testGetArtifacts(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('sysinfo')
-    #pylint: disable=protected-access
+    # pylint: disable=protected-access
     sysinfo_recipe._platform = 'linux'
-    sysinfo_recipe._DMI_DECODE_CMD = [
-        'echo', '-n', self._DMIDECODE_OUTPUT_STRING]
-    artifacts = sysinfo_recipe.GetArtifacts()
-    self.assertEqual(len(artifacts), 1)
+    # pylint: disable=line-too-long
+    with mock.patch('auto_forensicate.recipes.base.ProcessOutputArtifact._RunCommand') as patched_run:
+      patched_run.return_value = self._DMIDECODE_OUTPUT_STRING
+      artifacts = sysinfo_recipe.GetArtifacts()
+      self.assertEqual(len(artifacts), 1)
 
-    artifact = artifacts[0]
-    self.assertIsInstance(artifact, base.ProcessOutputArtifact)
-    self.assertEqual(artifact.name, 'system_info.txt')
-    self.assertEqual(artifact.remote_path, 'system_info.txt')
-    artifact_content = artifact.OpenStream().read()
-    self.assertEqual(artifact_content, self._DMIDECODE_OUTPUT_STRING)
+      artifact = artifacts[0]
+      self.assertIsInstance(artifact, base.ProcessOutputArtifact)
+      self.assertEqual(artifact.name, 'system_info.txt')
+      self.assertEqual(artifact.remote_path, 'system_info.txt')
+      artifact_content = artifact.OpenStream().read()
+      self.assertEqual(artifact_content, self._DMIDECODE_OUTPUT_STRING)
+
 
 class MacSysinfoRecipeTest(unittest.TestCase):
   """Tests for the SysinfoRecipe class."""
@@ -118,32 +124,34 @@ Software:
 
   def testGetArtifactsFail(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('failsysinfo')
-    #pylint: disable=protected-access
+    # pylint: disable=protected-access
     sysinfo_recipe._platform = 'darwin'
-    sysinfo_recipe._SYSTEM_PROFILER_CMD = [
-        'echo', '-n', self._SYSTEM_PROFILER_FAIL_STRING]
-    artifacts = sysinfo_recipe.GetArtifacts()
-    self.assertEqual(len(artifacts), 1)
+    # pylint: disable=line-too-long
+    with mock.patch('auto_forensicate.recipes.base.ProcessOutputArtifact._RunCommand') as patched_run:
+      patched_run.return_value = self._SYSTEM_PROFILER_FAIL_STRING
+      artifacts = sysinfo_recipe.GetArtifacts()
+      self.assertEqual(len(artifacts), 1)
 
-    artifact = artifacts[0]
-    self.assertIsInstance(artifact, base.ProcessOutputArtifact)
-    self.assertEqual(artifact.name, 'system_info.txt')
-    self.assertEqual(artifact.remote_path, 'system_info.txt')
-    artifact_content = artifact.OpenStream().read()
-    self.assertEqual(artifact_content, self._SYSTEM_PROFILER_FAIL_STRING)
+      artifact = artifacts[0]
+      self.assertIsInstance(artifact, base.ProcessOutputArtifact)
+      self.assertEqual(artifact.name, 'system_info.txt')
+      self.assertEqual(artifact.remote_path, 'system_info.txt')
+      artifact_content = artifact.OpenStream().read()
+      self.assertEqual(artifact_content, self._SYSTEM_PROFILER_FAIL_STRING)
 
   def testGetArtifacts(self):
     sysinfo_recipe = sysinfo.SysinfoRecipe('sysinfo')
-    #pylint: disable=protected-access
+    # pylint: disable=protected-access
     sysinfo_recipe._platform = 'darwin'
-    sysinfo_recipe._SYSTEM_PROFILER_CMD = [
-        'echo', '-n', self._SYSTEM_PROFILER_OUTPUT_STRING]
-    artifacts = sysinfo_recipe.GetArtifacts()
-    self.assertEqual(len(artifacts), 1)
+    # pylint: disable=line-too-long
+    with mock.patch('auto_forensicate.recipes.base.ProcessOutputArtifact._RunCommand') as patched_run:
+      patched_run.return_value = self._SYSTEM_PROFILER_OUTPUT_STRING
+      artifacts = sysinfo_recipe.GetArtifacts()
+      self.assertEqual(len(artifacts), 1)
 
-    artifact = artifacts[0]
-    self.assertIsInstance(artifact, base.ProcessOutputArtifact)
-    self.assertEqual(artifact.name, 'system_info.txt')
-    self.assertEqual(artifact.remote_path, 'system_info.txt')
-    artifact_content = artifact.OpenStream().read()
-    self.assertEqual(artifact_content, self._SYSTEM_PROFILER_OUTPUT_STRING)
+      artifact = artifacts[0]
+      self.assertIsInstance(artifact, base.ProcessOutputArtifact)
+      self.assertEqual(artifact.name, 'system_info.txt')
+      self.assertEqual(artifact.remote_path, 'system_info.txt')
+      artifact_content = artifact.OpenStream().read()
+      self.assertEqual(artifact_content, self._SYSTEM_PROFILER_OUTPUT_STRING)
