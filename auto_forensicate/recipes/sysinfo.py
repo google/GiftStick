@@ -16,13 +16,13 @@
 
 from __future__ import unicode_literals
 
+from auto_forensicate import hostinfo
 from auto_forensicate.recipes import base
 
 
 class SysinfoRecipe(base.BaseRecipe):
   """The SysinfoRecipe class."""
 
-  _DMI_DECODE_CMD = ['/usr/sbin/dmidecode', '--type=1']
   _SYSTEM_PROFILER_CMD = [
       '/usr/sbin/system_profiler', 'SPHardwareDataType', 'SPSoftwareDataType']
 
@@ -32,9 +32,15 @@ class SysinfoRecipe(base.BaseRecipe):
     Returns:
       list(BaseArtifact): the artifacts to copy.
     """
+    artifacts_list = []
     if self._platform == 'darwin':
-      return [
+      # TODO: have hostinfo.Which work on darwin
+      artifacts_list.append(
           base.ProcessOutputArtifact(
-              self._SYSTEM_PROFILER_CMD, 'system_info.txt')]
-    return [
-        base.ProcessOutputArtifact(self._DMI_DECODE_CMD, 'system_info.txt')]
+              self._SYSTEM_PROFILER_CMD, 'system_info.txt'))
+    else:
+      dmidecode_path = hostinfo.Which('dmidecode')
+      dmidecode_cmd = [dmidecode_path, '--type=1']
+      artifacts_list.append(
+          base.ProcessOutputArtifact(dmidecode_cmd, 'system_info.txt'))
+    return artifacts_list
