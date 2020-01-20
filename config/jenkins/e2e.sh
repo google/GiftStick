@@ -271,11 +271,11 @@ function main {
 
   readonly GCS_EXPECTED_URL="gs://${GCS_BUCKET}/forensic_evidence/${EXTRA_GCS_PATH}/*/*/"
 
+  # Use the default xubuntu image if non was specified
   if [[ "${ISO_TO_REMASTER_URL}" == "" ]] ; then
     ISO_TO_REMASTER_URL="${DEFAULT_ISO_URL}"
   fi
-
-  ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
+  ISO_FILENAME="${ISO_TO_REMASTER_URL##*/}"
 
   msg "Setting up environment"
   setup
