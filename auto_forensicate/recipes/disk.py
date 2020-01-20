@@ -92,7 +92,7 @@ class DiskArtifact(base.BaseArtifact):
     """
     if self._ddprocess is None:
       command = self._GenerateDDCommand()
-      self._logger.info('Opening disk with command \'{0:s}\''.format(command))
+      self._logger.info('Opening disk with command \'{0!s}\''.format(command))
       self._ddprocess = subprocess.Popen(
           command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     else:
@@ -115,7 +115,7 @@ class DiskArtifact(base.BaseArtifact):
     # If there is anything still to read from the subprocess then CloseStream
     # has been called early, terminate the child process to avoid deadlock.
     c = self._ddprocess.stdout.read(1)
-    if c != '':
+    if c:
       # TODO log this
       self._ddprocess.terminate()
       raise subprocess.CalledProcessError(

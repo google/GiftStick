@@ -1,0 +1,26 @@
+--- /usr/local/lib/python3.7/dist-packages/boto-2.49.0-py3.7.egg/boto/s3/key.py	2020-01-16 15:57:46.138157223 +0000
++++ /tmp/key.py	2020-01-16 15:58:50.001218437 +0000
+@@ -849,9 +849,9 @@
+                 chunk_len = len(chunk)
+                 data_len += chunk_len
+                 if chunked_transfer:
+-                    http_conn.send('%x;\r\n' % chunk_len)
++                    http_conn.send(('%x;\r\n' % chunk_len).encode())
+                     http_conn.send(chunk)
+-                    http_conn.send('\r\n')
++                    http_conn.send('\r\n'.encode())
+                 else:
+                     http_conn.send(chunk)
+                 for alg in digesters:
+@@ -879,9 +879,9 @@
+                 self.local_hashes[alg] = digesters[alg].digest()
+ 
+             if chunked_transfer:
+-                http_conn.send('0\r\n')
++                http_conn.send('0\r\n'.encode())
+                     # http_conn.send("Content-MD5: %s\r\n" % self.base64md5)
+-                http_conn.send('\r\n')
++                http_conn.send('\r\n'.encode())
+ 
+             if cb and (cb_count <= 1 or i > 0) and data_len > 0:
+                 cb(data_len, cb_size)

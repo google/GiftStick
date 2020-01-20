@@ -38,7 +38,7 @@ setup(
     install_requires=[
         'cachetools==3.1.1',  # Because 4.0 breaks on Py2 installs
         'progress',
-        'boto',
+        'boto==2.49.0',
         'gcs_oauth2_boto_plugin',
         'google-cloud-storage',
         'google-cloud-logging'
