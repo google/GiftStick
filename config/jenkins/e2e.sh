@@ -19,11 +19,13 @@
 CLOUD_PROJECT=""
 GCS_BUCKET=""
 SA_CREDENTIALS_FILE=""
+ISO_TO_REMASTER_URL=""
+ISO_FILENAME=""
 
 readonly GIFT_USER="gift"
-readonly ISO_TO_REMASTER_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
-readonly ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
 readonly IMAGE_NAME="giftstick.img"
+
+readonly DEFAULT_ISO_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
 
 readonly REMASTER_SCRIPT="tools/remaster.sh"
 readonly EXTRA_GCS_PATH="jenkins-build-${BUILD_NUMBER}"
@@ -265,8 +267,15 @@ function main {
   CLOUD_PROJECT=$1
   GCS_BUCKET=$2
   SA_CREDENTIALS_FILE=$3
+  ISO_TO_REMASTER_URL=$4
 
   readonly GCS_EXPECTED_URL="gs://${GCS_BUCKET}/forensic_evidence/${EXTRA_GCS_PATH}/*/*/"
+
+  if [[ "${ISO_TO_REMASTER_URL}" == "" ]] ; then
+    ISO_TO_REMASTER_URL="${DEFAULT_ISO_URL}"
+  fi
+
+  ISO_FILENAME=${ISO_TO_REMASTER_URL##*/}
 
   msg "Setting up environment"
   setup
