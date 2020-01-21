@@ -104,6 +104,7 @@ Pin-Priority: 150
 EOAPT
 
     apt update -y
+    apt install -y lz4
     apt install -y initramfs-tools-bin=0.133ubuntu10
     apt install -y initramfs-tools-core=0.133ubuntu10
   fi
