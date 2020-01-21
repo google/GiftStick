@@ -94,6 +94,20 @@ function setup {
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
   fi
 
+  if [[ "${ISO_FILENAME}" == *"20.04"* ]] || [[ "${ISO_FILENAME}" == *"focal"* ]] ; then
+    echo "Upgrading initramfs-tools-core to 0.133 to manage the new initrd format"
+    add-apt-repository 'deb http://europe-west1.gce.archive.ubuntu.com/ubuntu/ eoan main'
+    cat >/etc/apt/preferences.d/limit-eoan <<EOAPT
+Package: *
+Pin: release o=Ubuntu,a=eoan
+Pin-Priority: 150
+EOAPT
+
+    apt update -y
+    apt install -y initramfs-tools-bin=0.133ubuntu10
+    apt install -y initramfs-tools-core=0.133ubuntu10
+  fi
+
   if [ ! -f "${EVIDENCE_DISK}" ]; then
     evidence_disk_url=$(normalize_gcs_url "${EVIDENCE_DISK_GSURL}")
     msg "Downloading evidence disk from ${evidence_disk_url}"
