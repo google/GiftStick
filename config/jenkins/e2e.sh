@@ -62,6 +62,7 @@ function setup {
   sudo apt install --allow-downgrades -y \
     gdisk \
     genisoimage \
+    initramfs-tools-core \
     kpartx \
     jq \
     ovmf \
@@ -71,21 +72,21 @@ function setup {
     syslinux-utils \
     wget
 
-   # Xenial version of grub-efi-amd64-bin: 2.02~beta2-36ubuntu3 doesn't
-   # generate bootable images, for an unknown reason.
-   # Since our current CI environment uses Xenial, let's for installation
-   # of 2.02-2ubuntu8 from bionic hosted on GCE
-   add-apt-repository 'deb http://europe-west1.gce.archive.ubuntu.com/ubuntu/ bionic main'
-   cat >/etc/apt/preferences.d/limit-bionic <<EOAPT
-Package: *
-Pin: release o=Ubuntu,a=bionic
-Pin-Priority: 150
-EOAPT
-
-  apt update -y
-  apt install -y --allow-downgrades grub-common=2.02-2ubuntu8
-  apt install -y --allow-downgrades grub2-common=2.02-2ubuntu8
-  apt install -y --allow-downgrades grub-efi-amd64-bin=2.02-2ubuntu8
+#   # Xenial version of grub-efi-amd64-bin: 2.02~beta2-36ubuntu3 doesn't
+#   # generate bootable images, for an unknown reason.
+#   # Since our current CI environment uses Xenial, let's force installation
+#   # of 2.02-2ubuntu8 from bionic hosted on GCE
+#   add-apt-repository 'deb http://europe-west1.gce.archive.ubuntu.com/ubuntu/ bionic main'
+#   cat >/etc/apt/preferences.d/limit-bionic <<EOAPT
+#Package: *
+#Pin: release o=Ubuntu,a=bionic
+#Pin-Priority: 150
+#EOAPT
+#
+#  apt update -y
+#  apt install -y --allow-downgrades grub-common=2.02-2ubuntu8
+#  apt install -y --allow-downgrades grub2-common=2.02-2ubuntu8
+#  apt install -y --allow-downgrades grub-efi-amd64-bin=2.02-2ubuntu8
 
   if [ ! -f "${ISO_FILENAME}" ]; then
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
