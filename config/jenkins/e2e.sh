@@ -62,6 +62,7 @@ function setup {
   sudo apt install --allow-downgrades -y \
     gdisk \
     genisoimage \
+    grub-efi-amd64-bin \
     initramfs-tools-core \
     kpartx \
     jq \
