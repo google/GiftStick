@@ -33,7 +33,6 @@ readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
 readonly EVIDENCE_DISK="disk_42.img"
-readonly EVIDENCE_DISK_GSURL="gs://${GCS_BUCKET}/test_data/${EVIDENCE_DISK}"
 readonly EVIDENCE_DISK_MD5_HEX="1e639d0a0b2c718eae71a058582a555e"
 
 
@@ -292,6 +291,8 @@ function main {
   ISO_TO_REMASTER_URL=$4
 
   readonly GCS_EXPECTED_URL="gs://${GCS_BUCKET}/forensic_evidence/${EXTRA_GCS_PATH}/*/*/"
+
+  readonly EVIDENCE_DISK_GSURL="gs://${GCS_BUCKET}/test_data/${EVIDENCE_DISK}"
 
   # Use the default xubuntu image if non was specified
   if [[ "${ISO_TO_REMASTER_URL}" == "" ]] ; then
