@@ -33,6 +33,7 @@ readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
 readonly EVIDENCE_DISK="disk_42.img"
+readonly EVIDENCE_DISK_GSURL="gs://${GCS_BUCKET}/test_data/${EVIDENCE_DISK}"
 readonly EVIDENCE_DISK_MD5_HEX="1e639d0a0b2c718eae71a058582a555e"
 
 
@@ -93,14 +94,17 @@ function setup {
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
   fi
 
-  evidence_disk_url=$(normalize_gcs_url "gs://${GCS_BUCKET}/test_data/disk_42.img")
-  msg "Downloading evidence disk from ${evidence_disk_url}"
-  gsutil -q cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
+  if [ ! -f "${EVIDENCE_DISK}" ]; then
+    evidence_disk_url=$(normalize_gcs_url "${EVIDENCE_DISK_GSURL}")
+    msg "Downloading evidence disk from ${evidence_disk_url}"
+    gsutil -q cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
+  fi
+
 }
 
 # Builds a GiftStick image, using the remaster script
 function build_image {
-  bash "${REMASTER_SCRIPT}" \
+  sudo bash "${REMASTER_SCRIPT}" \
     --project "${CLOUD_PROJECT}" \
     --bucket "${GCS_BUCKET}" \
     --skip_gcs \
