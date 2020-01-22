@@ -95,12 +95,12 @@ def CheckLsblk(lsblk_path):
   sdb_disk = [
       dev for dev in lsblk_dict['blockdevices'] if dev['name'] == 'sdb'][0]
 
-  assert sdb_disk['size'] == '44040192'
+  assert int(sdb_disk['size']) == 44040192
   children = sorted(
-      [(child['name'], child['maj:min'], child['size'])
+      [(child['name'], child['maj:min'], int(child['size']))
        for child in sdb_disk['children']])
   assert children == [
-      ('sdb1', '8:17', '12582912'), ('sdb2', '8:18', '30408704')]
+      ('sdb1', '8:17', 12582912), ('sdb2', '8:18', 30408704)]
 
 
 def CheckDiskHash(hash_path):
