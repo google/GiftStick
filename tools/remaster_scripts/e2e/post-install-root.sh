@@ -24,7 +24,7 @@ function ubuntu_remove_packages {
 }
 
 function install_forensication_tools {
-  readonly local CHIPSEC_PKG=( python-dev libffi-dev build-essential gcc nasm )
+  readonly local CHIPSEC_PKG=( python3-dev libffi-dev build-essential gcc nasm )
   readonly local FORENSIC_PKG=( dcfldd )
 
   # install common utils
@@ -32,7 +32,7 @@ function install_forensication_tools {
 }
 
 function install_basic_pkg {
-  readonly local COMMON_UTILS=( git jq python-pip pv openssh-server zenity )
+  readonly local COMMON_UTILS=( git jq python3-pip pv openssh-server zenity )
 
   apt-get -y update
   apt-get -y install "${COMMON_UTILS[@]}"
