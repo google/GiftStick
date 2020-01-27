@@ -62,6 +62,7 @@ function ubuntu_fix_systemd {
   if [[ -f /etc/systemd/resolved.conf ]]; then
     sed -i 's/^#DNSSEC=.*/DNSSEC=no/' /etc/systemd/resolved.conf
   fi
+  apt-get -y update
   apt-get -y install libnss-resolve
 }
 
@@ -92,8 +93,7 @@ sed -e '/cdrom/ s/^#*/#/' -i /etc/apt/sources.list
 
 source /etc/lsb-release
 
-newest_ubuntus=("zesty" "artful" "bionic")
-if [[ "${newest_ubuntus[@]}" =~ "${DISTRIB_CODENAME}" ]]; then
+if ! [[ "xenial" == "${DISTRIB_CODENAME}" ]]; then
   ubuntu_fix_systemd
 fi
 

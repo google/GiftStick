@@ -62,6 +62,8 @@ function setup {
   sudo apt install --allow-downgrades -y \
     gdisk \
     genisoimage \
+    grub-efi-amd64-bin \
+    initramfs-tools-core \
     kpartx \
     jq \
     ovmf \
@@ -71,34 +73,37 @@ function setup {
     syslinux-utils \
     wget
 
-   # Xenial version of grub-efi-amd64-bin: 2.02~beta2-36ubuntu3 doesn't
-   # generate bootable images, for an unknown reason.
-   # Since our current CI environment uses Xenial, let's for installation
-   # of 2.02-2ubuntu8 from bionic hosted on GCE
-   add-apt-repository 'deb http://europe-west1.gce.archive.ubuntu.com/ubuntu/ bionic main'
-   cat >/etc/apt/preferences.d/limit-bionic <<EOAPT
-Package: *
-Pin: release o=Ubuntu,a=bionic
-Pin-Priority: 150
-EOAPT
-
-  apt update -y
-  apt install -y --allow-downgrades grub-common=2.02-2ubuntu8
-  apt install -y --allow-downgrades grub2-common=2.02-2ubuntu8
-  apt install -y --allow-downgrades grub-efi-amd64-bin=2.02-2ubuntu8
-
   if [ ! -f "${ISO_FILENAME}" ]; then
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
   fi
 
-  evidence_disk_url=$(normalize_gcs_url "gs://${GCS_BUCKET}/test_data/disk_42.img")
-  msg "Downloading evidence disk from ${evidence_disk_url}"
-  gsutil -q cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
+  if [[ "${ISO_FILENAME}" == *"20.04"* ]] || [[ "${ISO_FILENAME}" == *"focal"* ]] ; then
+    echo "Upgrading initramfs-tools-core to 0.133 to manage the new initrd format"
+    add-apt-repository 'deb http://europe-west1.gce.archive.ubuntu.com/ubuntu/ eoan main'
+    cat >/etc/apt/preferences.d/limit-eoan <<EOAPT
+Package: *
+Pin: release o=Ubuntu,a=eoan
+Pin-Priority: 150
+EOAPT
+
+    apt update -y
+    apt install -y liblz4-1=1.9.1-1
+    apt install -y lz4
+    apt install -y initramfs-tools-bin=0.133ubuntu10
+    apt install -y initramfs-tools-core=0.133ubuntu10
+  fi
+
+  if [ ! -f "${EVIDENCE_DISK}" ]; then
+    evidence_disk_url=$(normalize_gcs_url "${EVIDENCE_DISK_GSURL}")
+    msg "Downloading evidence disk from ${evidence_disk_url}"
+    gsutil -q cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
+  fi
+
 }
 
 # Builds a GiftStick image, using the remaster script
 function build_image {
-  bash "${REMASTER_SCRIPT}" \
+  sudo bash "${REMASTER_SCRIPT}" \
     --project "${CLOUD_PROJECT}" \
     --bucket "${GCS_BUCKET}" \
     --skip_gcs \
@@ -270,6 +275,8 @@ function main {
   ISO_TO_REMASTER_URL=$4
 
   readonly GCS_EXPECTED_URL="gs://${GCS_BUCKET}/forensic_evidence/${EXTRA_GCS_PATH}/*/*/"
+
+  readonly EVIDENCE_DISK_GSURL="gs://${GCS_BUCKET}/test_data/${EVIDENCE_DISK}"
 
   # Use the default xubuntu image if non was specified
   if [[ "${ISO_TO_REMASTER_URL}" == "" ]] ; then
