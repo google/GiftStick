@@ -38,6 +38,11 @@ function install_basic_pkg {
   apt-get -y install "${COMMON_UTILS[@]}"
 
   echo "PasswordAuthentication no" >>  /etc/ssh/sshd_config
+
+  # Force python3
+  update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+  update-alternatives --install /usr/bin/pip pip /usr/bin/pip3 1
+
 }
 
 function ubuntu_fix_systemd {
