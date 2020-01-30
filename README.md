@@ -102,6 +102,9 @@ versions of Xubuntu.
 The following packages should be installed in the system you're booting into:
 
 * `sudo apt install dcfldd python-pip zenity`
+* `sudo pip install gcs_oauth2_boto_plugin --upgrade;`
+* `sudo pip install google_cloud_logging --upgrade;`
+* `sudo pip install progress --upgrade;`
 * For Chipsec (optional)
 `apt install python-dev libffi-dev build-essential gcc nasm`
 
