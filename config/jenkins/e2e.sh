@@ -28,7 +28,7 @@ readonly IMAGE_NAME="giftstick.img"
 readonly DEFAULT_ISO_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
 
 readonly REMASTER_SCRIPT="tools/remaster.sh"
-readonly EXTRA_GCS_PATH="jenkins-build-${BUILD_NUMBER}"
+readonly EXTRA_GCS_PATH="jenkins-build-${BUILD_TAG}"
 readonly SSH_KEY_PATH="test_key"
 readonly QEMU_SSH_PORT=5555
 
@@ -188,7 +188,6 @@ function normalize_gcs_url {
 # the proper information.
 function check_stamp {
   local stamp_url
-  echo "check_stamp ${stamp_url}"
   stamp_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/stamp.json")
   echo "check_stamp ${stamp_url}"
   gsutil -q cp "${stamp_url}" stamp.json
