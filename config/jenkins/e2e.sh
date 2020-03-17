@@ -189,7 +189,6 @@ function normalize_gcs_url {
 function check_stamp {
   local stamp_url
   stamp_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/stamp.json")
-  echo "check_stamp ${stamp_url}"
   gsutil -q cp "${stamp_url}" stamp.json
   # Check that the stamp is a valid JSON file
   python3 config/jenkins/e2e_tools.py check_stamp stamp.json
