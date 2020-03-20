@@ -26,6 +26,11 @@ fi
 
 source config.sh
 
+
+# For some reason letting this package be installed with setup.py with
+# call_autofirensicate.sh can sometimes exhaust all memory, doing it here.
+sudo pip3 install grpcio
+
 # Make sure have the latest version of the auto_forensicate module
 git clone https://github.com/google/GiftStick
 cd GiftStick
