@@ -30,7 +30,7 @@ with the proper roles & ACL.
 acquisition process.
 
 It needs as input :
-* a vanilla Ubuntu ISO (tested with XUbuntu 18.04)
+* a vanilla Ubuntu ISO (tested with XUbuntu 20.04)
 * the name of your GCP project
 * the name of the GCS bucket (remember those need to be globally unique)
 
@@ -42,7 +42,7 @@ in](https://cloud.google.com/sdk/docs/initializing). Then run:
 bash tools/remaster.sh \
   --project some-forensics-project-XYZ \
   --bucket giftstick-uploads-XYZ
-  --source_iso gift_stick/xubuntu-18.04-desktop-amd64.iso
+  --source_iso gift_stick/xubuntu-20.04-desktop-amd64.iso
 ```
 
 
@@ -96,8 +96,9 @@ gs://giftstick-bucket/forensics_evidence/20181104-1543/SYSTEM_SERIAL/Disks/sda.i
 
 ## Dependencies
 
-The script has been tested on the Xenial (16.04) and Bionic Beaver (18.04)
-versions of Xubuntu.
+The auto_acquisition scripts need Python3 and have been tested to work with
+20.04 LTS version of Xubuntu. Previous versions should still work but are not
+actively supported.
 
 The following packages should be installed in the system you're booting into:
 
