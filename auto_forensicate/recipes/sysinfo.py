@@ -40,7 +40,7 @@ class SysinfoRecipe(base.BaseRecipe):
               self._SYSTEM_PROFILER_CMD, 'system_info.txt'))
     else:
       dmidecode_path = hostinfo.Which('dmidecode')
-      dmidecode_cmd = [dmidecode_path, '--type=1']
+      dmidecode_cmd = [dmidecode_path, '--type=bios', '--type=system']
       artifacts_list.append(
           base.ProcessOutputArtifact(dmidecode_cmd, 'system_info.txt'))
     return artifacts_list
