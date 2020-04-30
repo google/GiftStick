@@ -50,21 +50,6 @@ def GetChassisSerial():
   return ReadDMI('chassis_serial')
 
 
-def GetSystemInformation():
-  """Gets the system's hardware information.
-
-  Returns:
-    str: the information, outputs of dmidecode, or None.
-  """
-  dmi_info = None
-  try:
-    dmidecode_path = Which('dmidecode')
-    dmi_info = subprocess.check_output([dmidecode_path, '--type=system']).decode()
-  except subprocess.CalledProcessError:
-    pass
-  return dmi_info
-
-
 def GetMachineUUID():
   """Gets the system's product UUID.
 
