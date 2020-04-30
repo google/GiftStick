@@ -22,7 +22,7 @@ SA_CREDENTIALS_FILE=""
 ISO_TO_REMASTER_URL=""
 ISO_FILENAME=""
 
-readonly GIFT_USER="gift"
+readonly GIFT_USER="xubuntu"
 readonly IMAGE_NAME="giftstick.img"
 
 readonly DEFAULT_ISO_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
@@ -169,7 +169,7 @@ function run_image {
 
 # Starts the acquisition script
 function run_acquisition_script {
-  ssh_and_run "cd /home/gift ; sudo bash /home/gift/call_auto_forensicate.sh"
+  ssh_and_run "cd /home/${GIFT_USER} ; sudo bash call_auto_forensicate.sh"
 }
 
 # Checks whether a GCS object exists.
