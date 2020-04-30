@@ -17,7 +17,7 @@
 # scripts in this directory.
 
 readonly CURRENT_DIR=$(pwd)
-readonly GIFT_USERNAME="gift"
+readonly GIFT_USERNAME="xubuntu"
 readonly REMASTER_WORKDIR_NAME="remaster_workdir"
 readonly REMASTER_WORKDIR_PATH=$(readlink -m "${CURRENT_DIR}/${REMASTER_WORKDIR_NAME}")
 readonly REMASTER_SCRIPTS_DIR="${CODE_DIR}/remaster_scripts"

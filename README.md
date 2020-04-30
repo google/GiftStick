@@ -30,7 +30,7 @@ with the proper roles & ACL.
 acquisition process.
 
 It needs as input :
-* a vanilla Ubuntu ISO (tested with XUbuntu 20.04)
+* a [Xubuntu 20.04 ISO](https://xubuntu.org/download/) (won't work with non-XUbuntu, untested with versions different than 20.04)
 * the name of your GCP project
 * the name of the GCS bucket (remember those need to be globally unique)
 
@@ -42,7 +42,7 @@ in](https://cloud.google.com/sdk/docs/initializing). Then run:
 bash tools/remaster.sh \
   --project some-forensics-project-XYZ \
   --bucket giftstick-uploads-XYZ
-  --source_iso gift_stick/xubuntu-20.04-desktop-amd64.iso
+  --source_iso xubuntu-20.04-desktop-amd64.iso
 ```
 
 

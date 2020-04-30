@@ -113,11 +113,11 @@ EOBANNER
 function show_usage {
   echo "
 Usage: remaster.sh [OPTIONS]
-Generates a new GiftStick image. Complete usage doc at go/giftstick
+Generates a new GiftStick image.
 
 Example use:
 
-  bash remaster.sh --source_iso xubuntu-18.04-desktop-amd64.iso --project your_gcp_project --bucket gcs_bucketname
+  bash remaster.sh --source_iso xubuntu-20.04-desktop-amd64.iso --project your_gcp_project --bucket gcs_bucketname
 
 Mandatory flags:
   --source_iso=ISO      The vanilla LiveCD to use as a base for the Gift OS
@@ -154,6 +154,11 @@ function assert_sourceiso_flag {
     fi
     if [[ ! -f "${FLAGS_SOURCE_ISO}" ]]; then
       die "${FLAGS_SOURCE_ISO} is not found"
+    fi
+    if [[ "${FLAGS_SOURCE_ISO}" != *xubuntu* ]]; then
+      echo "WARNING: This auto-remastering tool will probably not behave properly on a non xubuntu image"
+      echo "press enter to continue anyway."
+      read -r
     fi
     SOURCE_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
   else
@@ -496,69 +501,9 @@ function chroot_rootfs {
   unmount_pseudo_fs "${chroot_dir}"
 }
 
-# Builds a new initrd file
-#
-# Arguments:
-#  The unpacked ISO directory, containing the compressed /casper/initrd file, as
-#    string.
-#  The target directory, as string.
-function pack_initrd {
-  local -r unpacked_iso_dir=$1
-  local -r initrd_dir=$2
-  msg "Packing new initrd from ${unpacked_iso_dir}/casper/initrd.* to ${initrd_dir}"
-
-  local initrd_file
-  local initrd_pack_method
-
-  pushd "${initrd_dir}"
-  if [[ -e "${unpacked_iso_dir}/casper/initrd.lz" ]]; then
-    initrd_file="${unpacked_iso_dir}/casper/initrd.lz"
-    initrd_pack_method=lzma
-  elif [[ -e "${unpacked_iso_dir}/casper/initrd.gz" ]]; then
-    initrd_file="${unpacked_iso_dir}/casper/initrd.gz"
-    initrd_pack_method=gzip
-  elif [[ -e "${unpacked_iso_dir}/install/initrd.gz" ]]; then
-    initrd_file="${unpacked_iso_dir}/install/initrd.gz"
-    initrd_pack_method=gzip
-  elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
-    initrd_file="${unpacked_iso_dir}/casper/initrd.lz"
-    initrd_pack_method=lzma
-  else
-    die "Can't find initrd file"
-  fi
-  find . | cpio -H newc -o | ${initrd_pack_method} > "${REMASTER_WORKDIR_PATH}/initrd.packed"
-  sudo mv -f "${REMASTER_WORKDIR_PATH}/initrd.packed" "${initrd_file}"
-  popd
-}
-
-# Unpacks a initrd file.
-#
-# Arguments:
-#  The unpacked ISO directory, containing the compressed /casper/initrd file, as
-#    string.
-#  The target directory, as string.
-function unpack_initrd {
-  local -r unpacked_iso_dir=$1
-  local -r initrd_dir=$2
-
-  local initrd_file
-
-  msg "Unpacking initrd to modify casper"
-
-  if [[ -e "${unpacked_iso_dir}/casper/initrd.lz" ]]; then
-    initrd_file="${unpacked_iso_dir}/casper/initrd.lz"
-  elif [[ -e "${unpacked_iso_dir}/casper/initrd" ]]; then
-    initrd_file="${unpacked_iso_dir}/casper/initrd"
-  fi
-
-  mkdir "${initrd_dir}"
-  unmkinitramfs "${initrd_file}"  "${initrd_dir}"
-}
-
 # Cleans up all remastering working directories.
 function clean_all_remaster_directories {
   msg "Cleaning up"
-  sudo rm -rf "${remaster_initrd_dir}"
   unmount_pseudo_fs "${remaster_destroot_dir}"
   sudo rm -rf "${remaster_destroot_dir}"
   sudo rm -rf "${remaster_destiso_dir}"
@@ -572,7 +517,6 @@ function make_custom_ubuntu_iso {
   readonly remaster_destroot_dir="${REMASTER_WORKDIR_PATH}/remaster-root"
   readonly remaster_destsquashfs_dir="${remaster_destiso_dir}/squashfs"
 
-  local remaster_initrd_dir="${REMASTER_WORKDIR_PATH}/remaster-initrd"
   local post_ubuntu_script_name
 
   msg "Making a custom ISO image from $(basename "${SOURCE_ISO}")"
@@ -580,21 +524,6 @@ function make_custom_ubuntu_iso {
   unpack_iso "${SOURCE_ISO}" "${remaster_destiso_dir}"
   mkdir "${remaster_destroot_dir}"
   unpack_rootfs "${remaster_destiso_dir}" "${remaster_destroot_dir}"
-  unpack_initrd "${remaster_destiso_dir}" "${remaster_initrd_dir}"
-
-  if [[ -d "${remaster_initrd_dir}/main" ]] ; then
-    remaster_initrd_dir="${remaster_initrd_dir}/main"
-  fi
-
-  msg "Customizing initrd"
-  sudo sed -i "s/USERNAME=\".*\"$/USERNAME=\"${GIFT_USERNAME}\"/" \
-    "${remaster_initrd_dir}/etc/casper.conf"
-  sudo sed -i "s/HOST=\".*\"$/HOST=\"gift-stick\"/" \
-    "${remaster_initrd_dir}/etc/casper.conf"
-  echo "export FLAVOUR=\"GIFTSTICK\"" | \
-    sudo tee -a "${remaster_initrd_dir}/etc/casper.conf"
-
-  pack_initrd "${remaster_destiso_dir}" "${remaster_initrd_dir}"
 
   if [[ -f "${POST_UBUNTU_ROOT_SCRIPT}" ]] ; then
     post_ubuntu_script_name=$(basename "${POST_UBUNTU_ROOT_SCRIPT}")
@@ -741,15 +670,6 @@ function make_bootable_usb_image {
   # Fix for the "no suitable mode found" error
   sudo cp /usr/share/grub/unicode.pf2 "${TMP_MNT_POINT}/boot/grub/"
 
-  if [[ ${remastered_iso_filename} == *"xubuntu"* ]]; then
-    # Xubuntu uses a specific name for the kernel file.
-    if [[ ${remastered_iso_filename} == *"18.04"* ]]; then
-      kernel_name="vmlinuz"
-    else
-      kernel_name="vmlinuz.efi"
-    fi
-  fi
-
   cat << EOGRUB | sudo tee "${TMP_MNT_POINT}/boot/grub/grub.cfg" > /dev/null
 set default=0
 set timeout=5
@@ -770,8 +690,8 @@ fi
 menuentry 'Ubuntu/Gift' {
   set isofile="/iso/${remastered_iso_filename}"
   loopback loop \$isofile
-  linux (loop)/casper/${kernel_name} boot=casper iso-scan/filename=\$isofile liveimg noprompt noeject quiet splash persistent --
-  initrd (loop)/casper/initrd.lz
+  linux (loop)/casper/vmlinuz boot=casper iso-scan/filename=\$isofile liveimg noprompt noeject quiet splash persistent --
+  initrd (loop)/casper/initrd
 }
 EOGRUB
 
