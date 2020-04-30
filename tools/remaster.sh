@@ -669,8 +669,6 @@ function make_bootable_usb_image {
   msg "Install some GRUB Magic"
   # Fix for the "no suitable mode found" error
   sudo cp /usr/share/grub/unicode.pf2 "${TMP_MNT_POINT}/boot/grub/"
-  msg "wait"
-  read
 
   cat << EOGRUB | sudo tee "${TMP_MNT_POINT}/boot/grub/grub.cfg" > /dev/null
 set default=0
