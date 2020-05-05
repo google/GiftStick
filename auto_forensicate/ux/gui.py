@@ -32,7 +32,7 @@ def AskText(message, mandatory=False):
     while not text:
       text = zenity.GetText(message)
   # TODO: Sanitize input here, as this will be used to construct GCS paths.
-  return text
+  return text.decode()
 
 
 def AskDiskList(disk_list):
