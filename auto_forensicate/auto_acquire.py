@@ -33,12 +33,14 @@ from progress.spinner import Spinner
 
 from auto_forensicate import errors
 from auto_forensicate import uploader
+from auto_forensicate.recipes import directory
 from auto_forensicate.recipes import disk
 from auto_forensicate.recipes import firmware
 from auto_forensicate.recipes import sysinfo
 from auto_forensicate.stamp import manager
 
 VALID_RECIPES = {
+    'directory': directory.DirectoryRecipe,
     'disk': disk.DiskRecipe,
     'firmware': firmware.ChipsecRecipe,
     'sysinfo': sysinfo.SysinfoRecipe
