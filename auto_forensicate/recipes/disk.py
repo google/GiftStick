@@ -24,6 +24,7 @@ from auto_forensicate import errors
 from auto_forensicate import hostinfo
 from auto_forensicate import macdisk
 from auto_forensicate.recipes import base
+from auto_forensicate.ux import cli
 from auto_forensicate.ux import gui
 
 
@@ -385,7 +386,10 @@ class DiskRecipe(base.BaseRecipe):
     disks_to_collect = []
     if getattr(self._options, 'select_disks', None):
       all_disks = self._ListDisks(all_devices=True)
-      disks_to_collect = gui.AskDiskList(all_disks)
+      if getattr(self._options, 'no_zenity', False):
+        disks_to_collect = cli.AskDiskList(all_disks)
+      else:
+        disks_to_collect = gui.AskDiskList(all_disks)
     elif getattr(self._options, 'disk', None):
       disks_to_collect = self._ListDisks(names=self._options.disk)
     else:
