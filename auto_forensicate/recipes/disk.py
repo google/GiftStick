@@ -106,7 +106,7 @@ class DiskArtifact(base.BaseArtifact):
       str: a return message for the report.
 
     Raises:
-      subprocess.CalledProcessError: if the dd process returns with an error.
+      errors.RecipeException: if the dcfldd process returns with an error.
       IOError: if CloseStream() is called before GetStream().
     """
     if not self._ddprocess:
@@ -118,14 +118,14 @@ class DiskArtifact(base.BaseArtifact):
     if c:
       # TODO log this
       self._ddprocess.terminate()
-      raise subprocess.CalledProcessError(
-          0, self._DD_BINARY, 'CloseStream() called but stdout still had data')
+      raise errors.RecipeException(
+          'CloseStream() called but stdout still had data')
 
     self._ddprocess.wait()
     code = self._ddprocess.returncode
     error = self._ddprocess.stderr.read()
-    if code < 0:
-      raise subprocess.CalledProcessError(code, self._DD_BINARY, error)
+    if code > 0:
+      raise errors.RecipeException('Command dcfldd returned non-zero exit status {0:d}, with error: "{1:s}"'.format(code, error.decode()))
     return error
 
   def GetDescription(self):
