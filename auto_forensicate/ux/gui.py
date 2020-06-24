@@ -36,10 +36,10 @@ def AskText(message, mandatory=False):
 
 
 def AskDiskList(disk_list):
-  """Asks the user to select which disk to copy.
+  """Asks the user to select which disks to copy.
 
   Args:
-    disk_list(DiskArtifact): list of disks.
+    disk_list(list(DiskArtifact)): list of disks.
 
   Returns:
     list(DiskArtifact): a list of devices.

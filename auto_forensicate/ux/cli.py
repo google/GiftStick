@@ -35,45 +35,43 @@ def AskText(message, mandatory=False):
 
 
 def AskDiskList(disk_list):
-  """Asks the user to select which disk to copy.
+  """Asks the user to select which disks to copy.
 
   Args:
-    disk_list(DiskArtifact): list of disks.
+    disk_list(list(DiskArtifact)): list of disks.
 
   Returns:
     list(DiskArtifact): a list of devices.
   """
-  disk_description_map = dict(
-      zip(
-          [disk.GetDescription() for disk in disk_list],
-          [disk for disk in disk_list],
-      )
-  )
-
-
   valid_choice = False
-  disk_indices_to_copy = [i for i, disk in enumerate(disk_list) if disk.ProbablyADisk()]
+  disk_indices_to_copy = [
+      i for i, disk in enumerate(disk_list) if disk.ProbablyADisk()]
   while not valid_choice:
     print('\nPlease select which disks to copy:')
     for num, disk in enumerate(disk_list, start=0):
       print('{0:d}\t{1:s}'.format(num, disk.GetDescription()))
       user_choices = input(
-        'Disk numbers (Default is [{0:s}], comma separated): '.format(
-            ','.join([str(i) for i in disk_indices_to_copy])))
+          'Disk numbers (Default is [{0:s}], comma separated): '.format(
+              ','.join([str(i) for i in disk_indices_to_copy])))
     if user_choices == "":
       valid_choice = True
     else:
       choices = user_choices.replace(' ', ',').split(',')
       try:
+        # Check that all provided indices are valid integers.
         choices = list(map(int, choices))
       except ValueError:
         continue
-      if all([0 <= int(i) and int(i) < len(disk_list) for i in choices]):
+      # Check that all provided indices are between expected values
+      if all([0 <= int(i) < len(disk_list) for i in choices]):
         valid_choice = True
-        disk_indices_to_copy = list(set(choices)) # Removing doubles
+        # Removing double values
+        disk_indices_to_copy = list(set(choices))
 
-  print(disk_indices_to_copy)
-  return [disk for index, disk in enumerate(disk_list, start=0) if index in disk_indices_to_copy]
+  return [
+      disk for index, disk in enumerate(disk_list, start=0)
+      if index in disk_indices_to_copy
+  ]
 
 
 def Confirm(text):
@@ -84,4 +82,8 @@ def Confirm(text):
   Returns:
     bool: True if the user confirms, False otherwise.
   """
-  return zenity.GetYesNo(text)
+  print(text)
+  user_choice = ''
+  while user_choice not in ['y', 'n']:
+    user_choice = input('[Y/N]? ').lower()
+  return user_choice == 'y'
