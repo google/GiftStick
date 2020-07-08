@@ -151,6 +151,10 @@ class AutoForensicate(object):
     parser = argparse.ArgumentParser(
         description='Autopush forensics evidence to Cloud Storage')
     parser.add_argument(
+        '--no-zenity', action='store_true', default=False,
+        help='Disable Zenity for user interactions')
+
+    parser.add_argument(
         '--acquire', action='append', help='Evidence to acquire',
         choices=['all']+sorted(list(self._recipes.keys())), required=True
     )
