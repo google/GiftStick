@@ -515,7 +515,6 @@ function make_custom_ubuntu_iso {
   # Let's define some directories for all the remaster subfunctions
   readonly remaster_destiso_dir="${REMASTER_WORKDIR_PATH}/remaster-iso"
   readonly remaster_destroot_dir="${REMASTER_WORKDIR_PATH}/remaster-root"
-  readonly remaster_destsquashfs_dir="${remaster_destiso_dir}/squashfs"
 
   local post_ubuntu_script_name
 
@@ -662,9 +661,14 @@ function make_bootable_usb_image {
   sudo mkdir -p "${TMP_MNT_POINT}/boot/grub"
   sudo mkdir "${TMP_MNT_POINT}/iso"
   sudo cp "${remastered_iso_path}" "${TMP_MNT_POINT}/iso/"
+  # Create the UEFI default entry
   sudo grub-install --removable --target=x86_64-efi \
     --efi-directory="${TMP_MNT_POINT}" \
     --boot-directory="${TMP_MNT_POINT}/boot/" "${loop_device}"
+
+  # Create an entry named "GIFT"
+  sudo mkdir -p "${TMP_MNT_POINT}/GIFT"
+  sudo cp -a "${TMP_MNT_POINT}/EFI/BOOT" "${TMP_MNT_POINT}/GIFT"
 
   msg "Install some GRUB Magic"
   # Fix for the "no suitable mode found" error

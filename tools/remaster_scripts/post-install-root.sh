@@ -54,7 +54,9 @@ function ubuntu_fix_systemd {
   # resolution. So we make our own temporary static resolv.conf here.
   if [[ -L /etc/resolv.conf ]]; then
     rm /etc/resolv.conf
+    # From https://developers.google.com/speed/public-dns/docs/using#addresses
     echo "nameserver 8.8.8.8" > /etc/resolv.conf.static
+    echo "nameserver 2001:4860:4860::8888" >> /etc/resolv.conf.static
     ln -s /etc/resolv.conf.static /etc/resolv.conf
   fi
 
@@ -71,13 +73,16 @@ function ubuntu_fix_mbp {
   # This is installing SPI drivers for the keyboard & mousepads on
   # MacBook 2016 (with touchbar)
   apt-get -y install dkms
-  git clone https://github.com/cb22/macbook12-spi-driver.git /usr/src/applespi-0.1
+  git clone https://github.com/roadrunner2/macbook12-spi-driver.git /usr/src/applespi-0.1
 
   # We need to install for the kernel of the OS we're chrooted in, not the one
   # that's currently running on our workstation.
   # Ubuntu Live CD should only have one kernel installed, so this should work.
   dkms install -m applespi -v 0.1 -k "$(basename /lib/modules/*)"
-  echo -e "\napplespi\nintel_lpss_pci\nspi_pxa2xx_platform" >> /etc/initramfs-tools/modules
+  echo -e "\napplespi\nintel_lpss_pci\nspi_pxa2xx_platform\nspi_pxa2xx_pci" >> /etc/initramfs-tools/modules
+
+  # This is for the apple_ib_tb module
+  echo "industrialio_triggered_buffer" >> /etc/initramfs-tools/modules
   update-initramfs -u
 }
 

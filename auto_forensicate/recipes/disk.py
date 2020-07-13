@@ -24,6 +24,7 @@ from auto_forensicate import errors
 from auto_forensicate import hostinfo
 from auto_forensicate import macdisk
 from auto_forensicate.recipes import base
+from auto_forensicate.ux import cli
 from auto_forensicate.ux import gui
 
 
@@ -106,7 +107,7 @@ class DiskArtifact(base.BaseArtifact):
       str: a return message for the report.
 
     Raises:
-      subprocess.CalledProcessError: if the dd process returns with an error.
+      errors.RecipeException: if the dcfldd process returns with an error.
       IOError: if CloseStream() is called before GetStream().
     """
     if not self._ddprocess:
@@ -118,14 +119,14 @@ class DiskArtifact(base.BaseArtifact):
     if c:
       # TODO log this
       self._ddprocess.terminate()
-      raise subprocess.CalledProcessError(
-          0, self._DD_BINARY, 'CloseStream() called but stdout still had data')
+      raise errors.RecipeException(
+          'CloseStream() called but stdout still had data')
 
     self._ddprocess.wait()
     code = self._ddprocess.returncode
     error = self._ddprocess.stderr.read()
-    if code < 0:
-      raise subprocess.CalledProcessError(code, self._DD_BINARY, error)
+    if code > 0:
+      raise errors.RecipeException('Command dcfldd returned non-zero exit status {0:d}, with error: "{1:s}"'.format(code, error.decode()))
     return error
 
   def GetDescription(self):
@@ -383,7 +384,10 @@ class DiskRecipe(base.BaseRecipe):
     disks_to_collect = []
     if getattr(self._options, 'select_disks', None):
       all_disks = self._ListDisks(all_devices=True)
-      disks_to_collect = gui.AskDiskList(all_disks)
+      if getattr(self._options, 'no_zenity', False):
+        disks_to_collect = cli.AskDiskList(all_disks)
+      else:
+        disks_to_collect = gui.AskDiskList(all_disks)
     elif getattr(self._options, 'disk', None):
       disks_to_collect = self._ListDisks(names=self._options.disk)
     else:
