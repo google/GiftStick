@@ -129,7 +129,7 @@ class DirectoryArtifact(base.BaseArtifact):
   def _GenerateTarCopyCommand(self):
     """TODO"""
 
-    command = ['tar', '-c', '-O', '-p', '--xattrs', '--acls']
+    command = ['sudo', 'tar', '-c', '-O', '-p', '--xattrs', '--acls', '--atime-preserve=system', '--format=posix']
     if self._compress:
       command.append('-z')
 
