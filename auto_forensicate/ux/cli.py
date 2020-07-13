@@ -31,7 +31,7 @@ def AskText(message, mandatory=False):
     while not text:
       text = input()
   # TODO: Sanitize input here, as this will be used to construct GCS paths.
-  return text.decode()
+  return text
 
 
 def AskDiskList(disk_list):

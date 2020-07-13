@@ -19,6 +19,7 @@ import subprocess
 
 from auto_forensicate import errors
 from auto_forensicate.recipes import base
+from auto_forensicate.ux import cli
 from auto_forensicate.ux import gui
 
 
@@ -45,23 +46,25 @@ class DirectoryArtifact(base.BaseArtifact):
       ValueError: if path is none, or doesn't exist
     """
     super(DirectoryArtifact, self).__init__(os.path.basename(path))
-    if not os.path.exist(path):
+    if not os.path.exists(path):
       raise ValueError(
-          'Error with path {0:s}: should start with \'/dev\''.format(path))
+          'Error with path {0:s} does not exist'.format(path))
 
-    self.size = self._GetSize()
-    self.method = method
-    self.compress = compress
-    if self.method == 'tar':
+    self.path = path
+    self._size = self._GetSize()
+    self._copy_command = None
+    self._method = method
+    self._compress = compress
+    if self._method == 'tar':
       self.remote_path = 'Directories/{0:s}.tar'.format(self.name)
 
-    if compress:
+    if self._compress:
       self.remote_path = self.remote_path + '.gz'
 
   def _GetSize(self):
     """TODO."""
     du_process = subprocess.run(
-        ['du', '-s', self.path], stdout=subprocess.PIPE, check=False)
+        ['du', '-s', '-b', self.path], stdout=subprocess.PIPE, check=False)
     du_output = int(du_process.stdout.split()[0])
     return du_output
 
@@ -135,19 +138,18 @@ class DirectoryArtifact(base.BaseArtifact):
     return command
 
 
-class LinuxDirectoryArtifact(base.BaseArtifact):
+class LinuxDirectoryArtifact(DirectoryArtifact):
   """The LinuxDirectoryArtifact class."""
 
   def __init__(self, path, method='tar', compress=False):
     """TODO"""
+    super().__init__(path, method=method, compress=compress)
     if method not in self._SUPPORTED_METHODS:
       raise errors.RecipeException(
           'Unsupported acquisition method on Linux: '+method)
 
-    super(LinuxDirectoryArtifact, self).__init__(
-        path, method=method, compress=compress)
 
-class MacDirectoryArtifact(base.BaseArtifact):
+class MacDirectoryArtifact(DirectoryArtifact):
   """The MacDirectoryArtifact class."""
 
   def __init__(self, path, method='tar', compress=False):
@@ -175,12 +177,20 @@ class DirectoryRecipe(base.BaseRecipe):
     more_to_copy = True
     path_list = []
     while more_to_copy:
-      path = gui.AskText(
-          'Specify the path to the directory you wish to copy')
-      if not os.path.isdir(path):
-        continue
-      path_list.append(path)
-      more_to_copy = gui.GetYesNo('Do you wish to copy another folder?')
+      if getattr(self._options, 'no_zenity', False):
+        path = cli.AskText(
+            'Specify the path to the directory you wish to copy')
+        if not os.path.isdir(path):
+          continue
+        path_list.append(path)
+        more_to_copy = cli.Confirm('Do you wish to copy another folder?')
+      else:
+        path = gui.AskText(
+            'Specify the path to the directory you wish to copy')
+        if not os.path.isdir(path):
+          continue
+        path_list.append(path)
+        more_to_copy = gui.Confirm('Do you wish to copy another folder?')
 
     if not path_list:
       raise errors.RecipeException('No directory to collect')
