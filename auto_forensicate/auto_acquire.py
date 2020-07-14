@@ -189,6 +189,15 @@ class AutoForensicate(object):
         '--disk', action='append', required=False,
         help='Specify a disk to acquire (eg: sda)'
     )
+    parser.add_argument(
+        '--method', action='store', required=False, choices=['tar'],
+        default='tar',
+        help='Specify which method to use when acquiring a directory'
+    )
+    parser.add_argument(
+        '--compress', action='store_true', required=False, default=False,
+        help='Specify which method to use when acquiring a directory'
+    )
     return parser
 
   def _ParseLoggingArguments(self, options):

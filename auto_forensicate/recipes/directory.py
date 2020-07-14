@@ -198,9 +198,13 @@ class DirectoryRecipe(base.BaseRecipe):
     artifacts = []
     for directory in path_list:
       if self._platform == 'darwin':
-        artifacts.append(MacDirectoryArtifact(directory))
+        artifacts.append(MacDirectoryArtifact(
+            directory, method=self._options.method,
+            compress=self._options.compress))
       elif self._platform == 'linux':
-        artifacts.append(LinuxDirectoryArtifact(directory))
+        artifacts.append(LinuxDirectoryArtifact(
+            directory, method=self._options.method,
+            compress=self._options.compress))
       else:
         raise ValueError('Unsupported platform: {0:s}'.self._platform)
 
