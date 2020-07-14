@@ -34,6 +34,9 @@ class DirectoryArtifact(base.BaseArtifact):
 
   _SUPPORTED_METHODS = ['tar']
 
+  _TAR_COMMAND = [
+      'tar', '-c', '-O', '-p', '--xattrs', '--acls', '--format=posix']
+
   def __init__(self, path, method='tar', compress=False):
     """Initializes a DirectoryArtifact object.
 
@@ -46,6 +49,7 @@ class DirectoryArtifact(base.BaseArtifact):
       ValueError: if path is none, or doesn't exist
     """
     super(DirectoryArtifact, self).__init__(os.path.basename(path))
+
     if not os.path.exists(path):
       raise ValueError(
           'Error with path {0:s} does not exist'.format(path))
@@ -123,13 +127,10 @@ class DirectoryArtifact(base.BaseArtifact):
     else:
       raise errors.RecipeException('Unsupported method '+self._method)
 
-#  def _GenerateTarCopyCommand(self):
-#    raise RuntimeError('_GenerateTarCopyCommand not implemented')
-
   def _GenerateTarCopyCommand(self):
     """TODO"""
 
-    command = ['sudo', 'tar', '-c', '-O', '-p', '--xattrs', '--acls', '--atime-preserve=system', '--format=posix']
+    command = self._TAR_COMMAND
     if self._compress:
       command.append('-z')
 
