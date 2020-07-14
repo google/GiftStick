@@ -46,6 +46,9 @@ VALID_RECIPES = {
     'sysinfo': sysinfo.SysinfoRecipe
 }
 
+# These recipes will all be executed when 'all' recipes are specified
+DEFAULT_RECIPES = frozenset({'disk', 'firmware', 'sysinfo'})
+
 
 class SpinnerBar(Spinner):
   """A Spinner object with an extra update method."""
@@ -287,7 +290,7 @@ class AutoForensicate(object):
       options (argparse.Namespace): the parsed command-line arguments.
     """
     if 'all' in options.acquire:
-      options.acquire = sorted(list(self._recipes.keys()))
+      options.acquire = sorted(DEFAULT_RECIPES)
     else:
       # Deduplicate recipes
       options.acquire = sorted(list(set(options.acquire)))
