@@ -23,6 +23,20 @@ from auto_forensicate.ux import cli
 from auto_forensicate.ux import gui
 
 
+def FullPathToName(path):
+  """Converts a directory path to a name used to save the remote archive.
+
+  Args:
+    path(str): the path.
+
+  Returns:
+    str: the name.
+  """
+  # In order to limit collision, use the full path, but remove separators
+  # as this will confuse GCS
+  return path.replace(os.path.sep, '_')
+
+
 class DirectoryArtifact(base.BaseArtifact):
   """The DirectoryArtifact class.
 
