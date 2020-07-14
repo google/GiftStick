@@ -62,7 +62,7 @@ class DirectoryArtifact(base.BaseArtifact):
     Raises:
       ValueError: if path is none, or doesn't exist
     """
-    super(DirectoryArtifact, self).__init__(os.path.basename(path))
+    super(DirectoryArtifact, self).__init__(FullPathToName(path))
 
     if not os.path.exists(path):
       raise ValueError(
@@ -122,7 +122,6 @@ class DirectoryArtifact(base.BaseArtifact):
     # has been called early, terminate the child process to avoid deadlock.
     c = self._copyprocess.stdout.read(1)
     if c:
-      # TODO log this
       self._copyprocess.terminate()
       raise subprocess.CalledProcessError(
           0, self._copy_command[0],
@@ -142,7 +141,11 @@ class DirectoryArtifact(base.BaseArtifact):
       raise errors.RecipeException('Unsupported method '+self._method)
 
   def _GenerateTarCopyCommand(self):
-    """TODO"""
+    """Creates the full command to execute for the copy.
+
+    Returns:
+      list(str): the command to run.
+    """
 
     command = self._TAR_COMMAND
     if self._compress:
@@ -157,24 +160,38 @@ class LinuxDirectoryArtifact(DirectoryArtifact):
   """The LinuxDirectoryArtifact class."""
 
   def __init__(self, path, method='tar', compress=False):
-    """TODO"""
-    super().__init__(path, method=method, compress=compress)
+    """Initializes a LinuxDirectoryArtifact object."""
     if method not in self._SUPPORTED_METHODS:
       raise errors.RecipeException(
           'Unsupported acquisition method on Linux: '+method)
+    super().__init__(path, method=method, compress=compress)
 
 
 class MacDirectoryArtifact(DirectoryArtifact):
   """The MacDirectoryArtifact class."""
 
   def __init__(self, path, method='tar', compress=False):
-    """TODO"""
+    """Initializes a MacDirectoryArtifact object."""
     if method not in self._SUPPORTED_METHODS:
       raise errors.RecipeException(
           'Unsupported acquisition method on Darwin: '+method)
+    super().__init__(path, method=method, compress=compress)
 
-    super(MacDirectoryArtifact, self).__init__(
-        path, method=method, compress=compress)
+
+class LinuxDirectoryTimelineArtifact(base.ProcessOutputArtifact):
+  """The MacDirectoryTimelineArtifact class."""
+
+  def __init__(self, path, compress=False):
+    """Initializes a MacDirectoryTimelineArtifact object.
+
+    Args:
+      path(str): the path to the directory
+      compress(bool): whether to use compression.
+    """
+
+    if not os.path.exists(path):
+      raise ValueError(
+          'Error with path {0:s} does not exist'.format(path))
 
 
 class DirectoryRecipe(base.BaseRecipe):
@@ -212,17 +229,32 @@ class DirectoryRecipe(base.BaseRecipe):
 
     artifacts = []
     for directory in path_list:
+
+      # 'tar' will not save some metadata such as access time. We generate
+      # a 'timeline' with the find(1) command to keep this information
+      timeline_artifact = None
+      dir_artifact = None
       if self._platform == 'darwin':
-        artifacts.append(MacDirectoryArtifact(
+        timeline_artifact = base.ProcessOutputArtifact(
+            ['find', directory, '-exec', 'stat', '-f',
+             '0|%N|%i|%p|%u|%u|%z|%a.0|%m.0|%c.0|%B.0', '-t', '%s', '{}',
+             '\\;'], 'Directories/{0:s}.timeline'.format(FullPathToName(path)))
+        dir_artifact = MacDirectoryArtifact(
             directory, method=self._options.method,
-            compress=self._options.compress))
+            compress=self._options.compress)
       elif self._platform == 'linux':
-        artifacts.append(LinuxDirectoryArtifact(
+        timeline_artifact = base.ProcessOutputArtifact(
+            ['find', directory, '-xdev', '-printf',
+             '0|%p|%i|%M|%U|%G|%s|%A@|%T@|%C@|0\n'],
+            'Directores/{0:s}.timeline'.format(FullPathToName(path)))
+
+        dir_artifact = LinuxDirectoryArtifact(
             directory, method=self._options.method,
-            compress=self._options.compress))
+            compress=self._options.compress)
       else:
-        raise ValueError('Unsupported platform: {0:s}'.self._platform)
+        raise ValueError('Unsupported platform: {0:s}'.format(self._platform))
+
+      artifacts.append(timeline_artifact)
+      artifacts.append(dir_artifact)
 
     return artifacts
-
-
