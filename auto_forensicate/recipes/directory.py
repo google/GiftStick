@@ -228,7 +228,9 @@ class DirectoryRecipe(base.BaseRecipe):
       raise errors.RecipeException('No directory to collect')
 
     artifacts = []
-    for directory in path_list:
+    # Deduplicating paths, as they would cause the code to upload the same file
+    # multiple times, which might not be allowed by the uploading process.
+    for directory in  list(set(path_list)):
 
       # 'tar' will not save some metadata such as access time. We generate
       # a 'timeline' with the find(1) command to keep this information
