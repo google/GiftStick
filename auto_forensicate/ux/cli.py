@@ -74,16 +74,29 @@ def AskDiskList(disk_list):
   ]
 
 
-def Confirm(text):
+def Confirm(text, default='N'):
   """Asks the user to confirm something.
 
   Args:
     text(str): the text of the question.
+    default(str): set the accepted value if user just hits Enter.
+      Possible values: 'Y' or 'N'.
   Returns:
     bool: True if the user confirms, False otherwise.
   """
   print(text)
   user_choice = ''
-  while user_choice not in ['y', 'n']:
-    user_choice = input('[Y/N]? ').lower()
-  return user_choice == 'y'
+  if default == 'Y':
+    while user_choice not in ['y', 'n', '']:
+      user_choice = input('[Y/n]? ').lower()
+    # An empty user answer means 'y'
+    return user_choice in ['y', '']
+  elif default == 'N':
+    while user_choice not in ['y', 'n', '']:
+      user_choice = input('[y/N]? ').lower()
+    return user_choice == 'y'
+  else:
+    # Don't allow an empty answer
+    while user_choice not in ['y', 'n']:
+      user_choice = input('[y/N]? ').lower()
+    return user_choice == 'y'
