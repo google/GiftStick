@@ -82,8 +82,8 @@ class DirectoryArtifact(base.BaseArtifact):
   def _GetSize(self):
     """TODO."""
     du_process = subprocess.run(
-        ['du', '-s', '-b', self.path], stdout=subprocess.PIPE, check=False)
-    du_output = int(du_process.stdout.split()[0])
+        ['du', '-s', '-k', self.path], stdout=subprocess.PIPE, check=False)
+    du_output = int(du_process.stdout.split()[0]) * 1024
     return du_output
 
   def _GetStream(self):
