@@ -49,7 +49,7 @@ class DirectoryArtifact(base.BaseArtifact):
   _SUPPORTED_METHODS = ['tar']
 
   _TAR_COMMAND = [
-      'tar', '-c', '-O', '-p', '--xattrs', '--acls', '--format=posix']
+      'tar', '-c', '-p', '--xattrs', '--acls', '--format=posix', '-f', '-']
 
   def __init__(self, path, method='tar', compress=False):
     """Initializes a DirectoryArtifact object.
