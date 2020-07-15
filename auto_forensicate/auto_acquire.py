@@ -208,11 +208,11 @@ class AutoForensicate(object):
           options.gs_keyfile)
       project_id = self._gcs_settings.get('project_id', None)
 
-      gcp_client_logger = google_logging.Client(
+      gcp_logging_client = google_logging.Client(
           project=project_id, credentials=gcp_credentials)
       self._stackdriver_handler = CloudLoggingHandler(
-          gcp_client_logger, name='GiftStick')
-      setup_gcp_logging(self._stackdriver_handler)
+          gcp_logging_client, name='GiftStick')
+      self._logger.addHandler(self._stackdriver_handler)
 
   def _MakeUploader(self, options):
     """Creates a new Uploader object.
