@@ -26,7 +26,6 @@ import time
 import gcs_oauth2_boto_plugin  # pylint: disable=unused-import
 from google.cloud import logging as google_logging
 from google.cloud.logging.handlers import CloudLoggingHandler
-from google.cloud.logging.handlers import setup_logging as setup_gcp_logging
 from google.oauth2 import service_account
 from progress.bar import IncrementalBar
 from progress.spinner import Spinner
