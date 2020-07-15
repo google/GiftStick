@@ -240,7 +240,7 @@ class DirectoryRecipe(base.BaseRecipe):
         timeline_artifact = base.ProcessOutputArtifact(
             ['find', directory, '-exec', 'stat', '-f',
              '0|%N|%i|%p|%u|%u|%z|%a.0|%m.0|%c.0|%B.0', '-t', '%s', '{}',
-             '\\;'], 'Directories/{0:s}.timeline'.format(FullPathToName(path)))
+             ';'], 'Directories/{0:s}.timeline'.format(FullPathToName(path)))
         dir_artifact = MacDirectoryArtifact(
             directory, method=self._options.method,
             compress=self._options.compress)
