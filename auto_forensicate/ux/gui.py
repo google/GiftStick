@@ -70,13 +70,11 @@ def AskDiskList(disk_list):
   return [disk_description_map[choice] for choice in choices]
 
 
-def Confirm(text, default='N'):
+def Confirm(text):
   """Asks the user to confirm something.
 
   Args:
     text(str): the text of the question.
-    default(str): set the accepted value if user just hits Enter.
-      This is ignored here.
   Returns:
     bool: True if the user confirms, False otherwise.
   """
