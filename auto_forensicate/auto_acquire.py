@@ -120,6 +120,43 @@ class BaBar(IncrementalBar):
     self._Update(current_bytes)
 
 
+class UpdateCallbackHandler:
+  """Class implementing boto update_callback handling logic.
+
+    Attributes:
+      _progress_bar: the progress bar to be updated
+      _artifact: the artifact being uploaded
+      _progress_logger: the stackdriver logger
+      _progress_enabled: whether progress logging is enabled
+  """
+
+  def __init__(self, progress_bar, artifact, progress_logger):
+    self._progress_bar = progress_bar
+    self._artifact = artifact
+    self._progress_logger = progress_logger
+    self._progress_enabled = False
+
+    if artifact.size > 1024**3 and progress_logger:
+      self._progress_enabled = True
+
+  #pylint: disable=invalid-name
+  def update_with_total(self, current_bytes, _unused_total_bytes):
+    """Called by boto library to update the UI and provide progress reporting.
+
+    Args:
+      current_bytes(int): the number of bytes uploaded.
+      _unused_total_bytes(int): the total number of bytes to upload.
+    """
+    self._progress_bar.update_with_total(current_bytes, _unused_total_bytes)
+
+    current_bytes_mb = current_bytes // 1024**2
+    if self._progress_enabled and current_bytes_mb % 1024 == 0:
+      self._progress_logger.log_text(
+          'Uploading \'{:s}\': (copied {:d}/{:d} bytes)'.format(
+              self._artifact.name, current_bytes, self._artifact.size),
+          severity='INFO')
+
+
 class AutoForensicate(object):
   """Class implementing forensics acquisition logic.
 
@@ -387,8 +424,10 @@ class AutoForensicate(object):
           artifact.size, artifact.name,
           'Uploading \'{0:s}\' ({1:s}, Task {2:d}/{3:d})'.format(
               artifact.name, artifact.readable_size, current_task, nb_tasks))
+      update_callback_handler = UpdateCallbackHandler(
+          progress_bar, artifact, self._progress_logger)
       self._UploadArtifact(
-          artifact, update_callback=progress_bar.update_with_total)
+          artifact, update_callback=update_callback_handler.update_with_total)
       progress_bar.finish()
 
   def _Colorize(self, color, msg):
