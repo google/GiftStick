@@ -32,6 +32,7 @@ from progress.bar import IncrementalBar
 from progress.spinner import Spinner
 
 from auto_forensicate import errors
+from auto_forensicate import hostinfo
 from auto_forensicate import uploader
 from auto_forensicate.recipes import disk
 from auto_forensicate.recipes import firmware
@@ -275,6 +276,12 @@ class AutoForensicate(object):
            'current recipes : {0:s})').format(
                ', '.join(options.acquire))
       )
+
+    if not options.no_zenity:
+      # force no_zenity to True if zenity is not installed
+      zenity_path = hostinfo.Which('zenity')
+      if not zenity_path:
+        options.no_zenity = True
 
     return options
 
