@@ -25,6 +25,8 @@ import sys
 import tempfile
 import six
 
+from auto_forensicate import errors
+
 
 class BaseArtifact(object):
   """BaseArtifact class.
@@ -188,6 +190,9 @@ class ProcessOutputArtifact(BaseArtifact):
     Args:
       command (list): the command to run as subprocess.
       path (str): the remote path to store the output of the command.
+
+    Raises:
+      errors.RecipeException: if the command failed to run.
     """
     super(ProcessOutputArtifact, self).__init__(os.path.basename(path))
     self.remote_path = path
@@ -216,6 +221,8 @@ class ProcessOutputArtifact(BaseArtifact):
               self._command, error.strip(), process.returncode))
       self._logger.error(command_output)
       command_output = command_output.encode()
+      raise errors.RecipeException(
+          'Error running ProcessOutputArtifact command')
 
     return command_output
 
