@@ -141,6 +141,7 @@ class AutoForensicate(object):
     self._errors = []
     self._gcs_settings = None
     self._logger = None
+    self._progress_logger = None
     self._recipes = recipes
     self._uploader = None
     self._should_retry = False  # True when a recoverable error occurred.
@@ -175,6 +176,12 @@ class AutoForensicate(object):
         '--logging', action='append', required=False,
         choices=['stackdriver', 'stdout'], default=['stdout'],
         help='Selects logging methods.'
+    )
+    parser.add_argument(
+        '--log_progress', action='store_true', default=False,
+        help=(
+            'Enable logging of acquisition progress to stackdriver, requires '
+            'stackdriver to be selected with --logging')
     )
     parser.add_argument(
         '--select_disks', action='store_true', required=False, default=False,
@@ -213,6 +220,10 @@ class AutoForensicate(object):
       self._stackdriver_handler = CloudLoggingHandler(
           gcp_logging_client, name='GiftStick')
       self._logger.addHandler(self._stackdriver_handler)
+
+      if options.log_progress:
+        self._progress_logger = google_logging.logger.Logger(
+            'GiftStick', gcp_logging_client)
 
   def _MakeUploader(self, options):
     """Creates a new Uploader object.
