@@ -80,7 +80,7 @@ def Confirm(text, default='N'):
   Args:
     text(str): the text of the question.
     default(str): set the accepted value if user just hits Enter.
-      Possible values: 'Y' or 'N'.
+      Possible values: 'Y' or 'N' (the default).
   Returns:
     bool: True if the user confirms, False otherwise.
   """
