@@ -26,7 +26,8 @@
 # you specify the destination with --image
 #
 # It requires the following packages, on ubuntu:
-#   gdisk genisoimage grub-efi-amd64-bin syslinux initramfs-tools-core
+#   gdisk genisoimage grub-efi-amd64-bin syslinux syslinux-utils
+#   initramfs-tools-core
 #
 # gdisk and grub-efi-amd64-bin are used for the EFI booting part.
 #
@@ -760,6 +761,7 @@ function main {
   check_packages grub-efi-amd64-bin
   check_packages squashfs-tools
   check_packages syslinux
+  check_packages syslinux-utils
   set -e
 
   parse_arguments "$@"
