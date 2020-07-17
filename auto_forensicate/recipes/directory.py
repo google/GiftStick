@@ -81,6 +81,7 @@ class DirectoryArtifact(base.BaseArtifact):
 
   def _GetSize(self):
     """TODO."""
+    self._logger.info('Calculating size of "{0:s}"'.format(self.path))
     du_process = subprocess.run(
         ['du', '-s', '-k', self.path], stdout=subprocess.PIPE, check=False)
     du_output = int(du_process.stdout.split()[0]) * 1024
