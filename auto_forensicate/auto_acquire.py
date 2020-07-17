@@ -26,7 +26,6 @@ import time
 import gcs_oauth2_boto_plugin  # pylint: disable=unused-import
 from google.cloud import logging as google_logging
 from google.cloud.logging.handlers import CloudLoggingHandler
-from google.cloud.logging.handlers import setup_logging as setup_gcp_logging
 from google.oauth2 import service_account
 from progress.bar import IncrementalBar
 from progress.spinner import Spinner
@@ -209,11 +208,11 @@ class AutoForensicate(object):
           options.gs_keyfile)
       project_id = self._gcs_settings.get('project_id', None)
 
-      gcp_client_logger = google_logging.Client(
+      gcp_logging_client = google_logging.Client(
           project=project_id, credentials=gcp_credentials)
       self._stackdriver_handler = CloudLoggingHandler(
-          gcp_client_logger, name='GiftStick')
-      setup_gcp_logging(self._stackdriver_handler)
+          gcp_logging_client, name='GiftStick')
+      self._logger.addHandler(self._stackdriver_handler)
 
   def _MakeUploader(self, options):
     """Creates a new Uploader object.
