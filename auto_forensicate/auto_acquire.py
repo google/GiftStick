@@ -142,8 +142,8 @@ class UpdateCallbackHandler:
     self._progress_bar = progress_bar
     self._artifact = artifact
     self._progress_logger = progress_logger
-    self._reporting_frequency = 5 # Report every 5% of progress
-    self._min_reporting_size = 1024**3 # Only report progress for > 1GiB
+    self._reporting_frequency = 5  # Report every 5% of progress
+    self._min_reporting_size = 1024**3  # Only report progress for > 1GiB
     self._reported_percentage = 0
     self._progress_reporting = False
 
@@ -206,7 +206,6 @@ class UpdateCallbackHandler:
     self._progress_bar.update_with_total(current_bytes, _unused_total_bytes)
     if self._progress_reporting:
       self._LogProgress(current_bytes)
-
 
 
 class AutoForensicate(object):
