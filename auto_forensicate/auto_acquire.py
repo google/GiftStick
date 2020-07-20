@@ -124,20 +124,76 @@ class UpdateCallbackHandler:
   """Class implementing boto update_callback handling logic.
 
     Attributes:
-      _progress_bar: the progress bar to be updated
-      _artifact: the artifact being uploaded
-      _progress_logger: the stackdriver logger
-      _progress_enabled: whether progress logging is enabled
+      _progress_bar (progress.Progress): the progress bar to be updated.
+      _artifact (BaseArtifact): the artifact being uploaded.
+      _progress_logger (google.cloud.logging.logger.Logger):
+        the Stackdriver logger for progress reporting.
   """
 
   def __init__(self, progress_bar, artifact, progress_logger):
+    """Instantiates the UpdateCallbackHandler object.
+
+    Args:
+      progress_bar (progress.Progress): the progress bar to be updated.
+      artifact (BaseArtifact): the artifact to be uploaded.
+      progress_logger (google.cloud.logging.logger.Logger): the Stackdriver
+        logger.
+    """
     self._progress_bar = progress_bar
     self._artifact = artifact
     self._progress_logger = progress_logger
-    self._progress_enabled = False
+    self._reporting_frequency = 5 # Report every 5% of progress
+    self._min_reporting_size = 1024**3 # Only report progress for > 1GiB
+    self._reported_percentage = 0
+    self._progress_reporting = False
 
-    if artifact.size > 1024**3 and progress_logger:
-      self._progress_enabled = True
+    if progress_logger and artifact.size > self._min_reporting_size:
+      self._progress_reporting = True
+
+  def _HumanReadableSize(self, size):
+    """Converts a byte count into a human readable form in MiB, GiB etc..
+
+    Args:
+      size (int): a byte count.
+    Returns:
+      str: A human-readable byte count.
+    """
+    suffixes = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB']
+    for i in range(4, 0, -1):
+      if size >= 1024**i:
+        return '{:.1f}{:s}'.format(size / 1024**i, suffixes[i])
+    return '{:.1f}{:s}'.format(0, suffixes[0])
+
+  def _IsReportable(self, percentage):
+    """Returns a bool indicating if the current percentage shoud be reported.
+
+    Args:
+      percentage (int): the current percentage uploaded.
+    Returns:
+      bool: whether to report this percentage.
+    """
+    if percentage % self._reporting_frequency == 0:
+      if percentage != self._reported_percentage:
+        return True
+    else:
+      return False
+
+  def _LogProgress(self, current_bytes):
+    """Log the current progress.
+
+    Args:
+      current_bytes(int): the number of bytes uploaded.
+    """
+    percentage = int(current_bytes / self._artifact.size * 100)
+    bytes_remaining = self._artifact.size - current_bytes
+
+    if self._IsReportable(percentage):
+      self._progress_logger.log_text(
+          'Uploading \'{:s}\' ({:d}% - {:s} remaining)'.format(
+              self._artifact.name, percentage,
+              self._HumanReadableSize(bytes_remaining)),
+          severity='INFO')
+      self._reported_percentage = percentage
 
   #pylint: disable=invalid-name
   def update_with_total(self, current_bytes, _unused_total_bytes):
@@ -148,13 +204,9 @@ class UpdateCallbackHandler:
       _unused_total_bytes(int): the total number of bytes to upload.
     """
     self._progress_bar.update_with_total(current_bytes, _unused_total_bytes)
+    if self._progress_reporting:
+      self._LogProcess(current_bytes)
 
-    current_bytes_mb = current_bytes // 1024**2
-    if self._progress_enabled and current_bytes_mb % 1024 == 0:
-      self._progress_logger.log_text(
-          'Uploading \'{:s}\': (copied {:d}/{:d} bytes)'.format(
-              self._artifact.name, current_bytes, self._artifact.size),
-          severity='INFO')
 
 
 class AutoForensicate(object):
@@ -258,9 +310,12 @@ class AutoForensicate(object):
           gcp_logging_client, name='GiftStick')
       self._logger.addHandler(self._stackdriver_handler)
 
-      if options.log_progress:
-        self._progress_logger = google_logging.logger.Logger(
-            'GiftStick', gcp_logging_client)
+    if options.log_progress:
+      if 'stackdriver' not in options.logging:
+        raise errors.BadConfigOption(
+            'Progress logging requires Stackdriver logging to be enabled')
+      self._progress_logger = google_logging.logger.Logger(
+          'GiftStick', gcp_logging_client)
 
   def _MakeUploader(self, options):
     """Creates a new Uploader object.
