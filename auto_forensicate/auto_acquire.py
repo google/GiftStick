@@ -158,13 +158,13 @@ class UpdateCallbackHandler:
     Returns:
       str: A human-readable byte count.
     """
-    suffixes = ['bytes', 'KiB', 'MiB', 'GiB', 'TiB']
+    suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
     for i in range(4, 0, -1):
       if size >= 1024**i:
         return '{:.1f}{:s}'.format(size / 1024**i, suffixes[i])
     return '{:.1f}{:s}'.format(0, suffixes[0])
 
-  def _IsReportable(self, percentage):
+  def _CheckReportable(self, percentage):
     """Returns a bool indicating if the current percentage shoud be reported.
 
     Args:
@@ -187,7 +187,7 @@ class UpdateCallbackHandler:
     percentage = int(current_bytes / self._artifact.size * 100)
     bytes_remaining = self._artifact.size - current_bytes
 
-    if self._IsReportable(percentage):
+    if self._CheckReportable(percentage):
       self._progress_logger.log_text(
           'Uploading \'{:s}\' ({:d}% - {:s} remaining)'.format(
               self._artifact.name, percentage,
@@ -205,7 +205,7 @@ class UpdateCallbackHandler:
     """
     self._progress_bar.update_with_total(current_bytes, _unused_total_bytes)
     if self._progress_reporting:
-      self._LogProcess(current_bytes)
+      self._LogProgress(current_bytes)
 
 
 
