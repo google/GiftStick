@@ -117,10 +117,10 @@ class BarTest(unittest.TestCase):
 
 
 class ProgressReporterTest(unittest.TestCase):
-  """Tests for the UpdateCallbackHandler class."""
+  """Tests for the ProgressReporter class."""
 
   def setUp(self):
-    """Set up an instantiated UpdateCallbackHandler for each test"""
+    """Set up an instantiated ProgressReporter for each test"""
     self.progress_reporter = auto_acquire.ProgressReporter(
         BytesIORecipe('stringio').GetArtifacts()[0],
         FakeGoogleLogger())
