@@ -159,7 +159,10 @@ class UpdateCallbackHandler:
       str: A human-readable byte count.
     """
     suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-    for i in range(4, 0, -1):
+
+    if size == 1:
+      return '{:.1f}{:s}'.format(1, suffixes[0])
+    for i in range(4, -1, -1):
       if size >= 1024**i:
         return '{:.1f}{:s}'.format(size / 1024**i, suffixes[i])
     return '{:.1f}{:s}'.format(0, suffixes[0])
@@ -175,8 +178,7 @@ class UpdateCallbackHandler:
     if percentage % self._reporting_frequency == 0:
       if percentage != self._reported_percentage:
         return True
-    else:
-      return False
+    return False
 
   def _LogProgress(self, current_bytes):
     """Log the current progress.

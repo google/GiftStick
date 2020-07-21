@@ -68,6 +68,32 @@ class FileCopyUploader(object):
       update_callback(len(data), len(data))
 
 
+class GCSUploader(object):
+  """Test implementation of a GCS Uploader for testing progress reporting"""
+
+  def UploadArtifact(self, artifact, update_callback=None):
+    current_bytes = 0
+    total_bytes = 0
+    boto_callback_interval = 1024
+
+    update_callback(current_bytes, total_bytes)
+    while True:
+      data = artifact._GetStream().read(boto_callback_interval)
+      if data:
+        current_bytes += len(data)
+        update_callback(current_bytes, total_bytes)
+      else:
+        break
+
+
+class FakeGoogleLogger(object):
+  """Fake google logger for testing progress reporting"""
+  logs = []
+
+  def log_text(self, log_entry, severity=None):
+    self.logs.append((severity, log_entry))
+
+
 class BarTest(unittest.TestCase):
   """Tests for the progress bar classes."""
 
@@ -88,6 +114,58 @@ class BarTest(unittest.TestCase):
     for index, value in enumerate(expected):
       self.assertEqual(
           progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
+
+
+class UpdateCallbackHandlerTest(unittest.TestCase):
+  """Tests for the UpdateCallbackHandler class."""
+
+  def setUp(self):
+    """Set up an instantiated UpdateCallbackHandler for each test"""
+    self.update_callback_handler = auto_acquire.UpdateCallbackHandler(
+        auto_acquire.BaBar(),
+        BytesIORecipe('stringio').GetArtifacts()[0],
+        FakeGoogleLogger())
+
+  def testHumanReadableSize(self):
+    """Tests _HumanReadableSize."""
+    HumanReadableSize = self.update_callback_handler._HumanReadableSize
+
+    self.assertEqual(HumanReadableSize(0), '0.0B')
+    self.assertEqual(HumanReadableSize(1), '1.0B')
+    self.assertEqual(HumanReadableSize(1024**1 - 1024**0), '1023.0B')
+    self.assertEqual(HumanReadableSize(1024**1), '1.0KiB')
+    self.assertEqual(HumanReadableSize(1024**4 - 1024**3), '1023.0GiB')
+    self.assertEqual(HumanReadableSize(1024**4), '1.0TiB')
+    self.assertEqual(HumanReadableSize(1024**5), '1024.0TiB')
+
+  def testCheckReportable(self):
+    """Tests _CheckReportable."""
+    reporting_frequency = self.update_callback_handler._reporting_frequency
+    CheckReportable = self.update_callback_handler._CheckReportable
+
+    self.assertEqual(CheckReportable(0), False)
+    self.assertEqual(CheckReportable(reporting_frequency), True)
+    self.update_callback_handler._reported_percentage = reporting_frequency
+    self.assertEqual(CheckReportable(reporting_frequency), False)
+    self.assertEqual(CheckReportable(reporting_frequency*2), True)
+
+  def testLogProgress(self):
+    """Tests _LogProgress."""
+    # For reporting purposes set the artifact to 1MiB and enable reporting
+    self.update_callback_handler._artifact = base.StringArtifact(
+        'fake/path', 'A' * (1024**2))
+    self.update_callback_handler._progress_reporting = True
+
+    artifact = self.update_callback_handler._artifact
+    update_callback = self.update_callback_handler.update_with_total
+    logger = self.update_callback_handler._progress_logger
+    reporting_frequency = self.update_callback_handler._reporting_frequency
+    expected_log_entries = 100 // reporting_frequency
+
+    gcs_uploader = GCSUploader()
+    gcs_uploader.UploadArtifact(artifact, update_callback)
+
+    self.assertEqual(len(logger.logs), expected_log_entries)
 
 
 class AutoForensicateTest(unittest.TestCase):
