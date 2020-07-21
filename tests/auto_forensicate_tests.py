@@ -116,19 +116,18 @@ class BarTest(unittest.TestCase):
           progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
 
 
-class UpdateCallbackHandlerTest(unittest.TestCase):
+class ProgressReporterTest(unittest.TestCase):
   """Tests for the UpdateCallbackHandler class."""
 
   def setUp(self):
     """Set up an instantiated UpdateCallbackHandler for each test"""
-    self.update_callback_handler = auto_acquire.UpdateCallbackHandler(
-        auto_acquire.BaBar(),
+    self.progress_reporter = auto_acquire.ProgressReporter(
         BytesIORecipe('stringio').GetArtifacts()[0],
         FakeGoogleLogger())
 
   def testHumanReadableSize(self):
     """Tests _HumanReadableSize."""
-    HumanReadableSize = self.update_callback_handler._HumanReadableSize
+    HumanReadableSize = self.progress_reporter._HumanReadableSize
 
     self.assertEqual(HumanReadableSize(0), '0.0B')
     self.assertEqual(HumanReadableSize(1), '1.0B')
@@ -140,26 +139,25 @@ class UpdateCallbackHandlerTest(unittest.TestCase):
 
   def testCheckReportable(self):
     """Tests _CheckReportable."""
-    reporting_frequency = self.update_callback_handler._reporting_frequency
-    CheckReportable = self.update_callback_handler._CheckReportable
+    reporting_frequency = self.progress_reporter._reporting_frequency
+    CheckReportable = self.progress_reporter._CheckReportable
 
     self.assertEqual(CheckReportable(0), False)
     self.assertEqual(CheckReportable(reporting_frequency), True)
-    self.update_callback_handler._reported_percentage = reporting_frequency
+    self.progress_reporter._reported_percentage = reporting_frequency
     self.assertEqual(CheckReportable(reporting_frequency), False)
     self.assertEqual(CheckReportable(reporting_frequency*2), True)
 
   def testLogProgress(self):
     """Tests _LogProgress."""
-    # For reporting purposes set the artifact to 1MiB and enable reporting
-    self.update_callback_handler._artifact = base.StringArtifact(
+    # For reporting purposes set the artifact to 1MiB
+    self.progress_reporter._artifact = base.StringArtifact(
         'fake/path', 'A' * (1024**2))
-    self.update_callback_handler._progress_reporting = True
 
-    artifact = self.update_callback_handler._artifact
-    update_callback = self.update_callback_handler.update_with_total
-    logger = self.update_callback_handler._progress_logger
-    reporting_frequency = self.update_callback_handler._reporting_frequency
+    artifact = self.progress_reporter._artifact
+    update_callback = self.progress_reporter.update_with_total
+    logger = self.progress_reporter._progress_logger
+    reporting_frequency = self.progress_reporter._reporting_frequency
     expected_log_entries = 100 // reporting_frequency
 
     gcs_uploader = GCSUploader()

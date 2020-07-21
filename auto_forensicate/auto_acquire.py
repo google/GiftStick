@@ -44,6 +44,8 @@ VALID_RECIPES = {
     'sysinfo': sysinfo.SysinfoRecipe
 }
 
+MIN_REPORTING_SIZE = 1024**3
+
 
 class SpinnerBar(Spinner):
   """A Spinner object with an extra update method."""
@@ -120,35 +122,29 @@ class BaBar(IncrementalBar):
     self._Update(current_bytes)
 
 
-class UpdateCallbackHandler:
-  """Class implementing boto update_callback handling logic.
+class ProgressReporter:
+  """Class implementing Stackdriver progress reporting.
 
     Attributes:
-      _progress_bar (progress.Progress): the progress bar to be updated.
       _artifact (BaseArtifact): the artifact being uploaded.
       _progress_logger (google.cloud.logging.logger.Logger):
         the Stackdriver logger for progress reporting.
   """
 
-  def __init__(self, progress_bar, artifact, progress_logger):
-    """Instantiates the UpdateCallbackHandler object.
+  def __init__(self, artifact, progress_logger, reporting_frequency=5):
+    """Instantiates the ProgressReporter object.
 
     Args:
-      progress_bar (progress.Progress): the progress bar to be updated.
       artifact (BaseArtifact): the artifact to be uploaded.
       progress_logger (google.cloud.logging.logger.Logger): the Stackdriver
         logger.
+      reporting_frequency (int): what percentage change in progress to report
+        defaults to 5% 
     """
-    self._progress_bar = progress_bar
     self._artifact = artifact
     self._progress_logger = progress_logger
-    self._reporting_frequency = 5  # Report every 5% of progress
-    self._min_reporting_size = 1024**3  # Only report progress for > 1GiB
+    self._reporting_frequency = reporting_frequency
     self._reported_percentage = 0
-    self._progress_reporting = False
-
-    if progress_logger and artifact.size > self._min_reporting_size:
-      self._progress_reporting = True
 
   def _HumanReadableSize(self, size):
     """Converts a byte count into a human readable form in MiB, GiB etc..
@@ -159,13 +155,12 @@ class UpdateCallbackHandler:
       str: A human-readable byte count.
     """
     suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-
-    if size == 1:
-      return '{:.1f}{:s}'.format(1, suffixes[0])
-    for i in range(4, -1, -1):
-      if size >= 1024**i:
+    if size > 1024**4:
+      return '{:.1f}{:s}'.format(size / 1024**4, 'TiB')
+    for i in range(0, 5):
+      if size < 1024**(i+1):
         return '{:.1f}{:s}'.format(size / 1024**i, suffixes[i])
-    return '{:.1f}{:s}'.format(0, suffixes[0])
+  
 
   def _CheckReportable(self, percentage):
     """Returns a bool indicating if the current percentage shoud be reported.
@@ -180,11 +175,13 @@ class UpdateCallbackHandler:
         return True
     return False
 
-  def _LogProgress(self, current_bytes):
-    """Log the current progress.
+  #pylint: disable=invalid-name
+  def update_with_total(self, current_bytes, _unused_total_bytes):
+    """Called by boto callback handling logic to report progress.
 
     Args:
       current_bytes(int): the number of bytes uploaded.
+      _unused_total_bytes(int): the total number of bytes to upload.
     """
     percentage = int(current_bytes / self._artifact.size * 100)
     bytes_remaining = self._artifact.size - current_bytes
@@ -197,6 +194,23 @@ class UpdateCallbackHandler:
           severity='INFO')
       self._reported_percentage = percentage
 
+
+class BotoCallbackHandler:
+  """Class implementing boto update_callback handling logic.
+
+    Attributes:
+      _progress_bar (progress.Progress): the progress bar to be updated.
+      _artifact (BaseArtifact): the artifact being uploaded.
+      _progress_logger (google.cloud.logging.logger.Logger):
+        the Stackdriver logger for progress reporting.
+  """
+
+  def __init__(self):
+    self._callbacks = []
+
+  def RegisterCallback(self, callback):
+    self._callbacks.append(callback)
+
   #pylint: disable=invalid-name
   def update_with_total(self, current_bytes, _unused_total_bytes):
     """Called by boto library to update the UI and provide progress reporting.
@@ -205,9 +219,8 @@ class UpdateCallbackHandler:
       current_bytes(int): the number of bytes uploaded.
       _unused_total_bytes(int): the total number of bytes to upload.
     """
-    self._progress_bar.update_with_total(current_bytes, _unused_total_bytes)
-    if self._progress_reporting:
-      self._LogProgress(current_bytes)
+    for callback in self._callbacks:
+      callback(current_bytes, _unused_total_bytes)
 
 
 class AutoForensicate(object):
@@ -438,6 +451,22 @@ class AutoForensicate(object):
       pb = SpinnerBar(name + ' ')
     return pb
 
+  def _MakeProgressReporter(self, artifact):
+    """Returns a ProgressReporter object.
+
+    Args:
+      max_size (int): the size of the source.
+      name (str): the name of what is being processed.
+      message (str): an extra message to display before the bar.
+
+    Returns:
+      ProgressBar: the progress bar object.
+    """
+    if self._progress_logger:
+      if artifact.size > MIN_REPORTING_SIZE:
+        return ProgressLogger(artifact, self._progress_logger)
+    return None
+
   def Do(self, recipe):
     """Runs a recipe.
 
@@ -476,14 +505,17 @@ class AutoForensicate(object):
     current_task = 0
     for artifact in artifacts:
       current_task += 1
+      callback_handler = BotoCallbackHandler()
       progress_bar = self._MakeProgressBar(
           artifact.size, artifact.name,
           'Uploading \'{0:s}\' ({1:s}, Task {2:d}/{3:d})'.format(
               artifact.name, artifact.readable_size, current_task, nb_tasks))
-      update_callback_handler = UpdateCallbackHandler(
-          progress_bar, artifact, self._progress_logger)
+      callback_handler.RegisterCallback(progress_bar.update_with_total)
+      progress_reporter = self._MakeProgressReporter(artifact)
+      if progress_reporter:
+        callback_handler.RegisterCallback(progress_reporter.update_with_total)   
       self._UploadArtifact(
-          artifact, update_callback=update_callback_handler.update_with_total)
+          artifact, update_callback=callback_handler.update_with_total)
       progress_bar.finish()
 
   def _Colorize(self, color, msg):
