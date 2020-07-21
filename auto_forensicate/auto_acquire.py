@@ -46,7 +46,6 @@ VALID_RECIPES = {
 
 MIN_REPORTING_SIZE = 1024**3
 
-
 class SpinnerBar(Spinner):
   """A Spinner object with an extra update method."""
 
@@ -139,7 +138,7 @@ class ProgressReporter:
       progress_logger (google.cloud.logging.logger.Logger): the Stackdriver
         logger.
       reporting_frequency (int): what percentage change in progress to report
-        defaults to 5% 
+        defaults to 5%.
     """
     self._artifact = artifact
     self._progress_logger = progress_logger
@@ -160,7 +159,6 @@ class ProgressReporter:
     for i in range(0, 5):
       if size < 1024**(i+1):
         return '{:.1f}{:s}'.format(size / 1024**i, suffixes[i])
-  
 
   def _CheckReportable(self, percentage):
     """Returns a bool indicating if the current percentage shoud be reported.
@@ -199,21 +197,24 @@ class BotoCallbackHandler:
   """Class implementing boto update_callback handling logic.
 
     Attributes:
-      _progress_bar (progress.Progress): the progress bar to be updated.
-      _artifact (BaseArtifact): the artifact being uploaded.
-      _progress_logger (google.cloud.logging.logger.Logger):
-        the Stackdriver logger for progress reporting.
+      _callbacks ([function]): a list of callback functions.
   """
 
   def __init__(self):
+    """Instantiates the BotoCallbackHandler object."""
     self._callbacks = []
 
   def RegisterCallback(self, callback):
+    """Register a callback to be called on boto callbacks.
+
+    Args:
+      callback (function): the callback function to be registered.
+    """
     self._callbacks.append(callback)
 
   #pylint: disable=invalid-name
   def update_with_total(self, current_bytes, _unused_total_bytes):
-    """Called by boto library to update the UI and provide progress reporting.
+    """Called by boto library during uploads.
 
     Args:
       current_bytes(int): the number of bytes uploaded.
@@ -455,16 +456,14 @@ class AutoForensicate(object):
     """Returns a ProgressReporter object.
 
     Args:
-      max_size (int): the size of the source.
-      name (str): the name of what is being processed.
-      message (str): an extra message to display before the bar.
+      artifact (BaseArtifact): the artifact representing the file to upload.
 
     Returns:
       ProgressBar: the progress bar object.
     """
     if self._progress_logger:
       if artifact.size > MIN_REPORTING_SIZE:
-        return ProgressLogger(artifact, self._progress_logger)
+        return ProgressReporter(artifact, self._progress_logger)
     return None
 
   def Do(self, recipe):
@@ -513,7 +512,7 @@ class AutoForensicate(object):
       callback_handler.RegisterCallback(progress_bar.update_with_total)
       progress_reporter = self._MakeProgressReporter(artifact)
       if progress_reporter:
-        callback_handler.RegisterCallback(progress_reporter.update_with_total)   
+        callback_handler.RegisterCallback(progress_reporter.update_with_total)
       self._UploadArtifact(
           artifact, update_callback=callback_handler.update_with_total)
       progress_bar.finish()
