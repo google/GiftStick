@@ -68,7 +68,7 @@ class FileCopyUploader(object):
       update_callback(len(data), len(data))
 
 
-class GCSUploader(object):
+class FakeGCSUploader(object):
   """Test implementation of a GCS Uploader for testing progress reporting"""
 
   def UploadArtifact(self, artifact, update_callback=None):
@@ -94,48 +94,51 @@ class FakeGoogleLogger(object):
     self.logs.append((severity, log_entry))
 
 
-class BarTest(unittest.TestCase):
-  """Tests for the progress bar classes."""
+class HumanReadableBytesTest(unittest.TestCase):
+  """Tests for the HumanReadableBytes Function"""
 
-  def testHumanReadableSpeed(self):
-    """Tests _HumanReadableSpeed."""
-    progressbar = auto_acquire.BaBar()
+  def testBadBase(self):
+    with self.assertRaises(ValueError):
+      auto_acquire.HumanReadableBytes(0, 3)
 
-    self.assertEqual(progressbar._HumanReadableSpeed(0.0), '0.0 B/s')
+  def testBase10(self):
+    """Tests base10 based conversions"""
+
+    self.assertEqual(auto_acquire.HumanReadableBytes(0.0), '0.0 B')
     expected = [
-        '1.2 B/s', '12.3 B/s', '123.0 B/s',
-        '1.2 KB/s', '12.3 KB/s', '123.0 KB/s',
-        '1.2 MB/s', '12.3 MB/s', '123.0 MB/s',
-        '1.2 GB/s', '12.3 GB/s', '123.0 GB/s',
-        '1.2 TB/s', '12.3 TB/s', '123.0 TB/s',
-        '1.2 PB/s', '12.3 PB/s', '123.0 PB/s',
-        '1230.0 PB/s', '12300.0 PB/s', '123000.0 PB/s',
+        '1.2 B', '12.3 B', '123.0 B',
+        '1.2 KB', '12.3 KB', '123.0 KB',
+        '1.2 MB', '12.3 MB', '123.0 MB',
+        '1.2 GB', '12.3 GB', '123.0 GB',
+        '1.2 TB', '12.3 TB', '123.0 TB',
+        '1.2 PB', '12.3 PB', '123.0 PB',
+        '1230.0 PB', '12300.0 PB', '123000.0 PB',
     ]
     for index, value in enumerate(expected):
       self.assertEqual(
-          progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
+          auto_acquire.HumanReadableBytes(1.23 * (10 ** index)), value)
+
+  def testBase2(self):
+    """Tests base2 based conversions"""
+
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**1 - 1024**0, 2), '1023.0 B')
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**1, 2), '1.0 KiB')
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**4 - 1024**3, 2), '1023.0 GiB')
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**4, 2), '1.0 TiB')
 
 
-class ProgressReporterTest(unittest.TestCase):
-  """Tests for the ProgressReporter class."""
+class GCPProgressReporterTest(unittest.TestCase):
+  """Tests for the GCPProgressReporter class."""
 
   def setUp(self):
-    """Set up an instantiated ProgressReporter for each test"""
-    self.progress_reporter = auto_acquire.ProgressReporter(
+    """Set up an instantiated GCPProgressReporter for each test"""
+    self.progress_reporter = auto_acquire.GCPProgressReporter(
         BytesIORecipe('stringio').GetArtifacts()[0],
         FakeGoogleLogger())
-
-  def testHumanReadableSize(self):
-    """Tests _HumanReadableSize."""
-    HumanReadableSize = self.progress_reporter._HumanReadableSize
-
-    self.assertEqual(HumanReadableSize(0), '0.0B')
-    self.assertEqual(HumanReadableSize(1), '1.0B')
-    self.assertEqual(HumanReadableSize(1024**1 - 1024**0), '1023.0B')
-    self.assertEqual(HumanReadableSize(1024**1), '1.0KiB')
-    self.assertEqual(HumanReadableSize(1024**4 - 1024**3), '1023.0GiB')
-    self.assertEqual(HumanReadableSize(1024**4), '1.0TiB')
-    self.assertEqual(HumanReadableSize(1024**5), '1024.0TiB')
 
   def testCheckReportable(self):
     """Tests _CheckReportable."""
@@ -160,7 +163,7 @@ class ProgressReporterTest(unittest.TestCase):
     reporting_frequency = self.progress_reporter._reporting_frequency
     expected_log_entries = 100 // reporting_frequency
 
-    gcs_uploader = GCSUploader()
+    gcs_uploader = FakeGCSUploader()
     gcs_uploader.UploadArtifact(artifact, update_callback)
 
     self.assertEqual(len(logger.logs), expected_log_entries)

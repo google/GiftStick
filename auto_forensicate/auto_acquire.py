@@ -44,7 +44,34 @@ VALID_RECIPES = {
     'sysinfo': sysinfo.SysinfoRecipe
 }
 
-MIN_REPORTING_SIZE = 1024**3
+ARTIFACT_MIN_REPORTING_SIZE = 1024**3
+
+def HumanReadableBytes(byte_val, base=10):
+  """Converts a byte count into a human readable form in MB/MiB etc
+
+  Args:
+    byte_val (int): a byte count.
+    base (int): what numbering base to use can be either 2 or 10
+  Returns:
+    str: A human-readable byte count.
+  Raises:
+    ValueError: if a base other than 2 or 10 is given.
+  """
+  if base not in (2, 10):
+    raise ValueError('base must be 2 or 10')
+
+  if base == 2:
+    kilo = 1024
+    suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+  else:
+    kilo = 1000
+    suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+
+  for i in range(0, 6):
+    if byte_val < kilo ** (i+1):
+      return '{:.1f} {:s}'.format(byte_val / kilo**i, suffixes[i])
+  return '{:.1f} {:s}'.format(byte_val / kilo**5, suffixes[5])
+
 
 class SpinnerBar(Spinner):
   """A Spinner object with an extra update method."""
@@ -89,26 +116,7 @@ class BaBar(IncrementalBar):
     """Returns a human readable version of the current upload speed."""
     if self.avg == 0:
       return 'NaN'
-    return self._HumanReadableSpeed(1 / self.avg)
-
-  def _HumanReadableSpeed(self, speed):
-    """Returns a number of bytes per second into a human readable string.
-
-    Args:
-      speed(int): a number of bytes per second.
-    Returns:
-      str: A human-readable speed reading.
-    """
-    if speed == 1:
-      return '1 B/s'
-    if speed < 1000:
-      return '{0:.1f} B/s'.format(speed)
-    suffixes = ['KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s']
-    for i, current_unit in enumerate(suffixes):
-      unit = 1000 ** (i + 2)
-      if speed < unit:
-        return '{0:.1f} {1:s}'.format(1000 * speed / unit, current_unit)
-    return '{0:.1f} {1:s}'.format(1000 * speed / unit, 'PB/s')
+    return HumanReadableBytes(1 / self.avg) + '/s'
 
   #pylint: disable=invalid-name
   def update_with_total(self, current_bytes, _unused_total_bytes):
@@ -121,7 +129,7 @@ class BaBar(IncrementalBar):
     self._Update(current_bytes)
 
 
-class ProgressReporter:
+class GCPProgressReporter:
   """Class implementing Stackdriver progress reporting.
 
     Attributes:
@@ -131,7 +139,7 @@ class ProgressReporter:
   """
 
   def __init__(self, artifact, progress_logger, reporting_frequency=5):
-    """Instantiates the ProgressReporter object.
+    """Instantiates the GCPProgressReporter object.
 
     Args:
       artifact (BaseArtifact): the artifact to be uploaded.
@@ -144,21 +152,6 @@ class ProgressReporter:
     self._progress_logger = progress_logger
     self._reporting_frequency = reporting_frequency
     self._reported_percentage = 0
-
-  def _HumanReadableSize(self, size):
-    """Converts a byte count into a human readable form in MiB, GiB etc..
-
-    Args:
-      size (int): a byte count.
-    Returns:
-      str: A human-readable byte count.
-    """
-    suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB']
-    if size > 1024**4:
-      return '{:.1f}{:s}'.format(size / 1024**4, 'TiB')
-    for i in range(0, 5):
-      if size < 1024**(i+1):
-        return '{:.1f}{:s}'.format(size / 1024**i, suffixes[i])
 
   def _CheckReportable(self, percentage):
     """Returns a bool indicating if the current percentage shoud be reported.
@@ -188,7 +181,7 @@ class ProgressReporter:
       self._progress_logger.log_text(
           'Uploading \'{:s}\' ({:d}% - {:s} remaining)'.format(
               self._artifact.name, percentage,
-              self._HumanReadableSize(bytes_remaining)),
+              HumanReadableBytes(bytes_remaining, 2)),
           severity='INFO')
       self._reported_percentage = percentage
 
@@ -213,15 +206,15 @@ class BotoCallbackHandler:
     self._callbacks.append(callback)
 
   #pylint: disable=invalid-name
-  def update_with_total(self, current_bytes, _unused_total_bytes):
+  def update_with_total(self, current_bytes, total_bytes):
     """Called by boto library during uploads.
 
     Args:
       current_bytes(int): the number of bytes uploaded.
-      _unused_total_bytes(int): the total number of bytes to upload.
+      total_bytes(int): the total number of bytes to upload.
     """
     for callback in self._callbacks:
-      callback(current_bytes, _unused_total_bytes)
+      callback(current_bytes, total_bytes)
 
 
 class AutoForensicate(object):
@@ -452,18 +445,18 @@ class AutoForensicate(object):
       pb = SpinnerBar(name + ' ')
     return pb
 
-  def _MakeProgressReporter(self, artifact):
-    """Returns a ProgressReporter object.
+  def _MakeGCPProgressReporter(self, artifact):
+    """Returns a GCPProgressReporter object.
 
     Args:
       artifact (BaseArtifact): the artifact representing the file to upload.
 
     Returns:
-      ProgressReporter: the progress reporter object.
+      GCPProgressReporter: the progress reporter object.
     """
     if self._progress_logger:
-      if artifact.size > MIN_REPORTING_SIZE:
-        return ProgressReporter(artifact, self._progress_logger)
+      if artifact.size > ARTIFACT_MIN_REPORTING_SIZE:
+        return GCPProgressReporter(artifact, self._progress_logger)
     return None
 
   def Do(self, recipe):
@@ -510,7 +503,7 @@ class AutoForensicate(object):
           'Uploading \'{0:s}\' ({1:s}, Task {2:d}/{3:d})'.format(
               artifact.name, artifact.readable_size, current_task, nb_tasks))
       callback_handler.RegisterCallback(progress_bar.update_with_total)
-      progress_reporter = self._MakeProgressReporter(artifact)
+      progress_reporter = self._MakeGCPProgressReporter(artifact)
       if progress_reporter:
         callback_handler.RegisterCallback(progress_reporter.update_with_total)
       self._UploadArtifact(
