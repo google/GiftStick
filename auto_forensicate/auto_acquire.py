@@ -459,7 +459,7 @@ class AutoForensicate(object):
       artifact (BaseArtifact): the artifact representing the file to upload.
 
     Returns:
-      ProgressBar: the progress bar object.
+      ProgressReporter: the progress reporter object.
     """
     if self._progress_logger:
       if artifact.size > MIN_REPORTING_SIZE:
