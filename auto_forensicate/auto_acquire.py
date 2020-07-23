@@ -46,24 +46,20 @@ VALID_RECIPES = {
 
 ARTIFACT_MIN_REPORTING_SIZE = 1024**3
 
-def HumanReadableBytes(byte_val, base=10):
+def HumanReadableBytes(byte_val, prefix='dec'):
   """Converts a byte count into a human readable form in MB/MiB etc
 
   Args:
     byte_val (int): a byte count.
-    base (int): what numbering base to use can be either 2 or 10
+    prefix (str): what prefix system to use, bin (KiB) or dec (KB)
   Returns:
     str: A human-readable byte count.
-  Raises:
-    ValueError: if a base other than 2 or 10 is given.
   """
-  if base not in (2, 10):
-    raise ValueError('base must be 2 or 10')
 
-  if base == 2:
+  if prefix == 'bin':
     kilo = 1024
     suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
-  else:
+  elif prefix == 'dec':
     kilo = 1000
     suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
 
@@ -181,7 +177,7 @@ class GCPProgressReporter:
       self._progress_logger.log_text(
           'Uploading \'{:s}\' ({:d}% - {:s} remaining)'.format(
               self._artifact.name, percentage,
-              HumanReadableBytes(bytes_remaining, 2)),
+              HumanReadableBytes(bytes_remaining, 'bin')),
           severity='INFO')
       self._reported_percentage = percentage
 

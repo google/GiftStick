@@ -97,12 +97,8 @@ class FakeGoogleLogger(object):
 class HumanReadableBytesTest(unittest.TestCase):
   """Tests for the HumanReadableBytes Function"""
 
-  def testBadBase(self):
-    with self.assertRaises(ValueError):
-      auto_acquire.HumanReadableBytes(0, 3)
-
-  def testBase10(self):
-    """Tests base10 based conversions"""
+  def testDec(self):
+    """Tests decimal prefix based conversions"""
 
     self.assertEqual(auto_acquire.HumanReadableBytes(0.0), '0.0 B')
     expected = [
@@ -118,17 +114,17 @@ class HumanReadableBytesTest(unittest.TestCase):
       self.assertEqual(
           auto_acquire.HumanReadableBytes(1.23 * (10 ** index)), value)
 
-  def testBase2(self):
-    """Tests base2 based conversions"""
+  def testBin(self):
+    """Tests binary prefix based conversions"""
 
     self.assertEqual(auto_acquire.HumanReadableBytes(
-        1024**1 - 1024**0, 2), '1023.0 B')
+        1024**1 - 1024**0, 'bin'), '1023.0 B')
     self.assertEqual(auto_acquire.HumanReadableBytes(
-        1024**1, 2), '1.0 KiB')
+        1024**1, 'bin'), '1.0 KiB')
     self.assertEqual(auto_acquire.HumanReadableBytes(
-        1024**4 - 1024**3, 2), '1023.0 GiB')
+        1024**4 - 1024**3, 'bin'), '1023.0 GiB')
     self.assertEqual(auto_acquire.HumanReadableBytes(
-        1024**4, 2), '1.0 TiB')
+        1024**4, 'bin'), '1.0 TiB')
 
 
 class GCPProgressReporterTest(unittest.TestCase):
