@@ -44,6 +44,30 @@ VALID_RECIPES = {
     'sysinfo': sysinfo.SysinfoRecipe
 }
 
+ARTIFACT_MIN_REPORTING_SIZE = 1024**3
+
+def HumanReadableBytes(byte_val, prefix='dec'):
+  """Converts a byte count into a human readable form in MB/MiB etc
+
+  Args:
+    byte_val (int): a byte count.
+    prefix (str): what prefix system to use, bin (KiB) or dec (KB)
+  Returns:
+    str: A human-readable byte count.
+  """
+
+  if prefix == 'bin':
+    kilo = 1024
+    suffixes = ['B', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB']
+  elif prefix == 'dec':
+    kilo = 1000
+    suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+
+  for i in range(0, 6):
+    if byte_val < kilo ** (i+1):
+      return '{:.1f} {:s}'.format(byte_val / kilo**i, suffixes[i])
+  return '{:.1f} {:s}'.format(byte_val / kilo**5, suffixes[5])
+
 
 class SpinnerBar(Spinner):
   """A Spinner object with an extra update method."""
@@ -88,26 +112,7 @@ class BaBar(IncrementalBar):
     """Returns a human readable version of the current upload speed."""
     if self.avg == 0:
       return 'NaN'
-    return self._HumanReadableSpeed(1 / self.avg)
-
-  def _HumanReadableSpeed(self, speed):
-    """Returns a number of bytes per second into a human readable string.
-
-    Args:
-      speed(int): a number of bytes per second.
-    Returns:
-      str: A human-readable speed reading.
-    """
-    if speed == 1:
-      return '1 B/s'
-    if speed < 1000:
-      return '{0:.1f} B/s'.format(speed)
-    suffixes = ['KB/s', 'MB/s', 'GB/s', 'TB/s', 'PB/s']
-    for i, current_unit in enumerate(suffixes):
-      unit = 1000 ** (i + 2)
-      if speed < unit:
-        return '{0:.1f} {1:s}'.format(1000 * speed / unit, current_unit)
-    return '{0:.1f} {1:s}'.format(1000 * speed / unit, 'PB/s')
+    return HumanReadableBytes(1 / self.avg) + '/s'
 
   #pylint: disable=invalid-name
   def update_with_total(self, current_bytes, _unused_total_bytes):
@@ -118,6 +123,94 @@ class BaBar(IncrementalBar):
       _unused_total_bytes(int): the total number of bytes to upload.
     """
     self._Update(current_bytes)
+
+
+class GCPProgressReporter:
+  """Class implementing Stackdriver progress reporting.
+
+    Attributes:
+      _artifact (BaseArtifact): the artifact being uploaded.
+      _progress_logger (google.cloud.logging.logger.Logger):
+        the Stackdriver logger for progress reporting.
+  """
+
+  def __init__(self, artifact, progress_logger, reporting_frequency=5):
+    """Instantiates the GCPProgressReporter object.
+
+    Args:
+      artifact (BaseArtifact): the artifact to be uploaded.
+      progress_logger (google.cloud.logging.logger.Logger): the Stackdriver
+        logger.
+      reporting_frequency (int): what percentage change in progress to report
+        defaults to 5%.
+    """
+    self._artifact = artifact
+    self._progress_logger = progress_logger
+    self._reporting_frequency = reporting_frequency
+    self._reported_percentage = 0
+
+  def _CheckReportable(self, percentage):
+    """Returns a bool indicating if the current percentage shoud be reported.
+
+    Args:
+      percentage (int): the current percentage uploaded.
+    Returns:
+      bool: whether to report this percentage.
+    """
+    if percentage % self._reporting_frequency == 0:
+      if percentage != self._reported_percentage:
+        return True
+    return False
+
+  #pylint: disable=invalid-name
+  def update_with_total(self, current_bytes, _unused_total_bytes):
+    """Called by boto callback handling logic to report progress.
+
+    Args:
+      current_bytes(int): the number of bytes uploaded.
+      _unused_total_bytes(int): the total number of bytes to upload.
+    """
+    percentage = int(current_bytes / self._artifact.size * 100)
+    bytes_remaining = self._artifact.size - current_bytes
+
+    if self._CheckReportable(percentage):
+      self._progress_logger.log_text(
+          'Uploading \'{:s}\' ({:d}% - {:s} remaining)'.format(
+              self._artifact.name, percentage,
+              HumanReadableBytes(bytes_remaining, 'bin')),
+          severity='INFO')
+      self._reported_percentage = percentage
+
+
+class BotoCallbackHandler:
+  """Class implementing boto update_callback handling logic.
+
+    Attributes:
+      _callbacks ([function]): a list of callback functions.
+  """
+
+  def __init__(self):
+    """Instantiates the BotoCallbackHandler object."""
+    self._callbacks = []
+
+  def RegisterCallback(self, callback):
+    """Register a callback to be called on boto callbacks.
+
+    Args:
+      callback (function): the callback function to be registered.
+    """
+    self._callbacks.append(callback)
+
+  #pylint: disable=invalid-name
+  def update_with_total(self, current_bytes, total_bytes):
+    """Called by boto library during uploads.
+
+    Args:
+      current_bytes(int): the number of bytes uploaded.
+      total_bytes(int): the total number of bytes to upload.
+    """
+    for callback in self._callbacks:
+      callback(current_bytes, total_bytes)
 
 
 class AutoForensicate(object):
@@ -141,6 +234,7 @@ class AutoForensicate(object):
     self._errors = []
     self._gcs_settings = None
     self._logger = None
+    self._progress_logger = None
     self._recipes = recipes
     self._uploader = None
     self._should_retry = False  # True when a recoverable error occurred.
@@ -175,6 +269,12 @@ class AutoForensicate(object):
         '--logging', action='append', required=False,
         choices=['stackdriver', 'stdout'], default=['stdout'],
         help='Selects logging methods.'
+    )
+    parser.add_argument(
+        '--log_progress', action='store_true', default=False,
+        help=(
+            'Enable logging of acquisition progress to stackdriver, requires '
+            'stackdriver to be selected with --logging')
     )
     parser.add_argument(
         '--select_disks', action='store_true', required=False, default=False,
@@ -213,6 +313,13 @@ class AutoForensicate(object):
       self._stackdriver_handler = CloudLoggingHandler(
           gcp_logging_client, name='GiftStick')
       self._logger.addHandler(self._stackdriver_handler)
+
+    if options.log_progress:
+      if 'stackdriver' not in options.logging:
+        raise errors.BadConfigOption(
+            'Progress logging requires Stackdriver logging to be enabled')
+      self._progress_logger = google_logging.logger.Logger(
+          'GiftStick', gcp_logging_client)
 
   def _MakeUploader(self, options):
     """Creates a new Uploader object.
@@ -334,6 +441,20 @@ class AutoForensicate(object):
       pb = SpinnerBar(name + ' ')
     return pb
 
+  def _MakeGCPProgressReporter(self, artifact):
+    """Returns a GCPProgressReporter object.
+
+    Args:
+      artifact (BaseArtifact): the artifact representing the file to upload.
+
+    Returns:
+      GCPProgressReporter: the progress reporter object.
+    """
+    if self._progress_logger:
+      if artifact.size > ARTIFACT_MIN_REPORTING_SIZE:
+        return GCPProgressReporter(artifact, self._progress_logger)
+    return None
+
   def Do(self, recipe):
     """Runs a recipe.
 
@@ -372,12 +493,17 @@ class AutoForensicate(object):
     current_task = 0
     for artifact in artifacts:
       current_task += 1
+      callback_handler = BotoCallbackHandler()
       progress_bar = self._MakeProgressBar(
           artifact.size, artifact.name,
           'Uploading \'{0:s}\' ({1:s}, Task {2:d}/{3:d})'.format(
               artifact.name, artifact.readable_size, current_task, nb_tasks))
+      callback_handler.RegisterCallback(progress_bar.update_with_total)
+      progress_reporter = self._MakeGCPProgressReporter(artifact)
+      if progress_reporter:
+        callback_handler.RegisterCallback(progress_reporter.update_with_total)
       self._UploadArtifact(
-          artifact, update_callback=progress_bar.update_with_total)
+          artifact, update_callback=callback_handler.update_with_total)
       progress_bar.finish()
 
   def _Colorize(self, color, msg):
