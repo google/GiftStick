@@ -61,7 +61,8 @@ sudo pip install chipsec
 
 sudo "${AUTO_FORENSIC_SCRIPT_NAME}" \
   --gs_keyfile="${GCS_SA_KEY_FILE}" \
-  --logging stdout, stackdriver \
+  --logging stdout \
+  --logging stackdriver \
   --log_progress \
   --acquire all \
   ${EXTRA_OPTIONS} "${GCS_REMOTE_URL}/"
