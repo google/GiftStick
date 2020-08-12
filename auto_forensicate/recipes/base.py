@@ -190,7 +190,7 @@ class ProcessOutputArtifact(BaseArtifact):
     Args:
       command (list): the command to run as subprocess.
       path (str): the remote path to store the output of the command.
-      ignore_failure(bool): set to True to not raise if the command failed to
+      ignore_failure (bool): set to True to not raise if the command failed to
         run.
 
     Raises:
