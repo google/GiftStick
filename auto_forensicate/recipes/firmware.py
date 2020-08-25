@@ -35,6 +35,9 @@ class ChipsecRecipe(base.BaseRecipe):
       self._logger.info('Firmware acquisition only works on Linux, skipping.')
       return []
 
+    # Firmware acquisition will fail on various platforms (ie: QEMU during e2e
+    # tests, and shouldn't be a reason to mark the full upload as failed.
+    # So we're setting ignore_failure to True.
     firmware_artifact = base.ProcessOutputArtifact(
-        self._CHIPSEC_CMD, 'Firmware/rom.bin')
+        self._CHIPSEC_CMD, 'Firmware/rom.bin', ignore_failure=True)
     return [firmware_artifact]

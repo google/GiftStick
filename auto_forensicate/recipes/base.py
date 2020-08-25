@@ -25,6 +25,8 @@ import sys
 import tempfile
 import six
 
+from auto_forensicate import errors
+
 
 class BaseArtifact(object):
   """BaseArtifact class.
@@ -182,17 +184,23 @@ class FileArtifact(BaseArtifact):
 class ProcessOutputArtifact(BaseArtifact):
   """Class for an artifact to upload the output of a command."""
 
-  def __init__(self, command, path):
+  def __init__(self, command, path, ignore_failure=False):
     """Initializes a ProcessOutputArtifact object.
 
     Args:
       command (list): the command to run as subprocess.
       path (str): the remote path to store the output of the command.
+      ignore_failure (bool): set to True to not raise if the command failed to
+        run.
+
+    Raises:
+      errors.RecipeException: if the command failed to run.
     """
     super(ProcessOutputArtifact, self).__init__(os.path.basename(path))
     self.remote_path = path
     self._buffered_content = None
     self._command = command
+    self._ignore_failure = ignore_failure
 
   def _RunCommand(self):
     """Run a command.
@@ -216,6 +224,9 @@ class ProcessOutputArtifact(BaseArtifact):
               self._command, error.strip(), process.returncode))
       self._logger.error(command_output)
       command_output = command_output.encode()
+      if not self._ignore_failure:
+        raise errors.RecipeException(
+            'Error running ProcessOutputArtifact command')
 
     return command_output
 

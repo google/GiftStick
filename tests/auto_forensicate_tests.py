@@ -68,26 +68,101 @@ class FileCopyUploader(object):
       update_callback(len(data), len(data))
 
 
-class BarTest(unittest.TestCase):
-  """Tests for the progress bar classes."""
+class FakeGCSUploader(object):
+  """Test implementation of a GCS Uploader for testing progress reporting"""
 
-  def testHumanReadableSpeed(self):
-    """Tests _HumanReadableSpeed."""
-    progressbar = auto_acquire.BaBar()
+  def UploadArtifact(self, artifact, update_callback=None):
+    current_bytes = 0
+    total_bytes = 0
+    boto_callback_interval = 1024
 
-    self.assertEqual(progressbar._HumanReadableSpeed(0.0), '0.0 B/s')
+    update_callback(current_bytes, total_bytes)
+    while True:
+      data = artifact._GetStream().read(boto_callback_interval)
+      if data:
+        current_bytes += len(data)
+        update_callback(current_bytes, total_bytes)
+      else:
+        break
+
+
+class FakeGoogleLogger(object):
+  """Fake google logger for testing progress reporting"""
+  logs = []
+
+  def log_text(self, log_entry, severity=None):
+    self.logs.append((severity, log_entry))
+
+
+class HumanReadableBytesTest(unittest.TestCase):
+  """Tests for the HumanReadableBytes Function"""
+
+  def testDec(self):
+    """Tests decimal prefix based conversions"""
+
+    self.assertEqual(auto_acquire.HumanReadableBytes(0.0), '0.0 B')
     expected = [
-        '1.2 B/s', '12.3 B/s', '123.0 B/s',
-        '1.2 KB/s', '12.3 KB/s', '123.0 KB/s',
-        '1.2 MB/s', '12.3 MB/s', '123.0 MB/s',
-        '1.2 GB/s', '12.3 GB/s', '123.0 GB/s',
-        '1.2 TB/s', '12.3 TB/s', '123.0 TB/s',
-        '1.2 PB/s', '12.3 PB/s', '123.0 PB/s',
-        '1230.0 PB/s', '12300.0 PB/s', '123000.0 PB/s',
+        '1.2 B', '12.3 B', '123.0 B',
+        '1.2 KB', '12.3 KB', '123.0 KB',
+        '1.2 MB', '12.3 MB', '123.0 MB',
+        '1.2 GB', '12.3 GB', '123.0 GB',
+        '1.2 TB', '12.3 TB', '123.0 TB',
+        '1.2 PB', '12.3 PB', '123.0 PB',
+        '1230.0 PB', '12300.0 PB', '123000.0 PB',
     ]
     for index, value in enumerate(expected):
       self.assertEqual(
-          progressbar._HumanReadableSpeed(1.23 * (10 ** index)), value)
+          auto_acquire.HumanReadableBytes(1.23 * (10 ** index)), value)
+
+  def testBin(self):
+    """Tests binary prefix based conversions"""
+
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**1 - 1024**0, 'bin'), '1023.0 B')
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**1, 'bin'), '1.0 KiB')
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**4 - 1024**3, 'bin'), '1023.0 GiB')
+    self.assertEqual(auto_acquire.HumanReadableBytes(
+        1024**4, 'bin'), '1.0 TiB')
+
+
+class GCPProgressReporterTest(unittest.TestCase):
+  """Tests for the GCPProgressReporter class."""
+
+  def setUp(self):
+    """Set up an instantiated GCPProgressReporter for each test"""
+    self.progress_reporter = auto_acquire.GCPProgressReporter(
+        BytesIORecipe('stringio').GetArtifacts()[0],
+        FakeGoogleLogger())
+
+  def testCheckReportable(self):
+    """Tests _CheckReportable."""
+    reporting_frequency = self.progress_reporter._reporting_frequency
+    CheckReportable = self.progress_reporter._CheckReportable
+
+    self.assertEqual(CheckReportable(0), False)
+    self.assertEqual(CheckReportable(reporting_frequency), True)
+    self.progress_reporter._reported_percentage = reporting_frequency
+    self.assertEqual(CheckReportable(reporting_frequency), False)
+    self.assertEqual(CheckReportable(reporting_frequency*2), True)
+
+  def testLogProgress(self):
+    """Tests _LogProgress."""
+    # For reporting purposes set the artifact to 1MiB
+    self.progress_reporter._artifact = base.StringArtifact(
+        'fake/path', 'A' * (1024**2))
+
+    artifact = self.progress_reporter._artifact
+    update_callback = self.progress_reporter.update_with_total
+    logger = self.progress_reporter._progress_logger
+    reporting_frequency = self.progress_reporter._reporting_frequency
+    expected_log_entries = 100 // reporting_frequency
+
+    gcs_uploader = FakeGCSUploader()
+    gcs_uploader.UploadArtifact(artifact, update_callback)
+
+    self.assertEqual(len(logger.logs), expected_log_entries)
 
 
 class AutoForensicateTest(unittest.TestCase):
