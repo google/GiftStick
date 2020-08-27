@@ -80,7 +80,11 @@ class DirectoryArtifact(base.BaseArtifact):
       self.remote_path = self.remote_path + '.gz'
 
   def _GetSize(self):
-    """TODO."""
+    """Gets the size of the directory to export.
+
+    Returns:
+      int: The size of the directory in bytes.
+    """
     self._logger.info('Calculating size of "{0:s}"'.format(self.path))
     du_process = subprocess.run(
         ['du', '-s', '-k', self.path], stdout=subprocess.PIPE, check=False)
@@ -98,11 +102,13 @@ class DirectoryArtifact(base.BaseArtifact):
     """
     if self._copy_command is None:
       self._copy_command = self._GenerateCopyCommand()
-    self._logger.info(
-        'Copying directory with command \'{0!s}\''.format(self._copy_command))
-    self._copyprocess = subprocess.Popen(
-        self._copy_command, stdin=None,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      self._logger.info(
+          'Copying directory with command \'{0!s}\''.format(self._copy_command))
+      self._copyprocess = subprocess.Popen(
+          self._copy_command, stdin=None,
+          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    else:
+      raise IOError('Directory is already being acquired')
 
     return self._copyprocess.stdout
 
@@ -121,8 +127,8 @@ class DirectoryArtifact(base.BaseArtifact):
 
     # If there is anything still to read from the subprocess then CloseStream
     # has been called early, terminate the child process to avoid deadlock.
-    c = self._copyprocess.stdout.read(1)
-    if c:
+    character = self._copyprocess.stdout.read(1)
+    if character:
       self._copyprocess.terminate()
       raise subprocess.CalledProcessError(
           0, self._copy_command[0],
@@ -136,6 +142,11 @@ class DirectoryArtifact(base.BaseArtifact):
     return error
 
   def _GenerateCopyCommand(self):
+    """Builds the command to run on the directory.
+
+    Returns:
+      list: the argument list for the dd command
+    """
     if self._method == 'tar':
       return self._GenerateTarCopyCommand()
     else:
@@ -179,22 +190,6 @@ class MacDirectoryArtifact(DirectoryArtifact):
     super().__init__(path, method=method, compress=compress)
 
 
-class LinuxDirectoryTimelineArtifact(base.ProcessOutputArtifact):
-  """The MacDirectoryTimelineArtifact class."""
-
-  def __init__(self, path, compress=False):
-    """Initializes a MacDirectoryTimelineArtifact object.
-
-    Args:
-      path(str): the path to the directory
-      compress(bool): whether to use compression.
-    """
-
-    if not os.path.exists(path):
-      raise ValueError(
-          'Error with path {0:s} does not exist'.format(path))
-
-
 class DirectoryRecipe(base.BaseRecipe):
   """The DirectoryRecipe class.
 
@@ -214,6 +209,9 @@ class DirectoryRecipe(base.BaseRecipe):
         path = cli.AskText(
             'Specify the path to the directory you wish to copy')
         if not os.path.isdir(path):
+          print(
+              'The following path does not exist or is not a directory:'
+              '{0:s}'.format(path))
           continue
         path_list.append(path)
         more_to_copy = cli.Confirm('Do you wish to copy another folder?')
@@ -221,6 +219,7 @@ class DirectoryRecipe(base.BaseRecipe):
         path = gui.AskText(
             'Specify the path to the directory you wish to copy')
         if not os.path.isdir(path):
+          # TODO: display an GUI error message
           continue
         path_list.append(path)
         more_to_copy = gui.Confirm('Do you wish to copy another folder?')
