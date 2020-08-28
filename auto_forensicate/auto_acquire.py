@@ -33,17 +33,21 @@ from progress.spinner import Spinner
 from auto_forensicate import errors
 from auto_forensicate import hostinfo
 from auto_forensicate import uploader
+from auto_forensicate.recipes import directory
 from auto_forensicate.recipes import disk
 from auto_forensicate.recipes import firmware
 from auto_forensicate.recipes import sysinfo
 from auto_forensicate.stamp import manager
 
 VALID_RECIPES = {
+    'directory': directory.DirectoryRecipe,
     'disk': disk.DiskRecipe,
     'firmware': firmware.ChipsecRecipe,
     'sysinfo': sysinfo.SysinfoRecipe
 }
 
+# These recipes will all be executed when 'all' recipes are specified
+DEFAULT_RECIPES = frozenset({'disk', 'firmware', 'sysinfo'})
 ARTIFACT_MIN_REPORTING_SIZE = 1024**3
 
 def HumanReadableBytes(byte_val, prefix='dec'):
@@ -284,6 +288,15 @@ class AutoForensicate(object):
         '--disk', action='append', required=False,
         help='Specify a disk to acquire (eg: sda)'
     )
+    parser.add_argument(
+        '--method', action='store', required=False, choices=['tar'],
+        default='tar',
+        help='Specify which method to use when acquiring a directory'
+    )
+    parser.add_argument(
+        '--compress', action='store_true', required=False, default=False,
+        help='Specify which method to use when acquiring a directory'
+    )
     return parser
 
   def _ParseLoggingArguments(self, options):
@@ -398,7 +411,7 @@ class AutoForensicate(object):
       options (argparse.Namespace): the parsed command-line arguments.
     """
     if 'all' in options.acquire:
-      options.acquire = sorted(list(self._recipes.keys()))
+      options.acquire = sorted(DEFAULT_RECIPES)
     else:
       # Deduplicate recipes
       options.acquire = sorted(list(set(options.acquire)))

@@ -32,9 +32,9 @@ from auto_forensicate.recipes import base
 
 DEFAULT_ARTIFACT_CONTENT = os.urandom(1000)
 
-
 # pylint: disable=missing-docstring
 # pylint: disable=protected-access
+
 
 class BytesIORecipe(base.BaseRecipe):
   """A Recipe returning 1 artifact with a BytesIO."""
@@ -252,7 +252,7 @@ class AutoForensicateTest(unittest.TestCase):
     af = auto_acquire.AutoForensicate(recipes=recipes)
     test_args = ['--acquire', 'test1', '--acquire', 'all', 'gs://bucket']
     options = af.ParseArguments(test_args)
-    expected_recipes = ['test1', 'test2']
+    expected_recipes = ['disk', 'firmware', 'sysinfo']
     self.assertEqual(options.acquire, expected_recipes)
 
   def testMakeUploader(self):
@@ -260,7 +260,7 @@ class AutoForensicateTest(unittest.TestCase):
 
     options = af.ParseArguments(['--acquire', 'all', 'destination'])
     uploader_object = af._MakeUploader(options)
-    self.assertEqual(uploader_object, None)
+    self.assertIsNone(uploader_object)
 
     options = af.ParseArguments(['--acquire', 'all', 'gs://destination'])
     with self.assertRaises(errors.BadConfigOption):

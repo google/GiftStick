@@ -155,8 +155,6 @@ class MacDiskArtifact(DiskArtifact):
   def __init__(self, path, size):
     """Initializes a MacDiskArtifact object.
 
-    Only supported implementations are MacOS and Linux.
-
     Args:
       path(str): the path to the disk.
       size(str): the size of the disk.

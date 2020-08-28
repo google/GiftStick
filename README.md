@@ -66,9 +66,22 @@ gcloud iam service-accounts --project giftstick-project keys create \
         credentials.json
 ```
 
-You can now then include the `auto_forensicate` folder, as well as the
-`credentials.json` file on a bootable USB of your choice, where the dependencies
-have been installed (see below).
+Now pull the code and install dependencies
+```
+git clone https://github.com/google/GiftStick
+cd GiftStick
+pip3 install -r requirements.txt
+```
+
+Unfortunately, because of
+[boto/boto#3699](https://github.com/boto/boto/pull/3699), some patches are
+required to work in a Python3 environment:
+
+```
+$ boto_dir=$(python -c "import boto; print(boto.__path__[0])")
+$ patch -p0 "${boto_dir}/connection.py" config/patches/boto_pr3561_connection.py.patch
+$ patch -p0 "${boto_dir}/s3/key.py" config/patches/boto_pr3561_key.py.patch
+```
 
 Once you have booted the system to acquire evidence from that newly created
 USB stick, and upload it to a GCS url
@@ -118,6 +131,12 @@ Currently the script uploads the following data:
   * the device's information (output of udevadm)
 * The system's firmware, dumped with
   [Chipsec](https://github.com/chipsec/chipsec)
+
+It also can upload a folder (for example a mounted filesystem) with
+`--acquire directory`. In this case, the script will build a `.tar` file, and
+upload it alongside a corresponding `.timeline`, which is a
+[bodyfile](https://wiki.sleuthkit.org/index.php?title=Body_file) compatible file
+generated with the `find` command (and `stat`, if run on MacOS).
 
 
 ## FAQ
