@@ -66,6 +66,10 @@ function ubuntu_fix_systemd {
   if [[ -f /etc/systemd/resolved.conf ]]; then
     sed -i 's/^#DNSSEC=.*/DNSSEC=no/' /etc/systemd/resolved.conf
   fi
+
+  echo "force-confold" >> /etc/dpkg/dpkg.cfg
+  echo "force-confdef" >> /etc/dpkg/dpkg.cfg
+
   apt-get -y update
   apt-get -y install libnss-resolve
 }
