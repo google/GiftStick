@@ -15,6 +15,8 @@
 
 # This script is being run chrooted in the ubuntu live CD ISO image
 
+export DEBIAN_FRONTEND=noninteractive
+
 function ubuntu_remove_packages {
   local PKG=( ubiquity udisks2 ) # udisks2 is responsible for automounting
   if [[ ${DISTRIB_CODENAME} == "trusty" ]]; then
