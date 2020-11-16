@@ -43,4 +43,8 @@ class SysinfoRecipe(base.BaseRecipe):
       dmidecode_cmd = [dmidecode_path, '--type=bios', '--type=system']
       artifacts_list.append(
           base.ProcessOutputArtifact(dmidecode_cmd, 'system_info.txt'))
+      ip_path = hostinfo.Which('ip')
+      ip_cmd = [ip_path, 'link', 'show']
+      artifacts_list.append(
+          base.ProcessOutputArtifact(ip_cmd, 'interfaces.txt'))
     return artifacts_list
