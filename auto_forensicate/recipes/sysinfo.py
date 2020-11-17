@@ -25,6 +25,8 @@ class SysinfoRecipe(base.BaseRecipe):
 
   _SYSTEM_PROFILER_CMD = [
       '/usr/sbin/system_profiler', 'SPHardwareDataType', 'SPSoftwareDataType']
+  _NETWORKSETUP_CMD = [
+      '/usr/sbin/networksetup', '-listallhardwareports']
 
   def GetArtifacts(self):
     """Provides a list of Artifacts to upload.
@@ -38,9 +40,16 @@ class SysinfoRecipe(base.BaseRecipe):
       artifacts_list.append(
           base.ProcessOutputArtifact(
               self._SYSTEM_PROFILER_CMD, 'system_info.txt'))
+      artifacts_list.append(
+          base.ProcessOutputArtifact(
+              self._NETWORKSETUP_CMD, 'interfaces.txt'))
     else:
       dmidecode_path = hostinfo.Which('dmidecode')
       dmidecode_cmd = [dmidecode_path, '--type=bios', '--type=system']
       artifacts_list.append(
           base.ProcessOutputArtifact(dmidecode_cmd, 'system_info.txt'))
+      ip_path = hostinfo.Which('ip')
+      ip_cmd = [ip_path, 'link', 'show']
+      artifacts_list.append(
+          base.ProcessOutputArtifact(ip_cmd, 'interfaces.txt'))
     return artifacts_list
