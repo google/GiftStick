@@ -55,7 +55,7 @@ class LinuxSysinfoRecipeTest(unittest.TestCase):
     with mock.patch('auto_forensicate.recipes.base.ProcessOutputArtifact._RunCommand') as patched_run:
       patched_run.return_value = self._DMIDECODE_OUTPUT_FAIL_STRING
       artifacts = sysinfo_recipe.GetArtifacts()
-      self.assertEqual(len(artifacts), 1)
+      self.assertEqual(len(artifacts), 2)
 
       artifact = artifacts[0]
       self.assertIsInstance(artifact, base.ProcessOutputArtifact)
@@ -72,7 +72,7 @@ class LinuxSysinfoRecipeTest(unittest.TestCase):
     with mock.patch('auto_forensicate.recipes.base.ProcessOutputArtifact._RunCommand') as patched_run:
       patched_run.return_value = self._DMIDECODE_OUTPUT_STRING
       artifacts = sysinfo_recipe.GetArtifacts()
-      self.assertEqual(len(artifacts), 1)
+      self.assertEqual(len(artifacts), 2)
 
       artifact = artifacts[0]
       self.assertIsInstance(artifact, base.ProcessOutputArtifact)
