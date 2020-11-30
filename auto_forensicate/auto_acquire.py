@@ -24,8 +24,9 @@ import sys
 import time
 
 import gcs_oauth2_boto_plugin  # pylint: disable=unused-import
-from google.cloud import logging as google_logging
-from google.cloud.logging_v2.handlers import CloudLoggingHandler
+from google.cloud import logging as cloud_logging
+from google.cloud.logging_v2 import logger as cloud_logger
+from google.cloud.logging_v2 import handlers as cloud_handlers
 from google.oauth2 import service_account
 from progress.bar import IncrementalBar
 from progress.spinner import Spinner
@@ -321,9 +322,9 @@ class AutoForensicate(object):
           options.gs_keyfile)
       project_id = self._gcs_settings.get('project_id', None)
 
-      gcp_logging_client = google_logging.Client(
+      gcp_logging_client = cloud_logging.Client(
           project=project_id, credentials=gcp_credentials)
-      self._stackdriver_handler = CloudLoggingHandler(
+      self._stackdriver_handler = cloud_handlers.CloudLoggingHandler(
           gcp_logging_client, name='GiftStick')
       self._logger.addHandler(self._stackdriver_handler)
 
@@ -331,7 +332,7 @@ class AutoForensicate(object):
       if 'stackdriver' not in options.logging:
         raise errors.BadConfigOption(
             'Progress logging requires Stackdriver logging to be enabled')
-      self._progress_logger = google_logging.logger.Logger(
+      self._progress_logger = cloud_logger.Logger(
           'GiftStick', gcp_logging_client)
 
   def _MakeUploader(self, options):
