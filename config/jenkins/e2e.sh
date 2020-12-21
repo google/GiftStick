@@ -59,12 +59,10 @@ function die {
 function setup {
   local evidence_disk_url
   export DEBIAN_FRONTEND=noninteractive
-  sudo rm /boot/grub/menu.lst
   sudo apt update -y
-  sudo apt install --allow-downgrades -y \
+  sudo apt install -y \
     gdisk \
     genisoimage \
-    grub-efi-amd64-bin \
     initramfs-tools-core \
     kpartx \
     jq \
