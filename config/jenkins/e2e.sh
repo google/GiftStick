@@ -61,6 +61,7 @@ function setup {
   export DEBIAN_FRONTEND=noninteractive
   sudo apt update -y
   sudo apt install -y \
+    dosfstools \
     gdisk \
     genisoimage \
     initramfs-tools-core \
