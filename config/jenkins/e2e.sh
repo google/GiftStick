@@ -25,7 +25,7 @@ ISO_FILENAME=""
 readonly GIFT_USER="xubuntu"
 readonly IMAGE_NAME="giftstick.img"
 
-readonly DEFAULT_ISO_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/18.04/release/xubuntu-18.04.1-desktop-amd64.iso"
+readonly DEFAULT_ISO_URL="http://mirror.us.leaseweb.net/ubuntu-cdimage/xubuntu/releases/20.04/release/xubuntu-20.04.1-desktop-amd64.iso"
 
 readonly REMASTER_SCRIPT="tools/remaster.sh"
 readonly EXTRA_GCS_PATH="jenkins-build-${BUILD_TAG}"
@@ -58,11 +58,12 @@ function die {
 # Installs packages required to run the E2E tests
 function setup {
   local evidence_disk_url
+  export DEBIAN_FRONTEND=noninteractive
   sudo apt update -y
-  sudo apt install --allow-downgrades -y \
+  sudo apt install -y \
+    dosfstools \
     gdisk \
     genisoimage \
-    grub-efi-amd64-bin \
     initramfs-tools-core \
     kpartx \
     jq \
@@ -75,22 +76,6 @@ function setup {
 
   if [ ! -f "${ISO_FILENAME}" ]; then
     wget -q -nc -O "${ISO_FILENAME}" "${ISO_TO_REMASTER_URL}"
-  fi
-
-  if [[ "${ISO_FILENAME}" == *"20.04"* ]] || [[ "${ISO_FILENAME}" == *"focal"* ]] ; then
-    echo "Upgrading initramfs-tools-core to 0.133 to manage the new initrd format"
-    add-apt-repository 'deb http://europe-west1.gce.archive.ubuntu.com/ubuntu/ eoan main'
-    cat >/etc/apt/preferences.d/limit-eoan <<EOAPT
-Package: *
-Pin: release o=Ubuntu,a=eoan
-Pin-Priority: 150
-EOAPT
-
-    apt update -y
-    apt install -y liblz4-1=1.9.1-1
-    apt install -y lz4
-    apt install -y initramfs-tools-bin=0.133ubuntu10
-    apt install -y initramfs-tools-core=0.133ubuntu10
   fi
 
   if [ ! -f "${EVIDENCE_DISK}" ]; then
