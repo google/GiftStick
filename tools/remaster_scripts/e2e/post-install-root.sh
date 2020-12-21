@@ -22,7 +22,7 @@ function ubuntu_remove_packages {
   if [[ ${DISTRIB_CODENAME} == "trusty" ]]; then
     PKG+=( friends friends-dispatcher friends-facebook friends-twitter )
   fi
-  apt-get -y remove "${BAD_PKG[@]}"
+  apt -y remove "${BAD_PKG[@]}"
 }
 
 function install_forensication_tools {
