@@ -20,6 +20,18 @@ except ImportError:
   from distutils.core import find_packages, setup
 
 
+def ParseRequirements(filename):
+  """Parse python requirements.
+
+  Args:
+    filename (str): The requirement file to read.
+  Returns:
+    List[str]: a list of requirements.
+  """
+  with open(filename) as requirements:
+    return requirements.readlines()
+
+
 description = 'Forensics acquisition tool'
 
 long_description = (
@@ -35,14 +47,7 @@ setup(
     author='giftstick development team',
     license='Apache License, Version 2.0',
     packages=find_packages(),
-    install_requires=[
-        'cachetools==3.1.1',  # Because 4.0 breaks on Py2 installs
-        'progress',
-        'boto==2.49.0',
-        'gcs_oauth2_boto_plugin',
-        'google-cloud-storage',
-        'google-cloud-logging'
-    ],
+    install_requires=ParseRequirements('requirements.txt'),
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
