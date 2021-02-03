@@ -1,7 +1,7 @@
 cachetools==3.1.1
 boto==2.49.0
 gcs-oauth2-boto-plugin
-google-cloud-api
+google-api-core
 google-cloud-logging
 google-cloud-storage
 mock
