@@ -28,7 +28,7 @@ long_description = (
 
 setup(
     name='auto_forensicate',
-    version='20181010',
+    version='20210201',
     description=description,
     long_description=long_description,
     url='https://github.com/google/giftstick',
