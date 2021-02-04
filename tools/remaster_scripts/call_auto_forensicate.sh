@@ -34,7 +34,7 @@ sudo pip3 install grpcio
 # Make sure have the latest version of the auto_forensicate module
 git clone https://github.com/google/GiftStick
 cd GiftStick
-sudo python setup.py install
+sudo pip install .
 
 # Apply patch for boto py3 compatibility
 # See https://github.com/boto/boto/pull/3699

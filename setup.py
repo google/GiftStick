@@ -14,10 +14,9 @@
 # limitations under the License.
 """Installation and deployment script."""
 
-try:
-  from setuptools import find_packages, setup
-except ImportError:
-  from distutils.core import find_packages, setup
+import pkg_resources
+from setuptools import find_packages
+from setuptools import setup
 
 
 def ParseRequirements(filename):
@@ -28,8 +27,13 @@ def ParseRequirements(filename):
   Returns:
     List[str]: a list of requirements.
   """
+  install_requires = []
   with open(filename) as requirements:
-    return requirements.readlines()
+    install_requires = [
+        str(requirement) for requirement in
+        pkg_resources.parse_requirements(requirements)]
+
+  return install_requires
 
 
 description = 'Forensics acquisition tool'
@@ -49,7 +53,6 @@ setup(
     packages=find_packages(),
     install_requires=ParseRequirements('requirements.txt'),
     classifiers=[
-        'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
