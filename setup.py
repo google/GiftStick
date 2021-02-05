@@ -53,6 +53,7 @@ setup(
     packages=find_packages(),
     install_requires=ParseRequirements('requirements.txt'),
     classifiers=[
+        'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
         'Programming Language :: Python',
     ],
