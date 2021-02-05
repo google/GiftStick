@@ -35,6 +35,7 @@ sudo pip3 install grpcio
 git clone https://github.com/google/GiftStick
 cd GiftStick
 sudo pip install .
+head -n 10 /usr/local/bin/auto_acquire.py
 
 # Apply patch for boto py3 compatibility
 # See https://github.com/boto/boto/pull/3699
