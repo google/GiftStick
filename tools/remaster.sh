@@ -343,8 +343,8 @@ function parse_arguments {
    assert_bucket_name
    assert_sa_name
   fi
+  assert_sourceiso_flag
   if [[ "${FLAGS_SKIP_ISO_REMASTER}" == "false" ]]; then
-    assert_sourceiso_flag
 
     readonly UBUNTU_ISO=$(readlink -m "${FLAGS_SOURCE_ISO}")
     if [[ ! "${FLAGS_REMASTERED_ISO}" ]] ; then
