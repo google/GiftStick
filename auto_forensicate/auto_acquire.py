@@ -111,7 +111,16 @@ class BaBar(IncrementalBar):
     self._ts = now
     self.index = current_bytes
 
-    self.update()
+    try:
+      self.update()
+    except OverflowError:
+      # When calculating a sliding ETA, the progress module will cast int()
+      # on values that can be very large (ie: 'lots of bytes, only sent a few
+      # of them just now)
+      # Passing here just might mess up the "ETA" part of the progress bar
+      # message, but prevents us from crashing. See:
+      # https://github.com/google/GiftStick/issues/92
+      pass
 
   @property
   def speed(self):
