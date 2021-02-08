@@ -14,10 +14,26 @@
 # limitations under the License.
 """Installation and deployment script."""
 
-try:
-  from setuptools import find_packages, setup
-except ImportError:
-  from distutils.core import find_packages, setup
+import pkg_resources
+from setuptools import find_packages
+from setuptools import setup
+
+
+def ParseRequirements(filename):
+  """Parse python requirements.
+
+  Args:
+    filename (str): The requirement file to read.
+  Returns:
+    List[str]: a list of requirements.
+  """
+  install_requires = []
+  with open(filename) as requirements:
+    install_requires = [
+        str(requirement) for requirement in
+        pkg_resources.parse_requirements(requirements)]
+
+  return install_requires
 
 
 description = 'Forensics acquisition tool'
@@ -28,21 +44,14 @@ long_description = (
 
 setup(
     name='auto_forensicate',
-    version='20181010',
+    version='20210201',
     description=description,
     long_description=long_description,
     url='https://github.com/google/giftstick',
     author='giftstick development team',
     license='Apache License, Version 2.0',
     packages=find_packages(),
-    install_requires=[
-        'cachetools==3.1.1',  # Because 4.0 breaks on Py2 installs
-        'progress',
-        'boto==2.49.0',
-        'gcs_oauth2_boto_plugin',
-        'google-cloud-storage',
-        'google-cloud-logging'
-    ],
+    install_requires=ParseRequirements('requirements.txt'),
     classifiers=[
         'Development Status :: 4 - Beta',
         'Operating System :: OS Independent',
