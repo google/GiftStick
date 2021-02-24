@@ -57,4 +57,13 @@ EOCHIPSHORT
 
 }
 
+function user_add_hotkey {
+  xfconf-query --create --channel xfce4-keyboard-shortcuts \
+    --property "/commands/custom/<Primary><Alt>f" --type string \
+    --set "xfce4-terminal --hold -e 'sudo bash $HOME/call_auto_forensicate.sh ; /bin/bash"
+}
+
+
+user_add_hotkey
+
 user_customise_desktop
