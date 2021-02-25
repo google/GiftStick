@@ -75,6 +75,9 @@ then
     touch \$HOME/${SENTINEL}
 fi
 EOSETUPSCRIPT
+
+  sudo mkdir -p .config/autostart
+
   cat << EOSTARTUPSCRIPT | sudo tee .config/autostart/gift_setup.desktop > /dev/null
 # This ensures the GiftStick setup script is run when the user logs in.
 [Desktop Entry]
