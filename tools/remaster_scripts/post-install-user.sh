@@ -60,7 +60,8 @@ EOCHIPSHORT
 function user_add_setup_script {
   # Sets up a script to be run after GiftStick has booted and user is logged in.
   # This currently adds:
-  #  - A hotkey to start the acquisition script with no mouse interaction
+  #  - A hotkey to start the acquisition script with no mouse interaction:
+  #     ctrl + alt + f and ctrl + shift +y
   readonly local SENTINEL=".gift_is_setup"
   readonly local SETUP_SCRIPT="gift_setup.sh"
   cat << EOSETUPSCRIPT | sudo tee ${SETUP_SCRIPT} > /dev/null
@@ -69,8 +70,11 @@ function user_add_setup_script {
 if [[ ! -e \$HOME/${SENTINEL} ]]
 then
   xfconf-query --create --channel xfce4-keyboard-shortcuts \
+    --property "/commands/custom/<Primary><Shift>y" --type string \
+    --set "xfce4-terminal -e "bash -c'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash'"
+  xfconf-query --create --channel xfce4-keyboard-shortcuts \
     --property "/commands/custom/<Primary><Alt>f" --type string \
-    --set "xfce4-terminal --hold -e 'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash"
+    --set "xfce4-terminal -e "bash -c'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash'"
 
     touch \$HOME/${SENTINEL}
 fi
