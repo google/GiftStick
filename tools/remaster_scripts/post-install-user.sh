@@ -71,10 +71,10 @@ if [[ ! -e \$HOME/${SENTINEL} ]]
 then
   xfconf-query --create --channel xfce4-keyboard-shortcuts \
     --property "/commands/custom/<Primary><Shift>y" --type string \
-    --set "xfce4-terminal -e "bash -c'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash'"
+    --set "xfce4-terminal -e \\"bash -c 'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash'\\""
   xfconf-query --create --channel xfce4-keyboard-shortcuts \
     --property "/commands/custom/<Primary><Alt>f" --type string \
-    --set "xfce4-terminal -e "bash -c'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash'"
+    --set "xfce4-terminal -e \\"bash -c 'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash'\\""
 
     touch \$HOME/${SENTINEL}
 fi
@@ -87,7 +87,7 @@ EOSETUPSCRIPT
 [Desktop Entry]
 Name=GiftStick Setup
 Type=Application
-Exec=/bin/sh -c "\$HOME/${SETUP_SCRIPT}"
+Exec=/bin/sh -c "bash \$HOME/${SETUP_SCRIPT}"
 EOSTARTUPSCRIPT
 }
 
