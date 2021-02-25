@@ -57,13 +57,34 @@ EOCHIPSHORT
 
 }
 
-function user_add_hotkey {
+function user_add_setup_script {
+  # Sets up a script to be run after GiftStick has booted and user is logged in.
+  # This currently adds:
+  #  - A hotkey to start the acquisition script with no mouse interaction
+  readonly local SENTINEL=".gift_is_setup"
+  readonly local SETUP_SCRIPT="gift_setup.sh"
+  cat << EOSETUPSCRIPT | sudo tee ${SETUP_SCRIPT} > /dev/null
+#!/bin/bash
+
+if [[ ! -e \$HOME/${SENTINEL} ]]
+then
   xfconf-query --create --channel xfce4-keyboard-shortcuts \
     --property "/commands/custom/<Primary><Alt>f" --type string \
-    --set "xfce4-terminal --hold -e 'sudo bash $HOME/call_auto_forensicate.sh ; /bin/bash"
+    --set "xfce4-terminal --hold -e 'sudo bash \$HOME/call_auto_forensicate.sh ; /bin/bash"
+
+    touch \$HOME/${SENTINEL}
+fi
+EOSETUPSCRIPT
+  cat << EOSTARTUPSCRIPT | sudo tee .config/autostart/gift_setup.desktop > /dev/null
+# This ensures the GiftStick setup script is run when the user logs in.
+[Desktop Entry]
+Name=GiftStick Setup
+Type=Application
+Exec=/bin/sh -c "\$HOME/${SETUP_SCRIPT}"
+EOSTARTUPSCRIPT
 }
 
 
-user_add_hotkey
+user_add_setup_script
 
 user_customise_desktop
