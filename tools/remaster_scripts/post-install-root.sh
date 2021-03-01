@@ -34,7 +34,7 @@ function install_forensication_tools {
 }
 
 function install_basic_pkg {
-  readonly local COMMON_UTILS=( git jq python3-pip pv zenity )
+  readonly local COMMON_UTILS=( git jq python3-pip pv zenity vim )
   readonly local WIRELESS_PKG=( firmware-b43-installer bcmwl-kernel-source )
 
   apt-get -y update
