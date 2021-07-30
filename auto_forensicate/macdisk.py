@@ -14,14 +14,9 @@
 # limitations under the License.
 """Helper functions to handle Mac OS information."""
 
+import plistlib
 import subprocess
 import sys
-try:
-  import biplist
-except ImportError as e:
-  if sys.platform == 'darwin':
-    print('It looks like you are acquiring raw disk on a MacOS platform. \n'
-          'Please install the biplist python module')
 
 
 class MacDiskError(Exception):
@@ -52,8 +47,8 @@ def _DictFromSubprocess(command):
             ' '.join(command), stderr))
 
   try:
-    return biplist.readPlistFromString(stdout)
-  except (biplist.InvalidPlistException, biplist.NotBinaryPlistException):
+    return plistlib.loads(stdout)
+  except Exception:
     raise MacDiskError(
         'Error creating plist from output: {0:s}'.format(stdout))
 
