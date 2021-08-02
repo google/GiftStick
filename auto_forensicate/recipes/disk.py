@@ -59,6 +59,7 @@ class DiskArtifact(base.BaseArtifact):
       raise ValueError(
           'Error with path {0:s}: should start with \'/dev\''.format(path))
     self._ddprocess = None
+    self.use_dcfldd = use_dcfldd
     self._path = path
     if size > 0:
       self._size = size
@@ -273,7 +274,7 @@ class DiskRecipe(base.BaseRecipe):
   def __init__(self, name, options=None):
     """TODO"""
     self.use_dcfldd = True
-    super().__init(self, name, options=options)
+    super().__init__(name, options=options)
 
   def _GetLsblkDict(self):
     """Calls lsblk.
