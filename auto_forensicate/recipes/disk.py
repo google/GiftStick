@@ -395,6 +395,10 @@ class DiskRecipe(base.BaseRecipe):
     """
     artifacts = []
     disks_to_collect = []
+    if getattr(self._options, 'disable_dcfldd', None):
+      self._logger.info('Disabling dcfldd')
+      self.use_dcfldd = False
+
     if getattr(self._options, 'select_disks', None):
       all_disks = self._ListDisks(all_devices=True)
       if getattr(self._options, 'no_zenity', False):
@@ -406,9 +410,6 @@ class DiskRecipe(base.BaseRecipe):
     else:
       disks_to_collect = self._ListDisks()
 
-    if getattr(self._options, 'disable_dcfldd', None):
-      self._logger.info('Disabling dcfldd')
-      self.use_dcfldd = False
 
     if not disks_to_collect:
       raise errors.RecipeException('No disk to collect')
