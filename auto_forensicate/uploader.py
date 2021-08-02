@@ -164,6 +164,7 @@ class LocalCopier(BaseUploader):
 
     return remote_path
 
+
 class GCSUploader(BaseUploader):
   """Handles resumable uploads of data to Google Cloud Storage."""
 
