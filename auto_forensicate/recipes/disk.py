@@ -168,7 +168,7 @@ class MacDiskArtifact(DiskArtifact):
     Raises:
       ValueError: if path is none, doesn't start with '/dev' or size is =< 0.
     """
-    super(MacDiskArtifact, self).__init__(path, size)
+    super(MacDiskArtifact, self).__init__(path, size, use_dcfldd=use_dcfldd)
     self._macdisk = macdisk.Disk(self.name)
 
   def _IsUsb(self):
