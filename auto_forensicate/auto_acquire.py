@@ -300,6 +300,12 @@ class AutoForensicate(object):
         help='Specify a disk to acquire (eg: sda)'
     )
     parser.add_argument(
+        '--disable_dcfldd', action='store_true', required=False,
+        help=(
+            'Do not use dcfldd to acquire a disk, just read blocks '
+            '(this disable creation of hashlog files)')
+    )
+    parser.add_argument(
         '--method', action='store', required=False, choices=['tar'],
         default='tar',
         help='Specify which method to use when acquiring a directory'
