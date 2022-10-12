@@ -72,10 +72,10 @@ def CheckList(column_names, data, title=None):
   zenity_binary = Which('zenity')
   command = [zenity_binary, '--list', '--checklist', '--editable=False']
   for column in column_names:
-    command.append('--column="{0:s}"'.format(column))
+    command.append('--column={0:s}'.format(column))
 
   if title:
-    command.append('--title="{0:s}"'.format(title))
+    command.append('--title={0:s}'.format(title))
 
   command = command + data
 
@@ -83,6 +83,7 @@ def CheckList(column_names, data, title=None):
       command, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
   if process.wait() == 0:
-    return process.stdout.read().strip().split('|')
+    process_out = process.stdout.read().decode()
+    return process_out.strip().split('|')
 
   return []
