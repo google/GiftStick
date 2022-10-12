@@ -41,7 +41,7 @@ class DiskArtifact(base.BaseArtifact):
   _DD_BINARY = 'dcfldd'
   _DD_OPTIONS = ['hash=md5,sha1', 'bs=2M', 'conv=noerror', 'hashwindow=128M']
 
-  def __init__(self, path, size):
+  def __init__(self, path, size, use_dcfldd=True):
     """Initializes a DiskArtifact object.
 
     Only supported implementations are MacOS and Linux.
@@ -49,6 +49,7 @@ class DiskArtifact(base.BaseArtifact):
     Args:
       path(str): the path to the disk.
       size(str): the size of the disk.
+      use_dcfldd(bool): whether to use dcfldd to read from the blockdevice.
 
     Raises:
       ValueError: if path is none, doesn't start with '/dev' or size is =< 0.
@@ -58,6 +59,7 @@ class DiskArtifact(base.BaseArtifact):
       raise ValueError(
           'Error with path {0:s}: should start with \'/dev\''.format(path))
     self._ddprocess = None
+    self.use_dcfldd = use_dcfldd
     self._path = path
     if size > 0:
       self._size = size
@@ -91,14 +93,17 @@ class DiskArtifact(base.BaseArtifact):
     Raises:
       IOError: If this method is called more than once before CloseStream().
     """
-    if self._ddprocess is None:
-      command = self._GenerateDDCommand()
-      self._logger.info('Opening disk with command \'{0!s}\''.format(command))
-      self._ddprocess = subprocess.Popen(
-          command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if self.use_dcfldd:
+      if self._ddprocess is None:
+        command = self._GenerateDDCommand()
+        self._logger.info('Opening disk with command \'{0!s}\''.format(command))
+        self._ddprocess = subprocess.Popen(
+            command, stdin=None, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+      else:
+        raise IOError('Disk is already opened')
+      return self._ddprocess.stdout
     else:
-      raise IOError('Disk is already opened')
-    return self._ddprocess.stdout
+      return open(self._path, 'rb')
 
   def CloseStream(self):
     """Closes the file-like object.
@@ -152,17 +157,18 @@ class MacDiskArtifact(DiskArtifact):
     size (int): the size of the artifact, in bytes.
   """
 
-  def __init__(self, path, size):
+  def __init__(self, path, size, use_dcfldd=True):
     """Initializes a MacDiskArtifact object.
 
     Args:
       path(str): the path to the disk.
       size(str): the size of the disk.
+      use_dcfldd(bool): whether to use dcfldd to read from the blockdevice.
 
     Raises:
       ValueError: if path is none, doesn't start with '/dev' or size is =< 0.
     """
-    super(MacDiskArtifact, self).__init__(path, size)
+    super(MacDiskArtifact, self).__init__(path, size, use_dcfldd=use_dcfldd)
     self._macdisk = macdisk.Disk(self.name)
 
   def _IsUsb(self):
@@ -183,6 +189,7 @@ class MacDiskArtifact(DiskArtifact):
       return True
     return False
 
+
 class LinuxDiskArtifact(DiskArtifact):
   """The DiskArtifact class.
 
@@ -193,18 +200,19 @@ class LinuxDiskArtifact(DiskArtifact):
     size (int): the size of the artifact, in bytes.
   """
 
-  def __init__(self, path, size):
+  def __init__(self, path, size, use_dcfldd=True):
     """Initializes a LinuxDiskArtifact object.
 
     Args:
       path(str): the path to the disk.
       size(str): the size of the disk.
+      use_dcfldd(bool): whether to use dcfldd to read from the blockdevice.
 
     Raises:
       ValueError: if path is none, doesn't start with '/dev' or size is =< 0.
     """
 
-    super(LinuxDiskArtifact, self).__init__(path, size)
+    super(LinuxDiskArtifact, self).__init__(path, size, use_dcfldd=use_dcfldd)
 
     self._udevadm_metadata = None
 
@@ -263,6 +271,11 @@ class DiskRecipe(base.BaseRecipe):
   This Recipe acquires the raw image of all disks on the system.
   """
 
+  def __init__(self, name, options=None):
+    """TODO"""
+    self.use_dcfldd = True
+    super().__init__(name, options=options)
+
   def _GetLsblkDict(self):
     """Calls lsblk.
 
@@ -284,7 +297,7 @@ class DiskRecipe(base.BaseRecipe):
     for mac_disk in macdisk.WholeDisks():
       disk_name = mac_disk.deviceidentifier
       disk_size = mac_disk.totalsize
-      disk = MacDiskArtifact(os.path.join('/dev', disk_name), disk_size)
+      disk = MacDiskArtifact(os.path.join('/dev', disk_name), disk_size, use_dcfldd=self.use_dcfldd)
       disk_list.append(disk)
     return disk_list
 
@@ -301,7 +314,7 @@ class DiskRecipe(base.BaseRecipe):
         disk_name = blockdevice.get('name')
         disk_size_str = blockdevice.get('size')
         disk_size = int(disk_size_str)
-        disk = LinuxDiskArtifact(os.path.join('/dev', disk_name), disk_size)
+        disk = LinuxDiskArtifact(os.path.join('/dev', disk_name), disk_size, use_dcfldd=self.use_dcfldd)
         disk_list.append(disk)
     return disk_list
 
@@ -382,6 +395,10 @@ class DiskRecipe(base.BaseRecipe):
     """
     artifacts = []
     disks_to_collect = []
+    if getattr(self._options, 'disable_dcfldd', None):
+      self._logger.info('Disabling dcfldd')
+      self.use_dcfldd = False
+
     if getattr(self._options, 'select_disks', None):
       all_disks = self._ListDisks(all_devices=True)
       if getattr(self._options, 'no_zenity', False):
@@ -393,6 +410,7 @@ class DiskRecipe(base.BaseRecipe):
     else:
       disks_to_collect = self._ListDisks()
 
+
     if not disks_to_collect:
       raise errors.RecipeException('No disk to collect')
 
@@ -401,15 +419,18 @@ class DiskRecipe(base.BaseRecipe):
 
     for disk in disks_to_collect:
 
-      hashlog_artifact = base.FileArtifact(disk.hashlog_filename)
-      hashlog_artifact.remote_path = 'Disks/{0:s}'.format(
-          hashlog_artifact.name)
-
-      # It is necessary for the DiskArtifact to be appended before the
-      # hashlog, as the hashlog is generated when dcfldd completes.
       disk_info_artifact = self._GetDiskInfoArtifact(disk)
       if disk_info_artifact:
         artifacts.append(disk_info_artifact)
+
       artifacts.append(disk)
-      artifacts.append(hashlog_artifact)
+
+      if self.use_dcfldd:
+        # It is necessary for the DiskArtifact to be appended before the
+        # hashlog, as the hashlog is generated when dcfldd completes.
+        hashlog_artifact = base.FileArtifact(disk.hashlog_filename)
+        hashlog_artifact.remote_path = 'Disks/{0:s}'.format(
+            hashlog_artifact.name)
+        artifacts.append(hashlog_artifact)
+
     return artifacts
