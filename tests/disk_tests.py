@@ -117,6 +117,11 @@ class LinuxDiskArtifactTests(unittest.TestCase):
     self.assertEqual(
         'sdX: Floppy Disk (internal)', disk_object.GetDescription())
 
+    disk_object.mounted = True
+    self.assertEqual(
+        '(WARNING: disk has a mounted partition) sdX: Floppy Disk (internal)',
+        disk_object.GetDescription())
+
 
 class DiskRecipeTests(unittest.TestCase):
   """Tests for the DiskRecipe (on linux) class."""

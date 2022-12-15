@@ -205,12 +205,13 @@ class LinuxDiskArtifact(DiskArtifact):
     size (int): the size of the artifact, in bytes.
   """
 
-  def __init__(self, path, size, use_dcfldd=True):
+  def __init__(self, path, size, mounted=False, use_dcfldd=True):
     """Initializes a LinuxDiskArtifact object.
 
     Args:
       path(str): the path to the disk.
       size(str): the size of the disk.
+      mounted(bool): whether the disk has a mounted partition.
       use_dcfldd(bool): whether to use dcfldd to read from the blockdevice.
 
     Raises:
@@ -345,7 +346,7 @@ class DiskRecipe(base.BaseRecipe):
         disk_size = int(disk_size_str)
         disk = LinuxDiskArtifact(
             os.path.join('/dev', disk_name), disk_size,
-            mounted=self._IsDiskMounted(disk_name, blockdevice),
+            mounted=self._IsDiskMounted(blockdevice),
             use_dcfldd=self.use_dcfldd)
         disk_list.append(disk)
     return disk_list
