@@ -41,7 +41,7 @@ class DiskArtifact(base.BaseArtifact):
   _DD_BINARY = 'dcfldd'
   _DD_OPTIONS = ['hash=md5,sha1', 'bs=2M', 'conv=noerror', 'hashwindow=128M']
 
-  def __init__(self, path, size, use_dcfldd=True):
+  def __init__(self, path, size, mounted=False, use_dcfldd=True):
     """Initializes a DiskArtifact object.
 
     Only supported implementations are MacOS and Linux.
@@ -49,6 +49,7 @@ class DiskArtifact(base.BaseArtifact):
     Args:
       path(str): the path to the disk.
       size(str): the size of the disk.
+      mounted(bool): whether the disk has a mounted partition.
       use_dcfldd(bool): whether to use dcfldd to read from the blockdevice.
 
     Raises:
@@ -59,6 +60,7 @@ class DiskArtifact(base.BaseArtifact):
       raise ValueError(
           'Error with path {0:s}: should start with \'/dev\''.format(path))
     self._ddprocess = None
+    self.mounted = mounted
     self.use_dcfldd = use_dcfldd
     self._path = path
     if size > 0:
@@ -141,6 +143,9 @@ class DiskArtifact(base.BaseArtifact):
       str: the description
     """
     return 'Name: {0:s} (Size: {1:d})'.format(self.name, self.size)
+    if self.mounted:
+      description = '(WARNING: disk has a mounted partition) ' + description
+    return description
 
   def ProbablyADisk(self):
     """Returns whether this is probably one of the system's internal disks."""
@@ -231,7 +236,10 @@ class LinuxDiskArtifact(DiskArtifact):
     if self._IsUsb():
       model = '{0:s} {1:s}'.format(self._GetUdevadmProperty('ID_VENDOR'), model)
       connection = '(usb)'
-    return '{0:s}: {1:s} {2:s}'.format(self.name, model, connection)
+    description = '{0:s}: {1:s} {2:s}'.format(self.name, model, connection)
+    if self.mounted:
+      description = '(WARNING: disk has a mounted partition) ' + description
+    return description
 
   def _GetUdevadmProperty(self, prop):
     """Get a udevadm property.
@@ -301,6 +309,27 @@ class DiskRecipe(base.BaseRecipe):
       disk_list.append(disk)
     return disk_list
 
+  def _IsDiskMounted(self, lsblk_device_dict):
+    """Returns True if the disk has a mounted partition.
+
+    Args:
+      lsblk_device_dict: a dict containing the information about the device from
+        lsblk.
+    Returns:
+      bool: True if the disk has at least one mounted partition.
+    """
+
+    if 'mountpoint' in lsblk_device_dict and lsblk_device_dict['mountpoint']:
+      return True
+
+    if 'children' in lsblk_device_dict:
+      res = [
+          self._IsDiskMounted(grandchild)
+          for grandchild in lsblk_device_dict['children']]
+      return any(res)
+
+    return False
+
   def _ListAllDisksLinux(self):
     """Lists all disks connected to the machine.
 
@@ -314,7 +343,10 @@ class DiskRecipe(base.BaseRecipe):
         disk_name = blockdevice.get('name')
         disk_size_str = blockdevice.get('size')
         disk_size = int(disk_size_str)
-        disk = LinuxDiskArtifact(os.path.join('/dev', disk_name), disk_size, use_dcfldd=self.use_dcfldd)
+        disk = LinuxDiskArtifact(
+            os.path.join('/dev', disk_name), disk_size,
+            mounted=self._IsDiskMounted(disk_name, blockdevice),
+            use_dcfldd=self.use_dcfldd)
         disk_list.append(disk)
     return disk_list
 
