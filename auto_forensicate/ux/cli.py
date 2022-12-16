@@ -53,7 +53,7 @@ def AskDiskList(disk_list):
       user_choices = input(
           'Disk numbers (Default is [{0:s}], comma separated): '.format(
               ','.join([str(i) for i in disk_indices_to_copy])))
-    if user_choices == "":
+    if user_choices == '':
       valid_choice = True
     else:
       choices = user_choices.replace(' ', ',').split(',')

@@ -117,6 +117,11 @@ class LinuxDiskArtifactTests(unittest.TestCase):
     self.assertEqual(
         'sdX: Floppy Disk (internal)', disk_object.GetDescription())
 
+    disk_object.mounted = True
+    self.assertEqual(
+        '(WARNING: disk has a mounted partition) sdX: Floppy Disk (internal)',
+        disk_object.GetDescription())
+
 
 class DiskRecipeTests(unittest.TestCase):
   """Tests for the DiskRecipe (on linux) class."""
@@ -236,6 +241,55 @@ class DiskRecipeTests(unittest.TestCase):
         self.assertEqual(file_artifact.name, '{0:s}.hash'.format(disk_name))
         self.assertEqual(
             file_artifact.remote_path, 'Disks/{0:s}.hash'.format(disk_name))
+
+  def testIsMounted(self):
+    recipe = disk.DiskRecipe('Disk')
+    recipe._platform = 'linux'
+    mounted_devices = [
+        #  No partition
+        {'name': 'loop0', 'size': '1073741824', 'mountpoint': '/dev/loop0'},
+        # One partition
+        {'name': 'sdx', 'size': '502190592', 'type': 'disk', 'mountpoint': None,
+         'children': [
+             {'name': 'sdx1', 'size': '485121', 'mountpoint': '/boot'},
+             {'name': 'sdx2', 'size': '231201', 'mountpoint': None},
+         ]
+        },
+        # partition has one child
+        {'name': 'sdy', 'size': '502190592', 'type': 'disk', 'mountpoint': None,
+         'children': [
+             {'name': 'sdy2', 'size': '231201', 'mountpoint': None,
+              'children': [
+                  {'name': 'sdy1p0', 'type': 'part', 'mountpoint': '/boot'}
+              ]},
+         ]}
+    ]
+
+    self.assertTrue(
+        all([recipe._IsDiskMounted(device) for device in mounted_devices]))
+
+    not_mounted_devices = [
+        #  No partition
+        {'name': 'loop0', 'size': '1073741824', 'mountpoint': None},
+        # One partition
+        {'name': 'sdx', 'size': '502190592', 'type': 'disk', 'mountpoint': None,
+         'children': [
+             {'name': 'sdx1', 'size': '485121', 'mountpoint': None},
+             {'name': 'sdx2', 'size': '231201', 'mountpoint': None},
+         ]
+        },
+        # partition has one child
+        {'name': 'sdy', 'size': '502190592', 'type': 'disk', 'mountpoint': None,
+         'children': [
+             {'name': 'sdy2', 'size': '231201', 'mountpoint': None,
+              'children': [
+                  {'name': 'sdy1p0', 'type': 'part', 'mountpoint': None}
+              ]},
+         ]}
+    ]
+
+    self.assertFalse(
+        any([recipe._IsDiskMounted(device) for device in not_mounted_devices]))
 
 
 class MacDiskArtifactTests(unittest.TestCase):
