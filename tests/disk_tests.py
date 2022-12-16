@@ -199,8 +199,11 @@ class DiskRecipeTests(unittest.TestCase):
       patched_listdisk.return_value = []
       recipe = disk.DiskRecipe('Disk')
       recipe._platform = 'linux'
-      with self.assertRaises(errors.RecipeException):
-        recipe.GetArtifacts()
+      artifacts = recipe.GetArtifacts()
+      self.assertEqual(len(artifacts), 1)
+
+      artifact = artifacts[0]
+      self.assertEqual(artifact.name, 'lsblk.txt')
 
   def testGetArtifacts(self):
     disk_name = 'sdx'
