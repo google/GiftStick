@@ -444,11 +444,11 @@ class DiskRecipe(base.BaseRecipe):
       disks_to_collect = self._ListDisks()
 
 
-    if not disks_to_collect:
-      raise errors.RecipeException('No disk to collect')
-
     disk_list_artifact = self._GetListDisksArtifact()
     artifacts.append(disk_list_artifact)
+
+    if not disks_to_collect:
+      self._logger.warn('No disk to collect')
 
     for disk in disks_to_collect:
 
