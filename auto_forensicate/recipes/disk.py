@@ -144,6 +144,7 @@ class DiskArtifact(base.BaseArtifact):
     Returns:
       str: the description
     """
+    description = 'Name: {0:s} (Size: {1:d})'.format(self.name, self.size)
     if self.mounted:
       description = '(WARNING: disk has a mounted partition) ' + description
     return description
