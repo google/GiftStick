@@ -306,6 +306,13 @@ class AutoForensicate(object):
             '(this disable creation of hashlog files)')
     )
     parser.add_argument(
+        '--slice_disks', nargs='?', required=False, default=None, type=int,
+        help=(
+            'If specified, when uploading a Disk artifact, the script will '
+            'split the upload into the specified number of chunks (default=10).'
+            '(this also sets --disable_dcfldd)'
+    )
+    parser.add_argument(
         '--method', action='store', required=False, choices=['tar'],
         default='tar',
         help='Specify which method to use when acquiring a directory'
@@ -381,6 +388,10 @@ class AutoForensicate(object):
             'The provided GCS json file lacks a "client_id" key.'
         )
 
+      if options.slice_disks:
+        return uploader.GCSSplitterUploader(
+            options.destination, options.gs_keyfile, client_id, stamp_manager,
+            slices=options.slice_disks)
       return uploader.GCSUploader(
           options.destination, options.gs_keyfile, client_id, stamp_manager)
 
@@ -412,6 +423,15 @@ class AutoForensicate(object):
            'current recipes : {0:s})').format(
                ', '.join(options.acquire))
       )
+
+    if options.slice_disks:
+      if 'disk' not in options:
+        raise errors.BadConfigOption(
+            '--slice_disks is selected but no disk is set to be uploaded')
+
+      if not destination.startswith('gs://'):
+        raise errors.BadConfigOption(
+            '--slice_disks can only be used when uploading to GCS')
 
     if not options.no_zenity:
       # force no_zenity to True if zenity is not installed
