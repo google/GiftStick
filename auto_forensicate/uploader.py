@@ -28,7 +28,7 @@ except ImportError:
 from six.moves.urllib.parse import urlparse
 import boto
 from auto_forensicate import errors
-from auto_forensicate import disk
+from auto_forensicate.recipes import disk
 
 class BaseUploader(object):
   """Base class for an Uploader object."""

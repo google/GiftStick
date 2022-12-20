@@ -310,7 +310,7 @@ class AutoForensicate(object):
         help=(
             'If specified, when uploading a Disk artifact, the script will '
             'split the upload into the specified number of chunks (default=10).'
-            '(this also sets --disable_dcfldd)'
+            '(this also sets --disable_dcfldd)')
     )
     parser.add_argument(
         '--method', action='store', required=False, choices=['tar'],
