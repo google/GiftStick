@@ -133,7 +133,9 @@ class DiskArtifact(base.BaseArtifact):
     code = self._ddprocess.returncode
     error = self._ddprocess.stderr.read()
     if code > 0:
-      raise errors.RecipeException('Command dcfldd returned non-zero exit status {0:d}, with error: "{1:s}"'.format(code, error.decode()))
+      raise errors.RecipeException(
+          'Command dcfldd returned non-zero exit status {0:d}, '
+          'with error: "{1:s}"'.format(code, error.decode()))
     return error
 
   def GetDescription(self):
@@ -142,7 +144,7 @@ class DiskArtifact(base.BaseArtifact):
     Returns:
       str: the description
     """
-    return 'Name: {0:s} (Size: {1:d})'.format(self.name, self.size)
+    description = 'Name: {0:s} (Size: {1:d})'.format(self.name, self.size)
     if self.mounted:
       description = '(WARNING: disk has a mounted partition) ' + description
     return description
@@ -281,7 +283,7 @@ class DiskRecipe(base.BaseRecipe):
   """
 
   def __init__(self, name, options=None):
-    """TODO"""
+    """Class for a disks acquisition Recipe"""
     self.use_dcfldd = True
     super().__init__(name, options=options)
 
@@ -306,7 +308,9 @@ class DiskRecipe(base.BaseRecipe):
     for mac_disk in macdisk.WholeDisks():
       disk_name = mac_disk.deviceidentifier
       disk_size = mac_disk.totalsize
-      disk = MacDiskArtifact(os.path.join('/dev', disk_name), disk_size, use_dcfldd=self.use_dcfldd)
+      disk = MacDiskArtifact(
+          os.path.join('/dev', disk_name), disk_size,
+          use_dcfldd=self.use_dcfldd)
       disk_list.append(disk)
     return disk_list
 
@@ -352,8 +356,7 @@ class DiskRecipe(base.BaseRecipe):
     return disk_list
 
   def _ListDisks(self, all_devices=False, names=None):
-    """Between all disks connected to the machine, selects the one we want to
-    acquire.
+    """Builds a list of DiskArtifact object to acquire.
 
     Args:
       all_devices(bool): whether to also list devices that aren't internal to
@@ -395,8 +398,7 @@ class DiskRecipe(base.BaseRecipe):
     return lsblk_artifact
 
   def _GetDiskInfoArtifact(self, disk):
-    """Returns an StringArtifact containing information about a disk being
-    copied.
+    """Returns an StringArtifact containing info about a disk being copied.
 
     Args:
       disk(DiskArtifact): the disk object to get info from.
@@ -443,12 +445,11 @@ class DiskRecipe(base.BaseRecipe):
     else:
       disks_to_collect = self._ListDisks()
 
-
-    if not disks_to_collect:
-      raise errors.RecipeException('No disk to collect')
-
     disk_list_artifact = self._GetListDisksArtifact()
     artifacts.append(disk_list_artifact)
+
+    if not disks_to_collect:
+      self._logger.warn('No disk to collect')
 
     for disk in disks_to_collect:
 
