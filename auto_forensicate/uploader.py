@@ -351,7 +351,7 @@ class GCSSplitterUploader(GCSUploader):
           raise errors.RetryableError(str(e))
 
         total_uploaded += current_slice_size
-        update_callback.update_with_total(total_uploaded, artifact.size)
+        update_callback(total_uploaded, artifact.size)
 
     artifact.CloseStream()
     return remote_path
