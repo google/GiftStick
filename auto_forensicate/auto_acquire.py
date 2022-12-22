@@ -429,9 +429,11 @@ class AutoForensicate(object):
         raise errors.BadConfigOption(
             '--slice_disks is selected but no disk is set to be uploaded')
 
-      if not destination.startswith('gs://'):
+      if not options.destination.startswith('gs://'):
         raise errors.BadConfigOption(
             '--slice_disks can only be used when uploading to GCS')
+
+      options.disable_dcfldd = True
 
     if not options.no_zenity:
       # force no_zenity to True if zenity is not installed

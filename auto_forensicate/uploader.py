@@ -281,6 +281,7 @@ class GCSSplitterUploader(GCSUploader):
     """TODO"""
     super().__init__(gs_url, gs_keyfile, client_id, stamp_manager, stamp=stamp)
     self._slices = int(slices)
+    self._skip_exist = False
 
   def UploadArtifact(self, artifact, update_callback=None):
     """Uploads a file object to Google Cloud Storage.
@@ -327,12 +328,11 @@ class GCSSplitterUploader(GCSUploader):
 
       for slice_num, seek_position in enumerate(
           range(0, artifact.size, slice_size)):
-        destination_path = f'{base_remote_path}_{slice_num}'
-        dst_uri = boto.storage_uri(destination_path, u'gs')
+        remote_path = f'{base_remote_path}_{slice_num}'
 
         if self._skip_exist and dst_uri.exists():
           self._logger.info(
-              'Skipping %s, which already exists.', destination_path)
+              'Skipping %s, which already exists.', remote_path)
           continue
 
         current_slice_size = slice_size
@@ -351,7 +351,7 @@ class GCSSplitterUploader(GCSUploader):
           raise errors.RetryableError(str(e))
 
         total_uploaded += current_slice_size
-        update_callback.update_with_total(total_uploaded)
+        update_callback.update_with_total(total_uploaded, artifact.size)
 
     artifact.CloseStream()
     return remote_path
