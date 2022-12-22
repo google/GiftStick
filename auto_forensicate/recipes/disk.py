@@ -105,7 +105,8 @@ class DiskArtifact(base.BaseArtifact):
         raise IOError('Disk is already opened')
       return self._ddprocess.stdout
     else:
-      return open(self._path, 'rb')
+      self._stream = open(self._path, 'rb')
+      return self._stream
 
   def CloseStream(self):
     """Closes the file-like object.
@@ -117,24 +118,27 @@ class DiskArtifact(base.BaseArtifact):
       errors.RecipeException: if the dcfldd process returns with an error.
       IOError: if CloseStream() is called before GetStream().
     """
-    if not self._ddprocess:
-      raise IOError('Illegal call to CloseStream() before GetStream()')
+    if not self.use_dcfldd:
+      self._stream.close()
+    else:
+      if not self._ddprocess:
+        raise IOError('Illegal call to CloseStream() before GetStream()')
 
-    # If there is anything still to read from the subprocess then CloseStream
-    # has been called early, terminate the child process to avoid deadlock.
-    c = self._ddprocess.stdout.read(1)
-    if c:
-      # TODO log this
-      self._ddprocess.terminate()
-      raise errors.RecipeException(
-          'CloseStream() called but stdout still had data')
+      # If there is anything still to read from the subprocess then CloseStream
+      # has been called early, terminate the child process to avoid deadlock.
+      c = self._ddprocess.stdout.read(1)
+      if c:
+        # TODO log this
+        self._ddprocess.terminate()
+        raise errors.RecipeException(
+            'CloseStream() called but stdout still had data')
 
-    self._ddprocess.wait()
-    code = self._ddprocess.returncode
-    error = self._ddprocess.stderr.read()
-    if code > 0:
-      raise errors.RecipeException('Command dcfldd returned non-zero exit status {0:d}, with error: "{1:s}"'.format(code, error.decode()))
-    return error
+      self._ddprocess.wait()
+      code = self._ddprocess.returncode
+      error = self._ddprocess.stderr.read()
+      if code > 0:
+        raise errors.RecipeException('Command dcfldd returned non-zero exit status {0:d}, with error: "{1:s}"'.format(code, error.decode()))
+      return error
 
   def GetDescription(self):
     """Get a human readable description about the device.
