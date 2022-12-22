@@ -137,7 +137,9 @@ class DiskArtifact(base.BaseArtifact):
       code = self._ddprocess.returncode
       error = self._ddprocess.stderr.read()
       if code > 0:
-        raise errors.RecipeException('Command dcfldd returned non-zero exit status {0:d}, with error: "{1:s}"'.format(code, error.decode()))
+        raise errors.RecipeException(
+            'Command dcfldd returned non-zero exit status {0:d}, '
+            'with error: "{1:s}"'.format(code, error.decode()))
       return error
 
   def GetDescription(self):
