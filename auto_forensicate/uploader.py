@@ -340,7 +340,7 @@ class GCSSplitterUploader(GCSUploader):
           current_slice_size = artifact.size - seek_position
 
         mmap_slice = mmap.mmap(
-            stream.filno(), length=current_slice_size, offset=seek_position,
+            stream.fileno(), length=current_slice_size, offset=seek_position,
             access=mmap.ACCESS_READ)
         try:
           dst_uri = boto.storage_uri(remote_path, u'gs')
