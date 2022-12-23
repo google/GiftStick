@@ -238,7 +238,7 @@ class LinuxDiskArtifact(DiskArtifact):
     if self._IsFloppy():
       model = 'Floppy Disk'
     if not model:
-      model = self._GetUdevadmProperty('ID_SERIAL')
+      model = self._GetUdevadmProperty('ID_SERIAL') or '(no serial)'
     connection = '(internal)'
     if self._IsUsb():
       model = '{0:s} {1:s}'.format(self._GetUdevadmProperty('ID_VENDOR'), model)
