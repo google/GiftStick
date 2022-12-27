@@ -167,6 +167,91 @@ class LocalCopier(BaseUploader):
     return remote_path
 
 
+class LocalSplitCopier(LocalCopier):
+  """TODO."""
+
+  def __init__(self, destination_dir, stamp_manager, stamp=None, slices=10):
+    """Initializes the LocalSplitCopier class.
+
+    Args:
+      destination_dir (str): the path to the destination directory.
+      stamp_manager (StampManager): the StampManager object for this
+        context.
+      stamp (namedtuple): an optional ForensicsStamp containing
+        the upload metadata.
+    """
+    super().__init__(stamp_manager=stamp_manager, stamp=stamp)
+    self.destination_dir = destination_dir
+    self._slices = int(slices)
+    self._skip_exist = False
+
+  def UploadArtifact(self, artifact, update_callback=None):
+    """Uploads a file object to a local directory.
+
+    Args:
+      artifact (BaseArtifact): the Artifact object pointing to data to upload.
+      update_callback (func): an optional function called as upload progresses.
+
+    Returns:
+      str: the remote destination where the file was uploaded.
+    """
+
+    # Upload the 'stamp' file. This allows us to make sure we have write
+    # permission on the bucket, and fail early if we don't.
+    if not self._stamp_uploaded:
+      self._UploadStamp()
+
+    if not isinstance(artifact, disk.DiskArtifact):
+      remote_path = self._MakeRemotePath(artifact.remote_path)
+      self._UploadStream(
+          artifact.OpenStream(), remote_path, update_callback=update_callback)
+
+    else:
+
+      total_uploaded = 0
+
+      if self._slices < 1:
+        raise errors.BadConfigOption(
+            'The number of slices needs to be greater than 1')
+
+      # mmap requires that the an offset is a multiple of mmap.PAGESIZE
+      # so we can't just equally divide the total size in the specified number
+      # of slices.
+      number_of_pages = int(artifact.size / self._slices /  mmap.PAGESIZE)
+
+      slice_size = number_of_pages * mmap.PAGESIZE
+      # slice_size might not be equal to (total_size / slices)
+
+      base_remote_path = self._MakeRemotePath(artifact.remote_path)
+
+      stream = artifact.OpenStream()
+
+      for slice_num, seek_position in enumerate(
+          range(0, artifact.size, slice_size)):
+        remote_path = f'{base_remote_path}_{slice_num}'
+
+        if self._skip_exist and os.path.exists(remote_path):
+          self._logger.info(
+              'Skipping %s, which already exists.', remote_path)
+          continue
+
+        current_slice_size = slice_size
+        if seek_position+slice_size > artifact.size:
+          current_slice_size = artifact.size - seek_position
+
+        mmap_slice = mmap.mmap(
+            stream.fileno(), length=current_slice_size, offset=seek_position,
+            access=mmap.ACCESS_READ)
+        self._UploadStream(
+            mmap_slice, remote_path, update_callback=update_callback)
+
+        total_uploaded += current_slice_size
+        update_callback(total_uploaded, artifact.size)
+
+    artifact.CloseStream()
+    return remote_path
+
+
 class GCSUploader(BaseUploader):
   """Handles resumable uploads of data to Google Cloud Storage."""
 
@@ -330,11 +415,6 @@ class GCSSplitterUploader(GCSUploader):
           range(0, artifact.size, slice_size)):
         remote_path = f'{base_remote_path}_{slice_num}'
 
-        if self._skip_exist and dst_uri.exists():
-          self._logger.info(
-              'Skipping %s, which already exists.', remote_path)
-          continue
-
         current_slice_size = slice_size
         if seek_position+slice_size > artifact.size:
           current_slice_size = artifact.size - seek_position
@@ -344,6 +424,12 @@ class GCSSplitterUploader(GCSUploader):
             access=mmap.ACCESS_READ)
         try:
           dst_uri = boto.storage_uri(remote_path, u'gs')
+
+          if self._skip_exist and dst_uri.exists():
+            self._logger.info(
+                'Skipping %s, which already exists.', remote_path)
+            continue
+
           dst_uri.new_key().set_contents_from_stream(mmap_slice)
         except boto.exception.GSDataError as e:
           # This is usually raised when the connection is broken, and deserves
