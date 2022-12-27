@@ -392,10 +392,14 @@ class AutoForensicate(object):
         return uploader.GCSSplitterUploader(
             options.destination, options.gs_keyfile, client_id, stamp_manager,
             slices=options.slice_disks)
+
       return uploader.GCSUploader(
           options.destination, options.gs_keyfile, client_id, stamp_manager)
 
     if options.destination.startswith('/'):
+      if options.slice_disks:
+        return uploader.LocalSplitterCopier(
+            options.destination, stamp_manager, slices=options.slice_disks)
       return uploader.LocalCopier(options.destination, stamp_manager)
 
     return None
@@ -428,10 +432,6 @@ class AutoForensicate(object):
       if 'disk' not in options:
         raise errors.BadConfigOption(
             '--slice_disks is selected but no disk is set to be uploaded')
-
-      if not options.destination.startswith('gs://'):
-        raise errors.BadConfigOption(
-            '--slice_disks can only be used when uploading to GCS')
 
       options.disable_dcfldd = True
 
