@@ -167,11 +167,16 @@ class LocalCopier(BaseUploader):
     return remote_path
 
 
-class LocalSplitCopier(LocalCopier):
-  """TODO."""
+class LocalSplitterCopier(LocalCopier):
+  """Class for a LocalSplitterCopier.
+
+  This class is a specific implementation of LocalCopier, that will split
+  DiskArtifacts (and only this class of Artifacts) into a specified number of
+  slices (10 by default).
+  """
 
   def __init__(self, destination_dir, stamp_manager, stamp=None, slices=10):
-    """Initializes the LocalSplitCopier class.
+    """Initializes the LocalSplitterCopier class.
 
     Args:
       destination_dir (str): the path to the destination directory.
@@ -179,9 +184,9 @@ class LocalSplitCopier(LocalCopier):
         context.
       stamp (namedtuple): an optional ForensicsStamp containing
         the upload metadata.
+      slices (int): the number of slices to split DiskArtifacts into
     """
-    super().__init__(stamp_manager=stamp_manager, stamp=stamp)
-    self.destination_dir = destination_dir
+    super().__init__(destination_dir, stamp_manager=stamp_manager, stamp=stamp)
     self._slices = int(slices)
     self._skip_exist = False
 
@@ -358,12 +363,28 @@ class GCSUploader(BaseUploader):
 
 
 class GCSSplitterUploader(GCSUploader):
-  """Handles resumable uploads of data to Google Cloud Storage."""
+  """Handles resumable uploads of data to Google Cloud Storage.
+
+  This class is a specific implementation of GCSUploader, that will split
+  DiskArtifacts (and only this class of Artifacts) into a specified number of
+  slices (10 by default).
+  """
 
   def __init__(
       self, gs_url, gs_keyfile, client_id, stamp_manager, stamp=None,
       slices=10):
-    """TODO"""
+    """Initializes a GCSSplitterUploader object.
+
+    Args:
+      gs_url (str): the GCS url to the bucket and remote path.
+      gs_keyfile (str): path of the private key for the Service Account.
+      client_id (str): the client ID set in the credentials file.
+      stamp_manager (StampManager): the StampManager object for this
+        context.
+      stamp (namedtuple): an optional ForensicsStamp containing
+        the upload metadata.
+      slices (int): the number of slices to split DiskArtifacts into.
+    """
     super().__init__(gs_url, gs_keyfile, client_id, stamp_manager, stamp=stamp)
     self._slices = int(slices)
     self._skip_exist = False
