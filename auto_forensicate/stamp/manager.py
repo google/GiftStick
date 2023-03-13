@@ -23,13 +23,20 @@ BaseStamp = namedtuple('Stamp', ['identifier', 'start_time'])
 class BaseStampManager(object):
   """Base class to generate the stamp file."""
 
-  def BasePathElements(self, stamp, graphical=True):
+  def __init__(self, graphical=True):
+    """Initializes a BaseStampManager object.
+
+    Args:
+      graphical (bool): whether we will request information from a graphical
+          environment.
+    """
+    self._graphical = graphical
+
+  def BasePathElements(self, stamp):
     """Generates upload paths based on information in stamp.
 
     Args:
       stamp (BaseStamp): device information
-      graphical (bool): whether we will request information from a graphical
-        environment.
 
     Returns:
       list(str): list of elements from the stamp
@@ -38,8 +45,6 @@ class BaseStampManager(object):
         stamp.start_time,
         stamp.identifier
     ]
-
-    self._graphical = graphical
 
     return remote_path_elems
 
