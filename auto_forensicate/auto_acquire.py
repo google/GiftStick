@@ -365,7 +365,8 @@ class AutoForensicate(object):
       errors.BadConfigOption: if the options are invalid.
     """
 
-    stamp_manager = manager.BaseStampManager()
+    graphical_env = not options.no_zenity
+    stamp_manager = manager.BaseStampManager(graphical=graphical_env)
 
     if options.destination.startswith('gs://'):
       if not self._gcs_settings:
