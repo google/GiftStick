@@ -23,11 +23,13 @@ BaseStamp = namedtuple('Stamp', ['identifier', 'start_time'])
 class BaseStampManager(object):
   """Base class to generate the stamp file."""
 
-  def BasePathElements(self, stamp):
+  def BasePathElements(self, stamp, graphical=True):
     """Generates upload paths based on information in stamp.
 
     Args:
       stamp (BaseStamp): device information
+      graphical (bool): whether we will request information from a graphical
+        environment.
 
     Returns:
       list(str): list of elements from the stamp
@@ -37,16 +39,14 @@ class BaseStampManager(object):
         stamp.identifier
     ]
 
+    self._graphical = graphical
+
     return remote_path_elems
 
-  def GetStamp(self, graphical=True):
+  def GetStamp(self):
     """Generates the "stamp" metadata to upload.
 
     This contains information such as when the script is run, and the host's ID.
-    
-    Args:
-      graphical(bool): Set to False if requesting the Stamp in an non-graphical
-        environment.
 
     Returns:
       BaseStamp: the content of the stamp.
