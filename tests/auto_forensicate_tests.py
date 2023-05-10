@@ -255,6 +255,16 @@ class AutoForensicateTest(unittest.TestCase):
     expected_recipes = ['disk', 'firmware', 'sysinfo']
     self.assertEqual(options.acquire, expected_recipes)
 
+  def testSliceOption(self):
+    af = auto_acquire.AutoForensicate(recipes={'test': None})
+
+    test_args = ['--slice_disks', '8', '--acquire', 'all', 'gs://bucket']
+    options = af.ParseArguments(test_args)
+
+    self.assertTrue(options.slice_disks)
+    self.assertTrue(options.disable_dcfldd)
+    self.assertEqual(options.slice_disks, 8)
+
   def testMakeUploader(self):
     af = auto_acquire.AutoForensicate(recipes={'test': None})
 
