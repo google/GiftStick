@@ -17,6 +17,7 @@
 from __future__ import unicode_literals
 
 import argparse
+import itertools
 import json
 import logging
 import mmap
@@ -408,12 +409,12 @@ class GCSSplitterUploader(GCSUploader):
       self._UploadStamp()
 
     if not isinstance(artifact, disk.DiskArtifact):
+      # We do not try to split artifacts that don't represent a disk
       remote_path = self._MakeRemotePath(artifact.remote_path)
       self._UploadStream(
           artifact.OpenStream(), remote_path, update_callback=update_callback)
 
     else:
-
       total_uploaded = 0
 
       if self._slices < 1:

@@ -24,6 +24,7 @@ try:
 except ImportError:
   from io import BytesIO
 import tempfile
+import mmap
 import unittest
 
 import boto
@@ -33,8 +34,11 @@ import shutil
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import base
+from auto_forensicate.recipes import disk
 from auto_forensicate.stamp import manager
 
+def fsu(remote_path, _):
+  return FakeStorageUri(remote_path)
 
 # pylint: disable=missing-docstring
 # pylint: disable=protected-access
@@ -97,6 +101,24 @@ class FakeStampManager(manager.BaseStampManager):
         start_time='20171012-135619')
 
 
+class FakeStorageUri(mock.MagicMock):
+  """TODO"""
+
+  RESULTS = {}
+
+  def __init__(self, remote_path):
+    super().__init__()
+    self._remote_path = remote_path
+
+  def _set_data(self, data):
+    self.RESULTS[self._remote_path] = data
+
+  def new_key(self):
+    mocked = mock.Mock()
+    mocked.set_contents_from_stream = self._set_data
+    return mocked
+
+
 class LocalCopierTests(unittest.TestCase):
   """Tests for the LocalCopier class."""
 
@@ -140,6 +162,7 @@ class GCSUploaderTests(unittest.TestCase):
     self.gcs_bucket = 'bucket_name'
     self.gcs_path = 'some/where'
     self.gcs_url = 'gs://{0:s}/{1:s}'.format(self.gcs_bucket, self.gcs_path)
+    super().setUp()
 
   def testMakeRemotePathNoAsset(self):
     uploader_object = uploader.GCSUploader(
@@ -186,7 +209,7 @@ class GCSUploaderTests(unittest.TestCase):
     self.gcs_url = 'invalid'
     uploader_object = uploader.GCSUploader(
         self.gcs_url, 'fake_key.json', 'fake_clientid', FakeStampManager())
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         argparse.ArgumentError, 'Invalid GCS URL \'{0:s}\''.format('invalid')):
       uploader_object._SplitGCSUrl()
 
@@ -243,3 +266,44 @@ class GCSUploaderTests(unittest.TestCase):
     with self.assertRaises(errors.ForensicateError):
       uploader_object._UploadStream(
           test_artifact.OpenStream(), 'gs://fake_bucket/remote/path')
+
+
+class GCSSplitterUploaderTests(GCSUploaderTests):
+  """Tests for the GCSSplitterUploader class."""
+
+  def setUp(self):
+    super().setUp()
+
+  @mock.patch.object(boto, 'storage_uri', new=fsu)
+  @mock.patch.object(disk.DiskArtifact, '_GetStream')
+  def testUploadArtifact(self, patched_getstream,):
+    patched_getstream.return_value = BytesIO(b'fake_content')
+
+    temp = tempfile.TemporaryFile()
+    # Generating some data
+    fake_data = bytes(range(0, 256))*1000
+    temp.write(fake_data)
+
+    test_artifact = disk.DiskArtifact(
+        '/dev/sda', len(fake_data), use_dcfldd=False)
+    patched_getstream.return_value = temp
+
+    uploader_object = uploader.GCSSplitterUploader(
+        'gs://fake_bucket/', 'no_keyfile', 'client_id', FakeStampManager(),
+        slices=5)
+    uploader_object._boto_configured = True
+    uploader_object._stamp_uploaded = True
+
+    uploader_object.UploadArtifact(test_artifact, update_callback=mock.Mock())
+
+    results = FakeStorageUri.RESULTS
+    expected_slice_paths = [
+        f'fake_bucket/20171012-135619/fake_uuid/Disks/sda.image_{x}'
+        for x in range(0, len(results))]
+    self.assertEqual(list(FakeStorageUri.RESULTS), expected_slice_paths)
+
+    concatenated_data = bytearray()
+    for path in list(results):
+      concatenated_data += results[path].read()
+
+    self.assertEqual(concatenated_data, fake_data)
