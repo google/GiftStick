@@ -434,7 +434,7 @@ class AutoForensicate(object):
         raise errors.BadConfigOption(
             '--slice_disks option should specify at least two slices')
 
-      if 'disk' not in options:
+      if 'disk' not in options.acquire:
         raise errors.BadConfigOption(
             '--slice_disks is selected but no disk is set to be uploaded')
 
