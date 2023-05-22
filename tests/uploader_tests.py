@@ -136,6 +136,53 @@ class LocalCopierTests(unittest.TestCase):
       self.assertEqual(expected_stamp_content, stamp_file.read())
 
 
+class LocalSplitterCopierTests(LocalCopierTests):
+  """Tests for the LocalSplitterCopier class."""
+
+  def setUp(self):
+    super().setUp()
+    self._copied_streams = {}
+
+  def _AddUploadedData(self, stream, remote_path, update_callback=None):
+    self._copied_streams[remote_path] = stream.read()
+
+  @mock.patch.object(uploader.LocalSplitterCopier, '_MakeRemotePath')
+  @mock.patch.object(uploader.LocalSplitterCopier, '_UploadStream')
+  @mock.patch.object(disk.DiskArtifact, '_GetStream')
+  def testUploadArtifact(
+      self, patched_getstream, patched_uploadstream, patched_makeremotepath):
+    """Tests that an artificact is correctly split in 5 different chunks."""
+
+    patched_uploadstream.side_effect = self._AddUploadedData
+    temp = tempfile.TemporaryFile()
+    # Generating some data
+    fake_data = bytes(range(0, 256))*1000
+    temp.write(fake_data)
+
+    test_artifact = disk.DiskArtifact(
+        '/dev/sda', len(fake_data), use_dcfldd=False)
+    patched_getstream.return_value = temp
+
+    uploader_object = uploader.LocalSplitterCopier(
+        '/fake_destination/', FakeStampManager(), slices=5)
+    patched_makeremotepath.return_value = '/fake_destination/sda.image'
+    uploader_object._stamp_uploaded = True
+
+    uploader_object.UploadArtifact(test_artifact, update_callback=mock.Mock())
+
+    results = self._copied_streams
+    expected_slice_paths = [
+        f'/fake_destination/sda.image_{x}'
+        for x in range(0, len(results))]
+    self.assertEqual(list(results), expected_slice_paths)
+
+    concatenated_data = bytearray()
+    for path in list(results):
+      concatenated_data += results[path]
+
+    self.assertEqual(concatenated_data, fake_data)
+
+
 class GCSUploaderTests(unittest.TestCase):
   """Tests for the GCSUploader class."""
 
