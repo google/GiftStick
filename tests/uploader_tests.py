@@ -37,11 +37,9 @@ from auto_forensicate.recipes import base
 from auto_forensicate.recipes import disk
 from auto_forensicate.stamp import manager
 
-def fsu(remote_path, _):
-  return FakeStorageUri(remote_path)
-
 # pylint: disable=missing-docstring
 # pylint: disable=protected-access
+
 
 class FakeStamp(
     namedtuple('Stamp', [
@@ -63,9 +61,9 @@ FAKE_STAMP_NO_ASSET = FakeStamp(
     start_time='20171012-135619'
 )
 
+
 class FakeGCSUploader(uploader.GCSUploader):
   """Fake class for the GCSUploader."""
-
 
   def __init__(self, gcs_url):
     """Initializes the GCSUploader class.
@@ -101,33 +99,16 @@ class FakeStampManager(manager.BaseStampManager):
         start_time='20171012-135619')
 
 
-class FakeStorageUri(mock.MagicMock):
-  """TODO"""
-
-  RESULTS = {}
-
-  def __init__(self, remote_path):
-    super().__init__()
-    self._remote_path = remote_path
-
-  def _set_data(self, data):
-    self.RESULTS[self._remote_path] = data
-
-  def new_key(self):
-    mocked = mock.Mock()
-    mocked.set_contents_from_stream = self._set_data
-    return mocked
-
-
 class LocalCopierTests(unittest.TestCase):
   """Tests for the LocalCopier class."""
 
   def setUp(self):
     self.temp_dir = tempfile.mkdtemp()
+    super().setUp()
 
   def tearDown(self):
-    pass
-    #shutil.rmtree(self.temp_dir)
+    shutil.rmtree(self.temp_dir)
+    super().tearDown()
 
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   def testUploadArtifact(self, patched_getstream):
@@ -273,12 +254,17 @@ class GCSSplitterUploaderTests(GCSUploaderTests):
 
   def setUp(self):
     super().setUp()
+    self._uploaded_streams = {}
 
-  @mock.patch.object(boto, 'storage_uri', new=fsu)
+  def _AddUploadedData(self, stream, remote_path, update_callback=None):
+    self._uploaded_streams[remote_path] = stream.read()
+
+  @mock.patch.object(uploader.GCSSplitterUploader, '_UploadStream')
   @mock.patch.object(disk.DiskArtifact, '_GetStream')
-  def testUploadArtifact(self, patched_getstream,):
-    patched_getstream.return_value = BytesIO(b'fake_content')
+  def testUploadArtifact(self, patched_getstream, patched_uploadstream):
+    """Tests that an artificact is correctly split in 5 different chunks."""
 
+    patched_uploadstream.side_effect = self._AddUploadedData
     temp = tempfile.TemporaryFile()
     # Generating some data
     fake_data = bytes(range(0, 256))*1000
@@ -296,14 +282,14 @@ class GCSSplitterUploaderTests(GCSUploaderTests):
 
     uploader_object.UploadArtifact(test_artifact, update_callback=mock.Mock())
 
-    results = FakeStorageUri.RESULTS
+    results = self._uploaded_streams
     expected_slice_paths = [
         f'fake_bucket/20171012-135619/fake_uuid/Disks/sda.image_{x}'
         for x in range(0, len(results))]
-    self.assertEqual(list(FakeStorageUri.RESULTS), expected_slice_paths)
+    self.assertEqual(list(results), expected_slice_paths)
 
     concatenated_data = bytearray()
     for path in list(results):
-      concatenated_data += results[path].read()
+      concatenated_data += results[path]
 
     self.assertEqual(concatenated_data, fake_data)

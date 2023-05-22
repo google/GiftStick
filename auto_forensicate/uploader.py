@@ -134,10 +134,9 @@ class LocalCopier(BaseUploader):
       remote_path (str): the remote path to store the data to.
       update_callback (func): an optional function called as upload progresses.
     """
-
     destination_file = open(remote_path, 'wb')
     copied = 0
-    buffer_length = 16*1024 # This is the defaults for shutil.copyfileobj()
+    buffer_length = 16*1024  # This is the defaults for shutil.copyfileobj()
     while True:
       buf = stream.read(buffer_length)
       if not buf:
@@ -189,7 +188,6 @@ class LocalSplitterCopier(LocalCopier):
     """
     super().__init__(destination_dir, stamp_manager=stamp_manager, stamp=stamp)
     self._slices = int(slices)
-    self._skip_exist = False
 
   def UploadArtifact(self, artifact, update_callback=None):
     """Uploads a file object to a local directory.
@@ -211,11 +209,8 @@ class LocalSplitterCopier(LocalCopier):
       remote_path = self._MakeRemotePath(artifact.remote_path)
       self._UploadStream(
           artifact.OpenStream(), remote_path, update_callback=update_callback)
-
     else:
-
       total_uploaded = 0
-
       if self._slices < 1:
         raise errors.BadConfigOption(
             'The number of slices needs to be greater than 1')
@@ -236,11 +231,6 @@ class LocalSplitterCopier(LocalCopier):
           range(0, artifact.size, slice_size)):
         remote_path = f'{base_remote_path}_{slice_num}'
 
-        if self._skip_exist and os.path.exists(remote_path):
-          self._logger.info(
-              'Skipping %s, which already exists.', remote_path)
-          continue
-
         current_slice_size = slice_size
         if seek_position+slice_size > artifact.size:
           current_slice_size = artifact.size - seek_position
@@ -248,6 +238,7 @@ class LocalSplitterCopier(LocalCopier):
         mmap_slice = mmap.mmap(
             stream.fileno(), length=current_slice_size, offset=seek_position,
             access=mmap.ACCESS_READ)
+
         self._UploadStream(
             mmap_slice, remote_path, update_callback=update_callback)
 
@@ -388,7 +379,6 @@ class GCSSplitterUploader(GCSUploader):
     """
     super().__init__(gs_url, gs_keyfile, client_id, stamp_manager, stamp=stamp)
     self._slices = int(slices)
-    self._skip_exist = False
 
   def UploadArtifact(self, artifact, update_callback=None):
     """Uploads a file object to Google Cloud Storage.
@@ -416,7 +406,6 @@ class GCSSplitterUploader(GCSUploader):
 
     else:
       total_uploaded = 0
-
       if self._slices < 1:
         raise errors.BadConfigOption(
             'The number of slices needs to be greater than 1')
@@ -444,19 +433,9 @@ class GCSSplitterUploader(GCSUploader):
         mmap_slice = mmap.mmap(
             stream.fileno(), length=current_slice_size, offset=seek_position,
             access=mmap.ACCESS_READ)
-        try:
-          dst_uri = boto.storage_uri(remote_path, u'gs')
 
-          if self._skip_exist and dst_uri.exists():
-            self._logger.info(
-                'Skipping %s, which already exists.', remote_path)
-            continue
-
-          dst_uri.new_key().set_contents_from_stream(mmap_slice)
-        except boto.exception.GSDataError as e:
-          # This is usually raised when the connection is broken, and deserves
-          # to be retried.
-          raise errors.RetryableError(str(e))
+        self._UploadStream(
+            mmap_slice, remote_path, update_callback=update_callback)
 
         total_uploaded += current_slice_size
         update_callback(total_uploaded, artifact.size)
