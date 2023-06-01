@@ -249,6 +249,7 @@ class AutoForensicate(object):
     self._errors = []
     self._gcs_settings = None
     self._logger = None
+    self._options = None
     self._progress_logger = None
     self._recipes = recipes
     self._uploader = None
@@ -357,6 +358,8 @@ class AutoForensicate(object):
             'Progress logging requires Stackdriver logging to be enabled')
       self._progress_logger = cloud_logger.Logger(
           'GiftStick', gcp_logging_client)
+
+    self._options = options
 
   def _MakeUploader(self, options):
     """Creates a new Uploader object.
@@ -487,7 +490,7 @@ class AutoForensicate(object):
     """
     if message:
       self._logger.info(message)
-    if max_size > 0:
+    if max_size > 0 and not self._options.slice_disks:
       pb = BaBar(
           max=max_size,
           # Cf https://github.com/verigak/progress/blob/master/README.rst
