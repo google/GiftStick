@@ -273,10 +273,6 @@ class AutoForensicateTest(unittest.TestCase):
     with self.assertRaises(errors.BadConfigOption):
       options = af.ParseArguments(test_args)
 
-    self.assertTrue(options.slice_disks)
-    self.assertTrue(options.disable_dcfldd)
-    self.assertEqual(options.slice_disks, 8)
-
   def testMakeUploader(self):
     af = auto_acquire.AutoForensicate(recipes={'test': None})
 
