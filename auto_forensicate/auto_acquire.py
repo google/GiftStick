@@ -307,10 +307,10 @@ class AutoForensicate(object):
             '(this disable creation of hashlog files)')
     )
     parser.add_argument(
-        '--slice_disks', nargs='?', required=False, default=10, type=int,
+        '--slice_disks', nargs='?', required=False, type=int,
         help=(
             'If specified, when uploading a Disk artifact, the script will '
-            'split the upload into the specified number of chunks (default=10).'
+            'split the upload into the specified number of chunks.'
             '(this also sets --disable_dcfldd)')
     )
     parser.add_argument(
