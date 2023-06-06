@@ -249,6 +249,7 @@ class AutoForensicate(object):
     self._errors = []
     self._gcs_settings = None
     self._logger = None
+    self._options = None
     self._progress_logger = None
     self._recipes = recipes
     self._uploader = None
@@ -306,6 +307,13 @@ class AutoForensicate(object):
             '(this disable creation of hashlog files)')
     )
     parser.add_argument(
+        '--slice_disks', nargs='?', required=False, type=int,
+        help=(
+            'If specified, when uploading a Disk artifact, the script will '
+            'split the upload into the specified number of chunks.'
+            '(this also sets --disable_dcfldd)')
+    )
+    parser.add_argument(
         '--method', action='store', required=False, choices=['tar'],
         default='tar',
         help='Specify which method to use when acquiring a directory'
@@ -351,6 +359,8 @@ class AutoForensicate(object):
       self._progress_logger = cloud_logger.Logger(
           'GiftStick', gcp_logging_client)
 
+    self._options = options
+
   def _MakeUploader(self, options):
     """Creates a new Uploader object.
 
@@ -382,10 +392,18 @@ class AutoForensicate(object):
             'The provided GCS json file lacks a "client_id" key.'
         )
 
+      if options.slice_disks:
+        return uploader.GCSSplitterUploader(
+            options.destination, options.gs_keyfile, client_id, stamp_manager,
+            slices=options.slice_disks)
+
       return uploader.GCSUploader(
           options.destination, options.gs_keyfile, client_id, stamp_manager)
 
     if options.destination.startswith('/'):
+      if options.slice_disks:
+        return uploader.LocalSplitterCopier(
+            options.destination, stamp_manager, slices=options.slice_disks)
       return uploader.LocalCopier(options.destination, stamp_manager)
 
     return None
@@ -413,6 +431,18 @@ class AutoForensicate(object):
            'current recipes : {0:s})').format(
                ', '.join(options.acquire))
       )
+
+    if options.slice_disks:
+      if options.slice_disks < 2:
+        raise errors.BadConfigOption(
+            '--slice_disks option should specify at least two slices')
+
+      if 'disk' not in options.acquire:
+        raise errors.BadConfigOption(
+            '--slice_disks is selected but no disk is set to be uploaded')
+
+      # We don't support dcfldd when splitting a disk into multiple files
+      options.disable_dcfldd = True
 
     if not options.no_zenity:
       # force no_zenity to True if zenity is not installed
@@ -460,7 +490,7 @@ class AutoForensicate(object):
     """
     if message:
       self._logger.info(message)
-    if max_size > 0:
+    if max_size > 0 and not self._options.slice_disks:
       pb = BaBar(
           max=max_size,
           # Cf https://github.com/verigak/progress/blob/master/README.rst

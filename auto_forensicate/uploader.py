@@ -17,8 +17,10 @@
 from __future__ import unicode_literals
 
 import argparse
+import itertools
 import json
 import logging
+import mmap
 import os
 try:
   from BytesIO import BytesIO
@@ -27,6 +29,7 @@ except ImportError:
 from six.moves.urllib.parse import urlparse
 import boto
 from auto_forensicate import errors
+from auto_forensicate.recipes import disk
 
 class BaseUploader(object):
   """Base class for an Uploader object."""
@@ -131,10 +134,9 @@ class LocalCopier(BaseUploader):
       remote_path (str): the remote path to store the data to.
       update_callback (func): an optional function called as upload progresses.
     """
-
     destination_file = open(remote_path, 'wb')
     copied = 0
-    buffer_length = 16*1024 # This is the defaults for shutil.copyfileobj()
+    buffer_length = 16*1024  # This is the defaults for shutil.copyfileobj()
     while True:
       buf = stream.read(buffer_length)
       if not buf:
@@ -162,6 +164,88 @@ class LocalCopier(BaseUploader):
     if not os.path.exists(base_dir):
       os.makedirs(base_dir)
 
+    return remote_path
+
+
+class LocalSplitterCopier(LocalCopier):
+  """Class for a LocalSplitterCopier.
+
+  This class is a specific implementation of LocalCopier, that will split
+  DiskArtifacts (and only this class of Artifacts) into a specified number of
+  slices (10 by default).
+  """
+
+  def __init__(self, destination_dir, stamp_manager, stamp=None, slices=10):
+    """Initializes the LocalSplitterCopier class.
+
+    Args:
+      destination_dir (str): the path to the destination directory.
+      stamp_manager (StampManager): the StampManager object for this
+        context.
+      stamp (namedtuple): an optional ForensicsStamp containing
+        the upload metadata.
+      slices (int): the number of slices to split DiskArtifacts into
+    """
+    super().__init__(destination_dir, stamp_manager=stamp_manager, stamp=stamp)
+    self._slices = int(slices)
+
+  def UploadArtifact(self, artifact, update_callback=None):
+    """Uploads a file object to a local directory.
+
+    Args:
+      artifact (BaseArtifact): the Artifact object pointing to data to upload.
+      update_callback (func): an optional function called as upload progresses.
+
+    Returns:
+      str: the remote destination where the file was uploaded.
+    """
+
+    # Upload the 'stamp' file. This allows us to make sure we have write
+    # permission on the bucket, and fail early if we don't.
+    if not self._stamp_uploaded:
+      self._UploadStamp()
+
+    if not isinstance(artifact, disk.DiskArtifact):
+      remote_path = self._MakeRemotePath(artifact.remote_path)
+      self._UploadStream(
+          artifact.OpenStream(), remote_path, update_callback=update_callback)
+    else:
+      total_uploaded = 0
+      if self._slices < 1:
+        raise errors.BadConfigOption(
+            'The number of slices needs to be greater than 1')
+
+      # mmap requires that the an offset is a multiple of mmap.PAGESIZE
+      # so we can't just equally divide the total size in the specified number
+      # of slices.
+      number_of_pages = int(artifact.size / self._slices /  mmap.PAGESIZE)
+
+      slice_size = number_of_pages * mmap.PAGESIZE
+      # slice_size might not be equal to (total_size / slices)
+
+      base_remote_path = self._MakeRemotePath(artifact.remote_path)
+
+      stream = artifact.OpenStream()
+
+      for slice_num, seek_position in enumerate(
+          range(0, artifact.size, slice_size)):
+        remote_path = f'{base_remote_path}_{slice_num}'
+
+        current_slice_size = slice_size
+        if seek_position+slice_size > artifact.size:
+          current_slice_size = artifact.size - seek_position
+
+        mmap_slice = mmap.mmap(
+            stream.fileno(), length=current_slice_size, offset=seek_position,
+            access=mmap.ACCESS_READ)
+
+        self._UploadStream(
+            mmap_slice, remote_path, update_callback=update_callback)
+
+        total_uploaded += current_slice_size
+        update_callback(total_uploaded, artifact.size)
+
+    artifact.CloseStream()
     return remote_path
 
 
@@ -268,3 +352,93 @@ class GCSUploader(BaseUploader):
       # This is usually raised when the connection is broken, and deserves to
       # be retried.
       raise errors.RetryableError(str(e))
+
+
+class GCSSplitterUploader(GCSUploader):
+  """Handles resumable uploads of data to Google Cloud Storage.
+
+  This class is a specific implementation of GCSUploader, that will split
+  DiskArtifacts (and only this class of Artifacts) into a specified number of
+  slices (10 by default).
+  """
+
+  def __init__(
+      self, gs_url, gs_keyfile, client_id, stamp_manager, stamp=None,
+      slices=10):
+    """Initializes a GCSSplitterUploader object.
+
+    Args:
+      gs_url (str): the GCS url to the bucket and remote path.
+      gs_keyfile (str): path of the private key for the Service Account.
+      client_id (str): the client ID set in the credentials file.
+      stamp_manager (StampManager): the StampManager object for this
+        context.
+      stamp (namedtuple): an optional ForensicsStamp containing
+        the upload metadata.
+      slices (int): the number of slices to split DiskArtifacts into.
+    """
+    super().__init__(gs_url, gs_keyfile, client_id, stamp_manager, stamp=stamp)
+    self._slices = int(slices)
+
+  def UploadArtifact(self, artifact, update_callback=None):
+    """Uploads a file object to Google Cloud Storage.
+
+    Args:
+      artifact (BaseArtifact): the Artifact object pointing to data to upload.
+      update_callback (func): an optional function called as upload progresses.
+
+    Returns:
+      str: the remote destination where the file was uploaded.
+    """
+    if not self._boto_configured:
+      self._InitBoto()
+
+    # Upload the 'stamp' file. This allows us to make sure we have write
+    # permission on the bucket, and fail early if we don't.
+    if not self._stamp_uploaded:
+      self._UploadStamp()
+
+    if not isinstance(artifact, disk.DiskArtifact):
+      # We do not try to split artifacts that don't represent a disk
+      remote_path = self._MakeRemotePath(artifact.remote_path)
+      self._UploadStream(
+          artifact.OpenStream(), remote_path, update_callback=update_callback)
+
+    else:
+      total_uploaded = 0
+      if self._slices < 1:
+        raise errors.BadConfigOption(
+            'The number of slices needs to be greater than 1')
+
+      # mmap requires that the an offset is a multiple of mmap.PAGESIZE
+      # so we can't just equally divide the total size in the specified number
+      # of slices.
+      number_of_pages = int(artifact.size / self._slices /  mmap.PAGESIZE)
+
+      slice_size = number_of_pages * mmap.PAGESIZE
+      # slice_size might not be equal to (total_size / slices)
+
+      base_remote_path = self._MakeRemotePath(artifact.remote_path)
+
+      stream = artifact.OpenStream()
+
+      for slice_num, seek_position in enumerate(
+          range(0, artifact.size, slice_size)):
+        remote_path = f'{base_remote_path}_{slice_num}'
+
+        current_slice_size = slice_size
+        if seek_position+slice_size > artifact.size:
+          current_slice_size = artifact.size - seek_position
+
+        mmap_slice = mmap.mmap(
+            stream.fileno(), length=current_slice_size, offset=seek_position,
+            access=mmap.ACCESS_READ)
+
+        self._UploadStream(
+            mmap_slice, remote_path, update_callback=update_callback)
+
+        total_uploaded += current_slice_size
+        update_callback(total_uploaded, artifact.size)
+
+    artifact.CloseStream()
+    return remote_path
