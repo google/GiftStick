@@ -395,7 +395,7 @@ function pack_iso {
   # Extract EFI partition image
   readonly skip=$(/sbin/fdisk -l "$orig" | fgrep '.iso2 ' | awk '{print $2}')
   readonly size=$(/sbin/fdisk -l "$orig" | fgrep '.iso2 ' | awk '{print $4}')
-  dd if="$orig" bs=512 skip="$skip" count="$size" of="$efi"
+  dd if="$FLAGS_SOURCE_ISO" bs=512 skip="$skip" count="$size" of="$efi"
 
   msg "Packing the new ISO from ${source_iso_dir} to ${target_iso_file}"
 
