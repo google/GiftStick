@@ -25,9 +25,8 @@
 # You should end up with a file called gift-image-$(date +%Y%m%d).img, unless
 # you specify the destination with --image
 #
-# It requires the following packages, on ubuntu:
-#   gdisk genisoimage grub-efi-amd64-bin syslinux syslinux-utils
-#   initramfs-tools-core
+# It requires the following packages, on ubuntu 22.04:
+#   gdisk xorriso grub-efi-amd64-bin initramfs-tools-core
 #
 # gdisk and grub-efi-amd64-bin are used for the EFI booting part.
 #
@@ -387,7 +386,19 @@ function pack_iso {
   local -r source_iso_dir=$1
   local -r target_iso_file=$2
 
+  readonly mbr="${FLAGS_REMASTERED_ISO}.mbr"
+  readonly efi="${FLAGS_REMASTERED_ISO}.efi"
+
+  # Extract the MBR template
+  dd if="$orig" bs=1 count=446 of="$mbr"
+
+  # Extract EFI partition image
+  readonly skip=$(/sbin/fdisk -l "$orig" | fgrep '.iso2 ' | awk '{print $2}')
+  readonly size=$(/sbin/fdisk -l "$orig" | fgrep '.iso2 ' | awk '{print $4}')
+  dd if="$orig" bs=512 skip="$skip" count="$size" of="$efi"
+
   msg "Packing the new ISO from ${source_iso_dir} to ${target_iso_file}"
+
   sudo genisoimage -o "${target_iso_file}" \
     -b "isolinux/isolinux.bin" \
     -c "isolinux/boot.cat" \
@@ -397,7 +408,22 @@ function pack_iso {
     -x "${source_iso_dir}"/casper/manifest.diff \
     -joliet-long \
     "${source_iso_dir}"
-  sudo isohybrid "${target_iso_file}"
+  sudo xorriso -as mkisofs \
+    -r -V "GIFTSTICK-${TODAY}" -J -joliet-long -l \
+    -iso-level 2 \
+    -partition_offset 15 \
+    --grub1-mbr "$mbr" \
+    --mbr-force-bootable \
+    -append_partition 1 0xEF "$efi" \
+    -appended_part_as_gpt \
+    -c /boot.catalog \
+    -b /boot/grub/i385-pc/eltorito.img \
+      -no-emul-boot -boot-load-size 3 -boot-info-table --grub2-boot-info \
+    -eltorito-alt-boot \
+    -e '--interval:appended_partition_1:all::' \
+      -no-emul-boot \
+    -o "${target_iso_file}" \
+    "${source_iso_dir}"
 }
 
 # Unpack a LiveCD iso file to a directory.
@@ -757,11 +783,9 @@ function main {
   # checking for package instalation status.
   set +e
   check_packages gdisk
-  check_packages genisoimage
+  check_packages xorriso
   check_packages grub-efi-amd64-bin
   check_packages squashfs-tools
-  check_packages syslinux
-  check_packages syslinux-utils
   set -e
 
   parse_arguments "$@"
