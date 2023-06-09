@@ -24,6 +24,7 @@ try:
 except ImportError:
   from io import BytesIO
 import tempfile
+import mmap
 import unittest
 
 import boto
@@ -33,11 +34,12 @@ import shutil
 from auto_forensicate import errors
 from auto_forensicate import uploader
 from auto_forensicate.recipes import base
+from auto_forensicate.recipes import disk
 from auto_forensicate.stamp import manager
-
 
 # pylint: disable=missing-docstring
 # pylint: disable=protected-access
+
 
 class FakeStamp(
     namedtuple('Stamp', [
@@ -59,9 +61,9 @@ FAKE_STAMP_NO_ASSET = FakeStamp(
     start_time='20171012-135619'
 )
 
+
 class FakeGCSUploader(uploader.GCSUploader):
   """Fake class for the GCSUploader."""
-
 
   def __init__(self, gcs_url):
     """Initializes the GCSUploader class.
@@ -102,10 +104,11 @@ class LocalCopierTests(unittest.TestCase):
 
   def setUp(self):
     self.temp_dir = tempfile.mkdtemp()
+    super().setUp()
 
   def tearDown(self):
-    pass
-    #shutil.rmtree(self.temp_dir)
+    shutil.rmtree(self.temp_dir)
+    super().tearDown()
 
   @mock.patch.object(base.BaseArtifact, '_GetStream')
   def testUploadArtifact(self, patched_getstream):
@@ -133,6 +136,53 @@ class LocalCopierTests(unittest.TestCase):
       self.assertEqual(expected_stamp_content, stamp_file.read())
 
 
+class LocalSplitterCopierTests(LocalCopierTests):
+  """Tests for the LocalSplitterCopier class."""
+
+  def setUp(self):
+    super().setUp()
+    self._copied_streams = {}
+
+  def _AddUploadedData(self, stream, remote_path, update_callback=None):
+    self._copied_streams[remote_path] = stream.read()
+
+  @mock.patch.object(uploader.LocalSplitterCopier, '_MakeRemotePath')
+  @mock.patch.object(uploader.LocalSplitterCopier, '_UploadStream')
+  @mock.patch.object(disk.DiskArtifact, '_GetStream')
+  def testUploadArtifact(
+      self, patched_getstream, patched_uploadstream, patched_makeremotepath):
+    """Tests that an artificact is correctly split in 5 different chunks."""
+
+    patched_uploadstream.side_effect = self._AddUploadedData
+    temp = tempfile.TemporaryFile()
+    # Generating some data
+    fake_data = bytes(range(0, 256))*1000
+    temp.write(fake_data)
+
+    test_artifact = disk.DiskArtifact(
+        '/dev/sda', len(fake_data), use_dcfldd=False)
+    patched_getstream.return_value = temp
+
+    uploader_object = uploader.LocalSplitterCopier(
+        '/fake_destination/', FakeStampManager(), slices=5)
+    patched_makeremotepath.return_value = '/fake_destination/sda.image'
+    uploader_object._stamp_uploaded = True
+
+    uploader_object.UploadArtifact(test_artifact, update_callback=mock.Mock())
+
+    results = self._copied_streams
+    expected_slice_paths = [
+        f'/fake_destination/sda.image_{x}'
+        for x in range(0, len(results))]
+    self.assertEqual(list(results), expected_slice_paths)
+
+    concatenated_data = bytearray()
+    for path in list(results):
+      concatenated_data += results[path]
+
+    self.assertEqual(concatenated_data, fake_data)
+
+
 class GCSUploaderTests(unittest.TestCase):
   """Tests for the GCSUploader class."""
 
@@ -140,6 +190,7 @@ class GCSUploaderTests(unittest.TestCase):
     self.gcs_bucket = 'bucket_name'
     self.gcs_path = 'some/where'
     self.gcs_url = 'gs://{0:s}/{1:s}'.format(self.gcs_bucket, self.gcs_path)
+    super().setUp()
 
   def testMakeRemotePathNoAsset(self):
     uploader_object = uploader.GCSUploader(
@@ -186,7 +237,7 @@ class GCSUploaderTests(unittest.TestCase):
     self.gcs_url = 'invalid'
     uploader_object = uploader.GCSUploader(
         self.gcs_url, 'fake_key.json', 'fake_clientid', FakeStampManager())
-    with self.assertRaisesRegexp(
+    with self.assertRaisesRegex(
         argparse.ArgumentError, 'Invalid GCS URL \'{0:s}\''.format('invalid')):
       uploader_object._SplitGCSUrl()
 
@@ -243,3 +294,49 @@ class GCSUploaderTests(unittest.TestCase):
     with self.assertRaises(errors.ForensicateError):
       uploader_object._UploadStream(
           test_artifact.OpenStream(), 'gs://fake_bucket/remote/path')
+
+
+class GCSSplitterUploaderTests(GCSUploaderTests):
+  """Tests for the GCSSplitterUploader class."""
+
+  def setUp(self):
+    super().setUp()
+    self._uploaded_streams = {}
+
+  def _AddUploadedData(self, stream, remote_path, update_callback=None):
+    self._uploaded_streams[remote_path] = stream.read()
+
+  @mock.patch.object(uploader.GCSSplitterUploader, '_UploadStream')
+  @mock.patch.object(disk.DiskArtifact, '_GetStream')
+  def testUploadArtifact(self, patched_getstream, patched_uploadstream):
+    """Tests that an artificact is correctly split in 5 different chunks."""
+
+    patched_uploadstream.side_effect = self._AddUploadedData
+    temp = tempfile.TemporaryFile()
+    # Generating some data
+    fake_data = bytes(range(0, 256))*1000
+    temp.write(fake_data)
+
+    test_artifact = disk.DiskArtifact(
+        '/dev/sda', len(fake_data), use_dcfldd=False)
+    patched_getstream.return_value = temp
+
+    uploader_object = uploader.GCSSplitterUploader(
+        'gs://fake_bucket/', 'no_keyfile', 'client_id', FakeStampManager(),
+        slices=5)
+    uploader_object._boto_configured = True
+    uploader_object._stamp_uploaded = True
+
+    uploader_object.UploadArtifact(test_artifact, update_callback=mock.Mock())
+
+    results = self._uploaded_streams
+    expected_slice_paths = [
+        f'fake_bucket/20171012-135619/fake_uuid/Disks/sda.image_{x}'
+        for x in range(0, len(results))]
+    self.assertEqual(list(results), expected_slice_paths)
+
+    concatenated_data = bytearray()
+    for path in list(results):
+      concatenated_data += results[path]
+
+    self.assertEqual(concatenated_data, fake_data)
