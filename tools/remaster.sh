@@ -386,11 +386,11 @@ function pack_iso {
   local -r source_iso_dir=$1
   local -r target_iso_file=$2
 
-  readonly mbr="${FLAGS_REMASTERED_ISO}.mbr"
-  readonly efi="${FLAGS_REMASTERED_ISO}.efi"
+  readonly mbr="${FLAGS_SOURCE_ISO}.mbr"
+  readonly efi="${FLAGS_SOURCE_ISO}.efi"
 
   # Extract the MBR template
-  dd if="$orig" bs=1 count=446 of="$mbr"
+  dd if="$FLAGS_SOURCE_ISO" bs=1 count=446 of="$mbr"
 
   # Extract EFI partition image
   readonly skip=$(/sbin/fdisk -l "$orig" | fgrep '.iso2 ' | awk '{print $2}')
@@ -399,28 +399,19 @@ function pack_iso {
 
   msg "Packing the new ISO from ${source_iso_dir} to ${target_iso_file}"
 
-  sudo genisoimage -o "${target_iso_file}" \
-    -b "isolinux/isolinux.bin" \
-    -c "isolinux/boot.cat" \
-    -p "GiftStick" \
-    -no-emul-boot -boot-load-size 4 -boot-info-table \
-    -V "GIFTSTICK-${TODAY}" -cache-inodes -r -J -l \
-    -x "${source_iso_dir}"/casper/manifest.diff \
-    -joliet-long \
-    "${source_iso_dir}"
   sudo xorriso -as mkisofs \
     -r -V "GIFTSTICK-${TODAY}" -J -joliet-long -l \
-    -iso-level 2 \
-    -partition_offset 15 \
-    --grub1-mbr "$mbr" \
+    -iso-level 3 \
+    -partition_offset 16 \
+    --grub2-mbr "$mbr" \
     --mbr-force-bootable \
-    -append_partition 1 0xEF "$efi" \
+    -append_partition 2 0xEF "$efi" \
     -appended_part_as_gpt \
     -c /boot.catalog \
-    -b /boot/grub/i385-pc/eltorito.img \
-      -no-emul-boot -boot-load-size 3 -boot-info-table --grub2-boot-info \
+    -b /boot/grub/i386-pc/eltorito.img \
+      -no-emul-boot -boot-load-size 4 -boot-info-table --grub2-boot-info \
     -eltorito-alt-boot \
-    -e '--interval:appended_partition_1:all::' \
+    -e '--interval:appended_partition_2:all::' \
       -no-emul-boot \
     -o "${target_iso_file}" \
     "${source_iso_dir}"
