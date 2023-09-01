@@ -55,6 +55,8 @@ else
 fi
 
 
+# Chipsec needs setuptools > 62 to install
+sudo pip install --ignore-installed setuptools>=62.4
 # We need to build a module for this system, this can't be installed before
 # booting.
 sudo pip install chipsec
