@@ -28,4 +28,4 @@ jobs:
     - name: Unit tests
       run: |
         export BOTO_CONFIG=/dev/null
-        coverage run run_tests.py
+        python run_tests.py
