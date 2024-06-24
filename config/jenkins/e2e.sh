@@ -269,6 +269,8 @@ function main {
   fi
   ISO_FILENAME="${ISO_TO_REMASTER_URL##*/}"
 
+  gcloud auth activate-service-account --key-file "${SA_CREDENTIALS_FILE}"
+
   msg "Setting up environment"
   setup
   msg "Starting GiftStick image building process"
