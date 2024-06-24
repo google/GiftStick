@@ -81,7 +81,7 @@ function setup {
   if [ ! -f "${EVIDENCE_DISK}" ]; then
     evidence_disk_url=$(normalize_gcs_url "${EVIDENCE_DISK_GSURL}")
     msg "Downloading evidence disk from ${evidence_disk_url}"
-    gsutil -q cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
+    gsutil -DD cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
   fi
 
 }
