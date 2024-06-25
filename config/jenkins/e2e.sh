@@ -136,7 +136,7 @@ function run_image {
   qemu-system-x86_64 -cpu qemu64 -bios /usr/share/ovmf/OVMF.fd  -m 1024 \
     -drive format=raw,file="${IMAGE_NAME}" -device e1000,netdev=net0 \
     -drive format=raw,file="${EVIDENCE_DISK}" \
-    -netdev user,id=net0,hostfwd=tcp::${QEMU_SSH_PORT}-:22 -no-kvm -daemonize -display none
+    -netdev user,id=net0,hostfwd=tcp::${QEMU_SSH_PORT}-:22 -machine accel=tcg -daemonize -display none
 
   # Cloud VMs lack any kind of virtualization super powers, so booting a
   # Ubuntu VM in a vm can take around forever.
@@ -268,6 +268,8 @@ function main {
     ISO_TO_REMASTER_URL="${DEFAULT_ISO_URL}"
   fi
   ISO_FILENAME="${ISO_TO_REMASTER_URL##*/}"
+
+  gcloud auth activate-service-account --key-file "${SA_CREDENTIALS_FILE}"
 
   msg "Setting up environment"
   setup
