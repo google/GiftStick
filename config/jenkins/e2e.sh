@@ -81,7 +81,7 @@ function setup {
   if [ ! -f "${EVIDENCE_DISK}" ]; then
     evidence_disk_url=$(normalize_gcs_url "${EVIDENCE_DISK_GSURL}")
     msg "Downloading evidence disk from ${evidence_disk_url}"
-    gsutil -q cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
+    gcloud storage cp "${evidence_disk_url}" "${EVIDENCE_DISK}"
   fi
 
 }
@@ -174,7 +174,7 @@ function normalize_gcs_url {
 function check_stamp {
   local stamp_url
   stamp_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/stamp.json")
-  gsutil -q cp "${stamp_url}" stamp.json
+  gcloud storage cp "${stamp_url}" stamp.json
   # Check that the stamp is a valid JSON file
   python3 config/jenkins/e2e_tools.py check_stamp stamp.json
 }
@@ -183,7 +183,7 @@ function check_stamp {
 function check_system_info {
   local system_info_url
   system_info_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/system_info.txt")
-  gsutil -q cp "${system_info_url}" system_info.txt
+  gcloud storage cp "${system_info_url}" system_info.txt
   python3 config/jenkins/e2e_tools.py check_system_info system_info.txt
 }
 
@@ -193,7 +193,7 @@ function check_system_info {
 function check_firmware {
   local firmware_url
   firmware_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Firmware/rom.bin")
-  gsutil -q stat "${firmware_url}"
+  gcloud storage objects list --stat --fetch-encrypted-object-hashes "${firmware_url}"
 }
 
 # Checks the files related to the evidence disk.
@@ -207,22 +207,22 @@ function check_disk {
   lsblk_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/lsblk.txt")
   udevadm_url=$(normalize_gcs_url "${GCS_EXPECTED_URL}/Disks/sdb.udevadm.txt")
   msg "Checking MD5 of ${disk_url}"
-  if gsutil -q hash -m -h "${disk_url}"| grep -q "${EVIDENCE_DISK_MD5_HEX}"; then
+  if gcloud storage hash --skip-crc32c --hex "${disk_url}"| grep -q "${EVIDENCE_DISK_MD5_HEX}"; then
     msg "MD5 is correct for ${disk_url}"
   else
     die "Bad MD5 for ${disk_url}"
   fi
 
   msg "Checking ${lsblk_url}"
-  gsutil cp "${lsblk_url}" "lsblk.txt"
+  gcloud storage cp "${lsblk_url}" "lsblk.txt"
   python3 config/jenkins/e2e_tools.py check_lsblk lsblk.txt
 
   msg "Checking ${hash_url}"
-  gsutil cp "${hash_url}" "sdb.hash"
+  gcloud storage cp "${hash_url}" "sdb.hash"
   python3 config/jenkins/e2e_tools.py check_hash "sdb.hash"
 
   msg "Checking ${udevadm_url}"
-  gsutil cp "${udevadm_url}" sdb.udevadm.txt
+  gcloud storage cp "${udevadm_url}" sdb.udevadm.txt
   python3 config/jenkins/e2e_tools.py check_udevadm sdb.udevadm.txt
 }
 
