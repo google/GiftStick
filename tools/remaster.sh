@@ -552,10 +552,10 @@ function make_custom_ubuntu_iso {
 #   The bucket name, as string
 function create_bucket {
   local bucket=$1
-  if gsutil -q ls -p "${FLAGS_CLOUD_PROJECT_NAME}" "gs://" | grep -q "gs://${bucket}/"; then
+  if gcloud storage ls --project "${FLAGS_CLOUD_PROJECT_NAME}" | grep -q "gs://${bucket}/"; then
     msg "Bucket ${bucket} already exists in project ${FLAGS_CLOUD_PROJECT_NAME}"
   else
-    gsutil mb -p "${FLAGS_CLOUD_PROJECT_NAME}" "gs://${bucket}/"
+    gcloud storage buckets create --project "${FLAGS_CLOUD_PROJECT_NAME}" "gs://${bucket}/"
   fi
 }
 
@@ -578,7 +578,7 @@ function create_service_account {
       --member "serviceAccount:${gcs_sa_email}" --role "roles/logging.logWriter"
   fi
   # Give the SA create permissions
-  gsutil iam ch "serviceAccount:${gcs_sa_email}:objectCreator" "gs://${gcs_bucket_name}"
+  gcloud storage buckets add-iam-policy-binding "gs://${gcs_bucket_name}" --member "serviceAccount:${gcs_sa_email}" --role "roles/storage.objectCreator"
 }
 
 # Creates and downloads a service account private key
@@ -603,8 +603,8 @@ function create_sa_key {
 
 # Makes sure Gcloud stuff is present and user is logged in.
 function check_gcs {
-   if [[ "$(which gsutil)" == "" ]]; then
-     die "Please install gsutil ( see https://cloud.google.com/storage/docs/gsutil_install ) "
+   if [[ "$(which gcloud)" == "" ]]; then
+     die "Please install gcloud ( see https://cloud.google.com/sdk/docs/install ) "
    fi
    gcloud_accounts=$(gcloud auth list --filter=status:ACTIVE --format="value(account)")
    if [[ "${gcloud_accounts}" == "" ]]; then
